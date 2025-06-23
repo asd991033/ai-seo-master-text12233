@@ -1,24 +1,35 @@
 {
   "version": 2,
   "name": "ai-seo-master-text12233",
-  "builds": [
-    {
-      "src": "backend/src/main.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/node"
+  "functions": {
+    "backend/src/main.py": {
+      "runtime": "python3.9"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "backend/src/main.py"
     },
     {
+      "src": "/auth/(.*)",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/webhooks/(.*)",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/privacy",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/terms",
+      "dest": "backend/src/main.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "frontend/dist/$1"
+      "dest": "backend/src/static/$1"
     }
   ],
   "env": {
@@ -29,11 +40,6 @@
     "REDIRECT_URI": "https://ai-seo-master-text12233.vercel.app/auth/callback",
     "FLASK_ENV": "production",
     "SECRET_KEY": "ai-seo-master-secret-key-2024"
-  },
-  "functions": {
-    "backend/src/main.py": {
-      "runtime": "python3.9"
-    }
   }
 }
 
