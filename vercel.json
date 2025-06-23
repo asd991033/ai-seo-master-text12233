@@ -3,7 +3,7 @@
   "name": "ai-seo-master-text12233",
   "functions": {
     "backend/src/main.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python"
     }
   },
   "routes": [
