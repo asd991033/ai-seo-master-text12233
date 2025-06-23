@@ -1,14 +1,9 @@
 {
   "version": 2,
-  "name": "ai-seo-master-text12233",
   "builds": [
     {
       "src": "backend/src/main.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -17,23 +12,25 @@
       "dest": "backend/src/main.py"
     },
     {
+      "src": "/auth/(.*)",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/webhooks/(.*)",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/privacy",
+      "dest": "backend/src/main.py"
+    },
+    {
+      "src": "/terms",
+      "dest": "backend/src/main.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "frontend/dist/$1"
+      "dest": "backend/src/static/$1"
     }
-  ],
-  "env": {
-    "SHOPIFY_CLIENT_ID": "974d76b1ff7dd9787c9bc956433e6acc",
-    "SHOPIFY_CLIENT_SECRET": "7b4828707ebcdf89b17750d500f4c2be",
-    "SHOPIFY_SCOPES": "read_products,write_products,read_content,write_content,read_themes,write_themes",
-    "APP_URL": "https://ai-seo-master-text12233.vercel.app",
-    "REDIRECT_URI": "https://ai-seo-master-text12233.vercel.app/auth/callback",
-    "FLASK_ENV": "production",
-    "SECRET_KEY": "ai-seo-master-secret-key-2024"
-  },
-  "functions": {
-    "backend/src/main.py": {
-      "runtime": "python3.9"
-    }
-  }
+  ]
 }
 
