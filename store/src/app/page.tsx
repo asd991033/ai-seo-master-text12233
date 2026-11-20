@@ -16,7 +16,7 @@ export default async function Home() {
     <>
       {/* 主視覺 */}
       <section className="overflow-hidden bg-sand">
-        <div className="container-x grid items-center gap-10 py-14 md:grid-cols-[1.05fr_1fr] md:py-20">
+        <div className="container-x grid items-center gap-14 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
           <div>
             <div className="eyebrow">{t.home.eyebrow}</div>
             <h1 className="mt-5 text-[40px] leading-[1.2] font-bold text-forest md:text-[54px]">{t.home.title}</h1>
@@ -26,18 +26,18 @@ export default async function Home() {
               <Link href="/guide" className="btn-outline px-7 py-3.5 text-base">{t.home.ctaGuide}</Link>
             </div>
           </div>
-          <div className="relative mx-auto grid w-full max-w-lg grid-cols-2 gap-4">
+          <div className="relative mx-auto w-full max-w-md md:max-w-none">
             {/* eslint-disable @next/next/no-img-element */}
-            <div className="space-y-4 pt-10">
-              <img src="/showcase/backpack.jpg" alt="" className="aspect-square w-full rounded-3xl bg-white object-cover shadow-xl" />
-              <img src="/showcase/mousepad.jpg" alt="" className="aspect-[4/3] w-full rounded-3xl bg-white object-cover shadow-xl" />
+            <img src="/brand/hero.jpg" alt="" className="aspect-[4/5] w-full rounded-[32px] object-cover shadow-2xl" />
+            <div className="absolute -bottom-6 -left-4 w-36 rounded-2xl bg-white p-2 shadow-xl sm:-left-10 sm:w-44">
+              <img src="/showcase/backpack.jpg" alt="" className="aspect-square w-full rounded-xl object-cover" />
+              <div className="px-1 pt-2 pb-1 text-[11px] text-mute">{t.home.sample}</div>
             </div>
-            <div className="space-y-4">
-              <img src="/showcase/blanket.jpg" alt="" className="aspect-[4/5] w-full rounded-3xl bg-white object-cover shadow-xl" />
-              <img src="/showcase/tote.jpg" alt="" className="aspect-square w-full rounded-3xl bg-white object-cover shadow-xl" />
+            <div className="absolute -top-5 -right-3 w-28 rounded-2xl bg-white p-2 shadow-xl sm:-right-6 sm:w-36">
+              <img src="/showcase/mug.jpg" alt="" className="aspect-square w-full rounded-xl object-cover" />
+              <div className="px-1 pt-2 pb-1 text-[11px] text-mute">{t.home.sample}</div>
             </div>
             {/* eslint-enable @next/next/no-img-element */}
-            <span className="absolute right-3 bottom-3 rounded-full bg-ink/70 px-3 py-1 text-[11px] text-white">{t.home.sample}</span>
           </div>
         </div>
       </section>
@@ -118,10 +118,10 @@ export default async function Home() {
             </ul>
             <Link href="/products" className="mt-9 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-medium text-forest transition hover:bg-sand">{t.home.designerCta}<IconArrow className="h-4 w-4" /></Link>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="relative">
             {/* eslint-disable @next/next/no-img-element */}
-            <img src="/showcase/pillow.jpg" alt="" loading="lazy" className="aspect-square w-full rounded-3xl bg-white object-cover" />
-            <img src="/showcase/tee.jpg" alt="" loading="lazy" className="mt-8 aspect-square w-full rounded-3xl bg-white object-cover" />
+            <img src="/brand/designer.jpg" alt="" loading="lazy" className="aspect-[4/3] w-full rounded-3xl object-cover" />
+            <img src="/showcase/tee.jpg" alt="" loading="lazy" className="absolute -bottom-6 -left-4 hidden w-36 rounded-2xl border-4 border-forest bg-white object-cover shadow-xl sm:block" />
             {/* eslint-enable @next/next/no-img-element */}
           </div>
         </div>
@@ -143,10 +143,14 @@ export default async function Home() {
 
       {/* 收尾 */}
       <section className="container-x">
-        <div className="rounded-3xl bg-sand px-6 py-14 text-center">
-          <h2 className="text-3xl font-bold text-forest">{t.home.ctaTitle}</h2>
-          <p className="mx-auto mt-3 max-w-md text-mute">{t.home.ctaLead}</p>
-          <Link href="/products" className="btn-primary mt-7 px-8 py-3.5 text-base">{t.home.ctaShop}<IconArrow className="h-4 w-4" /></Link>
+        <div className="relative overflow-hidden rounded-3xl bg-sand px-6 py-20 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/cta.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="relative">
+            <h2 className="text-3xl font-bold text-forest md:text-4xl">{t.home.ctaTitle}</h2>
+            <p className="mx-auto mt-3 max-w-md text-ink/70">{t.home.ctaLead}</p>
+            <Link href="/products" className="btn-primary mt-7 px-8 py-3.5 text-base">{t.home.ctaShop}<IconArrow className="h-4 w-4" /></Link>
+          </div>
         </div>
       </section>
     </>

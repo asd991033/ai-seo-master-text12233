@@ -8,8 +8,16 @@ export function AuthForm({ mode, next, providers = [], oauthError }: { mode: "lo
   const [state, action, pending] = useActionState(mode === "login" ? loginAction : registerAction, undefined);
   const qs = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <div className="container-x flex justify-center py-16">
-      <form action={action} className="card w-full max-w-sm space-y-4 p-7">
+    <div className="container-x grid items-stretch gap-0 py-10 md:grid-cols-2 md:py-16">
+      <div className="relative hidden overflow-hidden rounded-l-3xl md:block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/login.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent p-8 pt-24 text-white">
+          <div className="serif text-2xl font-bold">{t.auth.welcome}</div>
+          <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/85">{mode === "login" ? t.auth.welcomeLead : t.auth.joinLead}</p>
+        </div>
+      </div>
+      <form action={action} className="mx-auto w-full max-w-md space-y-4 rounded-3xl border border-line bg-white p-8 md:max-w-none md:rounded-l-none md:border-l-0 md:p-12">
         <h1 className="text-2xl font-bold">{mode === "login" ? t.auth.login : t.auth.register}</h1>
         {next && <input type="hidden" name="next" value={next} />}
         {mode === "register" && (

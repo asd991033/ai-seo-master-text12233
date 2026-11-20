@@ -9,8 +9,18 @@ export const metadata: Metadata = { title: t.guide.title };
 export default async function GuidePage() {
   const methods = await db.select().from(schema.printMethods).orderBy(asc(schema.printMethods.sort));
   return (
+    <>
+    <section className="relative overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/guide.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ink/75 via-ink/45 to-transparent" />
+      <div className="container-x relative py-20 text-white md:py-28">
+        <div className="text-xs tracking-[0.2em] text-[#e9d9b5]">{t.nav.guide.toUpperCase()}</div>
+        <h1 className="mt-4 text-4xl font-bold md:text-5xl">{t.guide.title}</h1>
+        <p className="mt-4 max-w-md leading-relaxed text-white/85">{t.guide.lead}</p>
+      </div>
+    </section>
     <div className="container-x max-w-4xl py-12">
-      <h1 className="text-3xl font-bold">{t.guide.title}</h1>
       <ol className="mt-10 grid gap-4 sm:grid-cols-2">
         {t.home.steps.map((s, i) => (
           <li key={s.t} className="card p-5">
@@ -50,5 +60,6 @@ export default async function GuidePage() {
         ))}
       </div>
     </div>
+    </>
   );
 }

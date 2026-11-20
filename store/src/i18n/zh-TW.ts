@@ -24,9 +24,9 @@ const dict = {
     ],
     scenesTitle: "為每一種送禮場合準備",
     scenes: [
-      { t: "企業贈禮", d: "員工禮、客戶禮、節慶禮盒。把 Logo 放上實用的日常好物，收到的人會真的用。", cta: "看居家與杯具", cat: "家居用品", img: "/showcase/mug.jpg" },
-      { t: "活動周邊", d: "展覽、演唱會、社團、校慶。托特包、T 恤、帽子，一件起訂、追加方便。", cta: "看包袋配件", cat: "箱包皮具", img: "/showcase/tote.jpg" },
-      { t: "品牌商品", d: "想推出自己的商品線？滿版印刷讓整件商品都是你的設計。", cta: "看服飾", cat: "男士服裝", img: "/showcase/hoodie.jpg" },
+      { t: "企業贈禮", d: "員工禮、客戶禮、節慶禮盒。把 Logo 放上實用的日常好物，收到的人會真的用。", cta: "看居家與杯具", cat: "家居用品", img: "/brand/scene-corporate.jpg" },
+      { t: "活動周邊", d: "展覽、演唱會、社團、校慶。托特包、T 恤、帽子，一件起訂、追加方便。", cta: "看包袋配件", cat: "箱包皮具", img: "/brand/scene-event.jpg" },
+      { t: "品牌商品", d: "想推出自己的商品線？滿版印刷讓整件商品都是你的設計。", cta: "看服飾", cat: "男士服裝", img: "/brand/scene-brand.jpg" },
     ],
     stepsTitle: "四個步驟，完成你的客製禮品",
     steps: [
@@ -102,11 +102,12 @@ const dict = {
   },
   auth: {
     login: "登入", register: "註冊", email: "Email", password: "密碼", name: "姓名", phone: "電話", company: "公司名稱（選填）",
-    noAccount: "還沒有帳號？", haveAccount: "已經有帳號？", badLogin: "Email 或密碼錯誤", emailTaken: "此 Email 已註冊", weakPassword: "密碼至少需 8 個字元",
+    welcome: "歡迎回來", welcomeLead: "登入後可以查看訂單進度、回頭修改設計，下次訂購也更快。", joinLead: "建立帳號只要一分鐘，之後下單與查詢訂單都更方便。", noAccount: "還沒有帳號？", haveAccount: "已經有帳號？", badLogin: "Email 或密碼錯誤", emailTaken: "此 Email 已註冊", weakPassword: "密碼至少需 8 個字元",
     invalid: "請確認欄位格式", or: "或", google: "使用 Google 登入", line: "使用 LINE 登入", oauthFailed: "第三方登入失敗，請再試一次", useSocial: "此帳號是用 Google / LINE 建立的，請改用下方按鈕登入", profile: "會員資料", hello: (n: string) => `${n}，你好`,
   },
   guide: {
     title: "訂購流程與稿件規範",
+    lead: "從選品到收到貨，每一步會發生什麼事、需要準備什麼，都寫在這裡。",
     methodsTitle: "印刷方式比較",
     fileTitle: "稿件規範",
     fileRules: [
