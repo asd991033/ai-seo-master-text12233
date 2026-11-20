@@ -18,6 +18,9 @@ export type ProductRow = {
   sizes?: string;
   /** 顏色名稱 → 該顏色的商品照片網址 */
   colorImages?: Record<string, string>;
+  /** 顏色名稱 → 前台展示用的乾淨商品圖 */
+  colorDisplay?: Record<string, string>;
+  popularity?: number;
   sourceUrl?: string;
   moq?: number; leadDays?: number; unitWeightG?: number;
   cartonQty?: number; cartonLengthCm?: number; cartonWidthCm?: number; cartonHeightCm?: number; cartonWeightKg?: number;
@@ -112,7 +115,8 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
           sku: r.sku.trim(), slug: slugify(r.sku), name: r.name.trim(),
           categoryId: r.category ? catByName.get(r.category.trim()) ?? null : null,
           summary: r.summary ?? "", description: r.description ?? "", material: r.material ?? "", sizeText: r.size ?? "",
-          colors: parseColors(r.colors).map((c) => (r.colorImages?.[c.name] ? { ...c, image: r.colorImages[c.name] } : c)),
+          colors: parseColors(r.colors).map((c) => ({ ...c, ...(r.colorImages?.[c.name] ? { image: r.colorImages[c.name] } : {}), ...(r.colorDisplay?.[c.name] ? { display: r.colorDisplay[c.name] } : {}) })),
+          popularity: r.popularity ?? 0,
           sizes: (r.sizes ?? "").split("|").map((x) => x.trim()).filter(Boolean),
           sourceUrl: r.sourceUrl ?? null,
           moq: r.moq || 1, leadDays: r.leadDays || 14, unitWeightG: r.unitWeightG || 0,

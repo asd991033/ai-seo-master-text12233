@@ -54,7 +54,7 @@ export const products = sqliteTable("products", {
   /** 圖片網址陣列 */
   images: text("images", { mode: "json" }).$type<string[]>().notNull().default([]),
   /** 可選顏色 */
-  colors: text("colors", { mode: "json" }).$type<{ name: string; hex: string; image?: string }[]>().notNull().default([]),
+  colors: text("colors", { mode: "json" }).$type<{ name: string; hex: string; image?: string; display?: string }[]>().notNull().default([]),
   /** 可選尺碼 */
   sizes: text("sizes", { mode: "json" }).$type<string[]>().notNull().default([]),
   /** 供應商商品頁（僅後台參考） */
@@ -70,6 +70,8 @@ export const products = sqliteTable("products", {
   cartonHeightCm: real("carton_height_cm").notNull().default(0),
   cartonWeightKg: real("carton_weight_kg").notNull().default(0),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+  /** 熱銷排序（數字越大越熱門） */
+  popularity: integer("popularity").notNull().default(0),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at").notNull().default(now),
 });

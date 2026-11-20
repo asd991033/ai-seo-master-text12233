@@ -1,29 +1,43 @@
 import Link from "next/link";
 import { site } from "@/config/site";
 import { t } from "@/i18n";
+import { categoryCounts } from "@/lib/catalog";
 
-export function Footer() {
+export async function Footer() {
+  const cats = (await categoryCounts()).filter((c) => c.count > 0).slice(0, 6);
   return (
-    <footer className="no-print mt-20 border-t border-line bg-sand">
-      <div className="container-x grid gap-8 py-12 text-sm sm:grid-cols-3">
+    <footer className="no-print mt-24 bg-forest-dark text-white/80">
+      <div className="container-x grid gap-10 py-14 text-sm md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <div className="serif text-lg font-bold text-forest">{site.brand} <span className="text-xs tracking-[0.3em] text-gold">{site.brandZh}</span></div>
-          <p className="mt-3 max-w-xs leading-relaxed text-mute">{t.footer.about}</p>
+          <div className="serif text-2xl font-bold text-white">{site.brand}</div>
+          <p className="mt-4 max-w-xs leading-relaxed text-white/60">{t.footer.about}</p>
         </div>
         <div>
-          <div className="mb-3 font-medium">{t.footer.links}</div>
-          <ul className="space-y-2 text-mute">
-            <li><Link href="/products" className="hover:text-ink">{t.nav.products}</Link></li>
-            <li><Link href="/guide" className="hover:text-ink">{t.nav.guide}</Link></li>
-            <li><Link href="/account" className="hover:text-ink">{t.nav.account}</Link></li>
+          <div className="mb-4 text-xs tracking-widest text-gold">{t.footer.shop}</div>
+          <ul className="space-y-2.5">
+            {cats.map((c) => <li key={c.id}><Link href={`/products?category=${encodeURIComponent(c.slug)}`} className="hover:text-white">{c.name}</Link></li>)}
+            <li><Link href="/products" className="hover:text-white">{t.home.viewAll} →</Link></li>
           </ul>
         </div>
         <div>
-          <div className="mb-3 font-medium">{t.footer.service}</div>
-          <a href={`mailto:${site.contactEmail}`} className="text-mute hover:text-ink">{site.contactEmail}</a>
+          <div className="mb-4 text-xs tracking-widest text-gold">{t.footer.help}</div>
+          <ul className="space-y-2.5">
+            <li><Link href="/guide" className="hover:text-white">{t.nav.guide}</Link></li>
+            <li><Link href="/guide#files" className="hover:text-white">{t.guide.fileTitle}</Link></li>
+            <li><Link href="/guide#shipping" className="hover:text-white">{t.guide.shipTitle}</Link></li>
+            <li><Link href="/guide#faq" className="hover:text-white">{t.guide.faqTitle}</Link></li>
+          </ul>
+        </div>
+        <div>
+          <div className="mb-4 text-xs tracking-widest text-gold">{t.footer.account}</div>
+          <ul className="space-y-2.5">
+            <li><Link href="/account" className="hover:text-white">{t.nav.account}</Link></li>
+            <li><Link href="/cart" className="hover:text-white">{t.nav.cart}</Link></li>
+            <li><a href={`mailto:${site.contactEmail}`} className="hover:text-white">{site.contactEmail}</a></li>
+          </ul>
         </div>
       </div>
-      <div className="border-t border-line py-4 text-center text-xs text-mute">© {new Date().getFullYear()} {site.brand}. {t.footer.rights}</div>
+      <div className="border-t border-white/10 py-5 text-center text-xs text-white/40">© {new Date().getFullYear()} {site.brand}. {t.footer.rights}</div>
     </footer>
   );
 }

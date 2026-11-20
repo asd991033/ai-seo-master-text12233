@@ -32,7 +32,7 @@ export default async function GuidePage() {
       </div>
 
       {[[t.guide.fileTitle, t.guide.fileRules], [t.guide.shipTitle, t.guide.shipRules]].map(([title, rules]) => (
-        <section key={title as string}>
+        <section key={title as string} id={title === t.guide.fileTitle ? "files" : "shipping"} className="scroll-mt-32">
           <h2 className="mt-14 text-xl font-bold">{title}</h2>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-mute">
             {(rules as string[]).map((r) => <li key={r}>{r}</li>)}
@@ -40,7 +40,7 @@ export default async function GuidePage() {
         </section>
       ))}
 
-      <h2 className="mt-14 text-xl font-bold">{t.guide.faqTitle}</h2>
+      <h2 id="faq" className="mt-14 scroll-mt-32 text-xl font-bold">{t.guide.faqTitle}</h2>
       <div className="mt-4 space-y-3">
         {t.guide.faq.map((f) => (
           <details key={f.q} className="card p-4 text-sm">

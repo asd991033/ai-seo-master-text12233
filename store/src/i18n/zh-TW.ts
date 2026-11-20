@@ -2,32 +2,48 @@ import { site } from "@/config/site";
 
 /** 繁體中文字典。新增語系時複製本檔翻譯，並在 i18n/index.ts 註冊。 */
 const dict = {
-  nav: { products: "全部商品", guide: "訂購流程", cart: "購物車", login: "登入 / 註冊", account: "會員中心", admin: "後台", search: "搜尋商品、SKU…", logout: "登出" },
+  nav: { menu: "選單", categories: "商品分類", announce: "一件起訂・數量越多越划算・線上排版即時看示意圖", products: "全部商品", guide: "訂購流程", cart: "購物車", login: "登入 / 註冊", account: "會員中心", admin: "後台", search: "搜尋商品、SKU…", logout: "登出" },
   home: {
-    eyebrow: "客製化禮品一站式解決方案",
-    title: "把品牌，做成一份拿得出手的禮物",
-    lead: "從選品、線上排版、印刷打樣到空運海運到貨，全程一個平台完成。即時報價，數量越多越划算。",
+    eyebrow: "客製化禮品・一站完成",
+    title: "把你的品牌，做成拿得出手的好禮",
+    lead: "近千款可客製商品，一件就能訂。上傳 Logo、線上排版、即時看成品示意圖，價格透明，數量越多越划算。",
     ctaShop: "開始選品",
     ctaGuide: "了解訂購流程",
-    featured: "精選商品",
+    sample: "示範設計",
+    featured: "熱門商品",
+    featuredLead: "最多人選的客製品項，從這裡開始最不會出錯。",
     viewAll: "看全部商品",
     categories: "依品類選購",
-    steps: [
-      { t: "選品與即時報價", d: "選擇數量、印刷方式與印刷面積，價格即時計算，沒有隱藏費用。" },
-      { t: "線上排版", d: "直接在刀模上放 Logo 與文字，同步看到成品示意圖。" },
-      { t: "確認稿件與生產", d: "專人審稿後進入生產，進度隨時可在會員中心查詢。" },
-      { t: "空運 / 海運到貨", d: "依重量與材積自動計算運費，急單走空運，大貨走海運更省。" },
+    categoriesLead: "從居家、服飾到包袋配件，找到最適合你品牌的載體。",
+    countUnit: "款",
+    promise: [
+      { t: "一件起訂", d: "不用湊量，打樣、小量送禮都可以。" },
+      { t: "價格透明", d: "每一級數量的單價直接標示，印刷費已含。" },
+      { t: "線上排版", d: "上傳圖片就能排版，即時看成品示意圖。" },
+      { t: "空運・海運", d: "依重量與材積自動試算，時效與成本自己選。" },
+    ],
+    scenesTitle: "為每一種送禮場合準備",
+    scenes: [
+      { t: "企業贈禮", d: "員工禮、客戶禮、節慶禮盒。把 Logo 放上實用的日常好物，收到的人會真的用。", cta: "看居家與杯具", cat: "家居用品", img: "/showcase/mug.jpg" },
+      { t: "活動周邊", d: "展覽、演唱會、社團、校慶。托特包、T 恤、帽子，一件起訂、追加方便。", cta: "看包袋配件", cat: "箱包皮具", img: "/showcase/tote.jpg" },
+      { t: "品牌商品", d: "想推出自己的商品線？滿版印刷讓整件商品都是你的設計。", cta: "看服飾", cat: "男士服裝", img: "/showcase/hoodie.jpg" },
     ],
     stepsTitle: "四個步驟，完成你的客製禮品",
-    promise: [
-      { t: "區間價格透明", d: "每一級數量的單價都公開。" },
-      { t: "多種印刷工藝", d: "網印、熱轉印、UV、雷雕、燙金。" },
-      { t: "專人審稿", d: "下單後設計師逐一檢查印刷檔。" },
-      { t: "空海運雙報價", d: "時效與成本一目了然。" },
+    steps: [
+      { t: "選品與價格試算", d: "選數量就看到單價，印刷費已含，沒有隱藏費用。" },
+      { t: "線上排版", d: "上傳 Logo、加上文字，拖曳調整位置，同步看示意圖。" },
+      { t: "確認稿件與生產", d: "下單後專人審稿，確認無誤才進入生產。" },
+      { t: "空運 / 海運到貨", d: "依重量與材積自動計算運費，進度隨時可查。" },
     ],
+    designerTitle: "不用會設計，也能做出好看的東西",
+    designerLead: "打開排版工具，上傳圖片或輸入文字，拖一拖就完成。右邊即時顯示印在商品上的樣子，手機也能操作。",
+    designerPoints: ["圖片、文字、底色自由組合", "置中吸附與圖層，排版更精準", "解析度不足會自動提醒", "購物車裡隨時可以回頭修改"],
+    designerCta: "挑一件商品試試",
+    ctaTitle: "準備好開始了嗎？",
+    ctaLead: "先逛逛商品，價格與示意圖都能直接看到，不需要先詢價。",
   },
   products: {
-    title: "全部商品", all: "全部", empty: "找不到符合條件的商品。", from: "起", moq: "最低訂購", pcs: "件",
+    title: "全部商品", all: "全部", empty: "找不到符合條件的商品。", from: "起", moqOne: "1 件起訂", count: (n: number) => `共 ${n} 件商品`, filter: "商品分類", related: "你可能也喜歡", moq: "最低訂購", pcs: "件",
     sort: { default: "精選排序", price_asc: "價格由低到高", price_desc: "價格由高到低" },
     resultFor: (q: string) => `「${q}」的搜尋結果`,
   },
@@ -43,7 +59,7 @@ const dict = {
     design: "線上排版", designHint: "在刀模上直接排版並預覽成品示意圖",
     addToCart: "加入購物車", buyNow: "立即下單", addLater: "還沒有設計稿也可以先下單，稿件可於下單後再提供。",
     artwork: "已有設計稿？直接上傳", artworkHint: "支援 AI / PDF / EPS / PSD / PNG / JPG / ZIP，50MB 以內", artworkUploaded: "已上傳",
-    uploading: "上傳中…", added: "已加入購物車", desc: "商品說明", needPrint: "請先選擇至少一個印刷位置",
+    uploading: "上傳中…", added: "已加入購物車", desc: "商品說明", specs: "規格", perPiece: "每件，印刷費已含", needPrint: "請先選擇至少一個印刷位置",
     nextTier: (n: number, price: string) => `再加 ${n} 件，單價降為 ${price}`,
   },
   designer: {
@@ -113,7 +129,7 @@ const dict = {
       { q: "可以開立發票嗎？", a: "可以。結帳時填寫公司名稱與統一編號即可。" },
     ],
   },
-  footer: { about: `${site.brand} 提供企業贈品、活動周邊與品牌禮盒的客製化一站式服務。`, service: "客服信箱", links: "快速連結", rights: "版權所有" },
+  footer: { shop: "選購", help: "幫助", account: "帳戶", about: `${site.brand} 提供企業贈品、活動周邊與品牌禮盒的客製化一站式服務。`, service: "客服信箱", links: "快速連結", rights: "版權所有" },
   common: { loading: "載入中…", save: "儲存", cancel: "取消", close: "關閉", required: "必填", notFound: "找不到頁面", backHome: "回首頁" },
 };
 

@@ -14,7 +14,7 @@ export type ConfigProduct = {
   sku: string;
   name: string;
   image: string | null;
-  colors: { name: string; hex: string; image?: string }[];
+  colors: { name: string; hex: string; image?: string; display?: string }[];
   sizes: string[];
   /** 滿版印刷：整面都由客戶的設計決定，沒有底色可選 */
   fullPrint: boolean;
@@ -42,9 +42,10 @@ export function Configurator({ p }: { p: ConfigProduct }) {
 
   /** 選項全都不是顏色名稱時（例如「無帽繩」），當成款式顯示 */
   const styleOnly = p.colors.length > 0 && p.colors.every((c) => !isColorName(c.name));
-  const pickColor = (c: { name: string; image?: string }) => {
+  const pickColor = (c: { name: string; image?: string; display?: string }) => {
     setColor(c.name);
-    if (c.image) window.dispatchEvent(new CustomEvent("product-image", { detail: c.image }));
+    const src = c.display ?? c.image;
+    if (src) window.dispatchEvent(new CustomEvent("product-image", { detail: src }));
   };
 
   const methodsFor = (pos: string, area: string) => {
@@ -123,8 +124,14 @@ export function Configurator({ p }: { p: ConfigProduct }) {
 
   function goDesign() {
     if (!quote) return;
-    if (!prints.length) return setNotice(t.product.needPrint);
-    saveDraft({ slug: p.slug, qty, colorName: color, sizeName: size, prints });
+    // 還沒選印刷位置時，自動帶入第一個位置，少一個步驟
+    let chosen = prints;
+    if (!chosen.length) {
+      const first = p.positions[0], st = first && posState[first.code];
+      if (!first || !st?.methodCode) return setNotice(t.product.needPrint);
+      chosen = [{ positionCode: first.code, areaCode: st.areaCode, methodCode: st.methodCode, colors: st.colors }];
+    }
+    saveDraft({ slug: p.slug, qty, colorName: color, sizeName: size, prints: chosen });
     router.push(`/design/${p.slug}`);
   }
 
@@ -313,6 +320,19 @@ export function Configurator({ p }: { p: ConfigProduct }) {
           )}
         </div>
       )}
+
+      {/* 手機底部固定的下單列 */}
+      <div className="no-print fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] text-mute">{t.product.subtotal}</div>
+          <div className="serif truncate text-lg font-bold text-forest">{quote ? fmtMoney(quote.total) : "—"}</div>
+        </div>
+        {p.positions.length > 0 ? (
+          <button type="button" onClick={goDesign} disabled={!quote} className="btn-primary px-6 py-3">{t.product.design}</button>
+        ) : (
+          <button type="button" onClick={() => addToCart("/checkout")} disabled={!quote} className="btn-primary px-6 py-3">{t.product.buyNow}</button>
+        )}
+      </div>
 
       <div className="space-y-3">
         {p.positions.length > 0 && (

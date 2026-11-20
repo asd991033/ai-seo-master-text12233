@@ -10,6 +10,8 @@ export type Region = {
   cx: number; cy: number; w: number; h: number; angle: number;
   /** 設計透明處要顯示的底色：印刷區被商品本體包住時取商品顏色（如黑 T），否則為白 */
   fill: string;
+  /** 印刷區是否被商品本體包住（如 T 恤胸前）；false 代表整個商品都是印刷區（滿版） */
+  enclosed: boolean;
 };
 export type MockupModel = { n: number; regions: Region[]; shade: Uint8ClampedArray };
 
@@ -173,13 +175,14 @@ export function analyze(img: CanvasImageSource): MockupModel {
     const uc = (b.u0 + b.u1) / 2, vc = (b.v0 + b.v1) / 2;
     // 取印刷區外圍一圈的顏色
     const grown = boxMax(hard, n, 5);
-    let ring = 0, on = 0, sr = 0, sg = 0, sb = 0;
+    let ring = 0, on = 0, sr = 0, sg = 0, sb = 0, inside = 0;
     for (let i = 0; i < n * n; i++) if (grown[i] && !hard[i]) {
       ring++;
+      if (!bg[i]) inside++;
       if (!bg[i] && !light[i]) { on++; sr += d[i * 4]; sg += d[i * 4 + 1]; sb += d[i * 4 + 2]; }
     }
     const fill = ring > 0 && on / ring > 0.6 ? `rgb(${Math.round(sr / on)},${Math.round(sg / on)},${Math.round(sb / on)})` : "#ffffff";
-    return { mask: boxBlur(boxBlur(hard, n, 2), n, 2), area, cx: mx + uc * b.cos - vc * b.sin, cy: my + uc * b.sin + vc * b.cos, w: b.u1 - b.u0 + 1, h: b.v1 - b.v0 + 1, angle, fill };
+    return { mask: boxBlur(boxBlur(hard, n, 2), n, 2), area, cx: mx + uc * b.cos - vc * b.sin, cy: my + uc * b.sin + vc * b.cos, w: b.u1 - b.u0 + 1, h: b.v1 - b.v0 + 1, angle, fill, enclosed: ring > 0 && inside / ring > 0.6 };
   });
 
   // 陰影：佔位圖的淡藍斜紋在「藍色通道」幾乎和白底一樣亮，所以藍色通道就是去掉斜紋後的布料明暗，

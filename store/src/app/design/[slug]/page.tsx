@@ -13,7 +13,7 @@ export default async function DesignPage({ params }: { params: Promise<{ slug: s
   return (
     <DesignerLoader
       product={{
-        id: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.images[0] ?? null, colors: p.colors,
+        id: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.colors[0]?.image ?? p.images[0] ?? null, colors: p.colors,
         methods: p.methods.map((m) => ({ code: m.code, name: m.name, perColor: m.perColor })),
         positions: p.positions.map((x) => ({
           code: x.code, name: x.name, dielineUrl: x.dielineUrl, widthMm: x.widthMm, heightMm: x.heightMm, pxW: x.pxW, pxH: x.pxH,

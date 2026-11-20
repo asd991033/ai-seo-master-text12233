@@ -34,9 +34,10 @@ export async function countProducts(opts: { category?: string; q?: string } = {}
   return r.n;
 }
 
-function productConds(opts: { category?: string; q?: string; featured?: boolean }) {
+function productConds(opts: { category?: string; q?: string; featured?: boolean; exclude?: number }) {
   const conds = [eq(products.active, true)];
   if (opts.category) conds.push(eq(categories.slug, opts.category));
+  if (opts.exclude) conds.push(sql`${products.id} != ${opts.exclude}`);
   if (opts.featured) conds.push(eq(products.featured, true));
   if (opts.q?.trim()) {
     const kw = `%${opts.q.trim().replace(/[%_]/g, "")}%`;
@@ -45,7 +46,7 @@ function productConds(opts: { category?: string; q?: string; featured?: boolean 
   return conds;
 }
 
-export async function listProducts(opts: { category?: string; q?: string; sort?: string; featured?: boolean; limit?: number; page?: number } = {}): Promise<ProductCard[]> {
+export async function listProducts(opts: { category?: string; q?: string; sort?: string; featured?: boolean; limit?: number; page?: number; exclude?: number } = {}): Promise<ProductCard[]> {
   const conds = productConds(opts);
   const rows = await db
     .select({
@@ -59,7 +60,7 @@ export async function listProducts(opts: { category?: string; q?: string; sort?:
     .orderBy(
       opts.sort === "price_asc" ? sql`(select min(unit_price) from price_tiers where product_id = ${products.id}) asc`
       : opts.sort === "price_desc" ? sql`(select min(unit_price) from price_tiers where product_id = ${products.id}) desc`
-      : sql`${products.featured} desc, ${products.id} desc`,
+      : sql`${products.popularity} desc, ${products.id} desc`,
     )
     .limit(opts.limit ?? PAGE_SIZE)
     .offset(Math.max(0, (opts.page ?? 1) - 1) * (opts.limit ?? PAGE_SIZE));
@@ -124,6 +125,15 @@ export async function getProductsByIds(ids: number[]): Promise<ProductFull[]> {
   if (!ids.length) return [];
   const rows = await fullSelect().where(and(inArray(products.id, ids), eq(products.active, true)));
   return hydrate(rows.map((r) => ({ ...r.p, categoryName: r.categoryName, categorySlug: r.categorySlug })));
+}
+
+export async function categoryCounts() {
+  return db
+    .select({ id: categories.id, slug: categories.slug, name: categories.name, count: sql<number>`count(${products.id})`, image: sql<string | null>`(select json_extract(p2.images, '$[0]') from products p2 where p2.category_id = ${categories.id} and p2.active = 1 order by p2.popularity desc limit 1)` })
+    .from(categories)
+    .leftJoin(products, and(eq(products.categoryId, categories.id), eq(products.active, true)))
+    .groupBy(categories.id)
+    .orderBy(sql`count(${products.id}) desc`);
 }
 
 export type Zone = { code: string; name: string; rates: RateRow[] };
