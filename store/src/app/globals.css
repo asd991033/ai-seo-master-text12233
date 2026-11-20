@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #faf8f4;
+  --color-sand: #f1ece3;
+  --color-line: #e3dccf;
+  --color-ink: #1f1e1b;
+  --color-mute: #6f6a60;
+  --color-forest: #23423a;
+  --color-forest-dark: #182f29;
+  --color-gold: #a8833f;
+  --color-danger: #b3402e;
+  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-serif: "Noto Serif TC", "Songti TC", "PMingLiU", Georgia, serif;
+}
+
+html { background: var(--color-paper); color: var(--color-ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .serif { font-family: var(--font-serif); }
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 bg-forest text-white hover:bg-forest-dark; }
+  .btn-outline { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-forest text-forest hover:bg-forest hover:text-white; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-line bg-white text-ink hover:border-ink; }
+  .card { @apply rounded-2xl border border-line bg-white; }
+  .input { @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-forest; }
+  .label { @apply mb-1 block text-xs font-medium text-mute; }
+  .chip { @apply rounded-full border border-line bg-white px-3 py-1.5 text-sm transition hover:border-ink; }
+  .chip-on { @apply rounded-full border border-forest bg-forest px-3 py-1.5 text-sm text-white; }
+  .eyebrow { @apply text-xs font-medium tracking-[0.2em] text-gold uppercase; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  html { background: #fff; }
+}
