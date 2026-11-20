@@ -48,12 +48,12 @@ export default async function ProductPage({ params }: Props) {
         {p.categoryName && <> / <Link href={`/products?category=${encodeURIComponent(p.categorySlug ?? "")}`} className="hover:text-ink">{p.categoryName}</Link></>}
       </nav>
       <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,460px)]">
-        <div>
-          <div className="lg:sticky lg:top-24">
+        <div className="min-w-0">
+          <div className="lg:sticky lg:top-32">
             <Gallery images={p.images} alt={p.name} />
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           {p.categoryName && <div className="eyebrow">{p.categoryName}</div>}
           <h1 className="mt-2 text-3xl leading-snug font-bold md:text-[34px]">{p.name}</h1>
           <p className="mt-3 leading-relaxed text-mute">{p.summary}</p>

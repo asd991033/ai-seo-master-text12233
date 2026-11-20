@@ -45,7 +45,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       </div>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[210px_minmax(0,1fr)]">
-        <aside>
+        <aside className="min-w-0">
           {/* 手機：橫向捲動的分類 */}
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden">
             <Link href={href({ category: undefined })} className={`shrink-0 ${sp.category ? "chip" : "chip-on"}`}>{t.products.all}</Link>
@@ -61,7 +61,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             </div>
           </div>
         </aside>
-        <div>
+        <div className="min-w-0">
           {items.length ? (
             <div className="grid grid-cols-2 gap-x-4 gap-y-9 md:grid-cols-3 xl:grid-cols-4">
               {items.map((p) => <ProductCard key={p.id} p={p} />)}
