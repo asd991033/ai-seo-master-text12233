@@ -27,7 +27,14 @@ export type ProductCard = Pick<Product, "id" | "slug" | "sku" | "name" | "summar
   categoryName: string | null;
 };
 
-export async function listProducts(opts: { category?: string; q?: string; sort?: string; featured?: boolean; limit?: number } = {}): Promise<ProductCard[]> {
+export const PAGE_SIZE = 48;
+
+export async function countProducts(opts: { category?: string; q?: string } = {}): Promise<number> {
+  const [r] = await db.select({ n: sql<number>`count(*)` }).from(products).leftJoin(categories, eq(categories.id, products.categoryId)).where(and(...productConds(opts)));
+  return r.n;
+}
+
+function productConds(opts: { category?: string; q?: string; featured?: boolean }) {
   const conds = [eq(products.active, true)];
   if (opts.category) conds.push(eq(categories.slug, opts.category));
   if (opts.featured) conds.push(eq(products.featured, true));
@@ -35,6 +42,11 @@ export async function listProducts(opts: { category?: string; q?: string; sort?:
     const kw = `%${opts.q.trim().replace(/[%_]/g, "")}%`;
     conds.push(or(like(products.name, kw), like(products.sku, kw), like(products.summary, kw))!);
   }
+  return conds;
+}
+
+export async function listProducts(opts: { category?: string; q?: string; sort?: string; featured?: boolean; limit?: number; page?: number } = {}): Promise<ProductCard[]> {
+  const conds = productConds(opts);
   const rows = await db
     .select({
       id: products.id, slug: products.slug, sku: products.sku, name: products.name, summary: products.summary,
@@ -49,7 +61,8 @@ export async function listProducts(opts: { category?: string; q?: string; sort?:
       : opts.sort === "price_desc" ? sql`(select min(unit_price) from price_tiers where product_id = ${products.id}) desc`
       : sql`${products.featured} desc, ${products.id} desc`,
     )
-    .limit(opts.limit ?? 200);
+    .limit(opts.limit ?? PAGE_SIZE)
+    .offset(Math.max(0, (opts.page ?? 1) - 1) * (opts.limit ?? PAGE_SIZE));
   if (!rows.length) return [];
   const tiers = await db.select().from(priceTiers).where(inArray(priceTiers.productId, rows.map((r) => r.id))).orderBy(asc(priceTiers.minQty));
   return rows.map((r) => ({ ...r, tiers: tiers.filter((t) => t.productId === r.id).map((t) => ({ minQty: t.minQty, unitPrice: t.unitPrice })) }));
