@@ -542,7 +542,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                 <img src={cur.pos.dielineUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full" data-testid="dieline" />
               )}
               <div className="pointer-events-none absolute border border-dashed border-gold" style={{ left: g.ax, top: g.ay, width: g.aw, height: g.ah }}>
-                <span className={`absolute left-0 rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white ${g.ay < 20 ? "top-1 left-1" : "-top-5"}`}>{cur.pos.pxW ? `${t.designer.printPx} ${cur.pos.pxW} × ${cur.pos.pxH} px` : `${t.designer.printArea} ${cur.area.widthMm} × ${cur.area.heightMm} mm`}</span>
+                <span className={`absolute rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white ${g.ay < 20 ? "top-1 left-1" : "-top-5 left-0"}`}>{cur.pos.pxW ? `${t.designer.printPx} ${cur.pos.pxW} × ${cur.pos.pxH} px` : `${t.designer.printArea} ${cur.area.widthMm} × ${cur.area.heightMm} mm`}</span>
                 {!cur.pos.pxW && Math.min(cur.area.widthMm, cur.area.heightMm) >= 20 && (
                   <div className="absolute border border-dotted border-forest/50" style={{ inset: SAFE_MM * g.scale }} />
                 )}
