@@ -182,10 +182,39 @@ export function analyze(img: CanvasImageSource): MockupModel {
   return { n, regions, shade };
 }
 
+export type Placement = { regions: number[]; pos: number };
+
+const HIDDEN = /[後后背底內内]/;
+const FRONT = /^(前片|前面|正面|A面|上衣前片)$/;
+
 /**
- * 把設計貼到商品照上。designs[i] 對應 regions[i]（由大到小）；沒有設計的區域維持原照片。
+ * 決定哪個印刷面貼到照片上的哪些區塊。商品照通常只拍正面：
+ * 背面、袖子等不在照片上的印刷面不貼；正面設計會跨越所有區塊連續貼上（例如被拉鍊分成兩半的外套）。
  */
-export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, model: MockupModel, designs: (CanvasImageSource | null)[], size = 800) {
+export function planMockup(names: string[], regions: Region[]): Placement[] {
+  if (!regions.length || !names.length) return [];
+  const all = regions.map((_, i) => i);
+  const idx = (re: RegExp) => names.findIndex((n) => re.test(n.trim()));
+  // 左右前片：以穿著者的左右為準，所以「左前片」在照片的右邊
+  const lf = idx(/^左前片$/), rf = idx(/^右前片$/);
+  if (lf >= 0 && rf >= 0 && regions.length >= 2) {
+    const [a, b] = [0, 1].sort((x, y) => regions[x].cx - regions[y].cx);
+    return [{ regions: [a], pos: rf }, { regions: [b], pos: lf }];
+  }
+  // 上衣 + 褲子這類兩件式：最大的兩塊各自對應一個正面
+  const fronts = names.map((n, i) => (FRONT.test(n.trim()) ? i : -1)).filter((i) => i >= 0);
+  if (fronts.length >= 2 && regions.length >= 2) {
+    return [{ regions: [0], pos: fronts[0] }, { regions: all.slice(1), pos: fronts[1] }];
+  }
+  const main = fronts[0] ?? names.findIndex((n) => !HIDDEN.test(n));
+  return main >= 0 ? [{ regions: all, pos: main }] : [];
+}
+
+/**
+ * 把設計貼到商品照上。每個 placement 的設計會以「填滿」方式鋪在它涵蓋的區塊上；
+ * 沒有設計的區塊顯示為空白布料（不保留佔位圖）。
+ */
+export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, model: MockupModel, plan: Placement[], designs: (CanvasImageSource | null)[], size = 800) {
   const { n } = model;
   out.width = out.height = size;
   const ctx = out.getContext("2d")!;
@@ -195,30 +224,48 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
   const layer = document.createElement("canvas");
   layer.width = layer.height = n;
   const lctx = layer.getContext("2d", { willReadFrequently: true })!;
-  model.regions.forEach((rg, i) => {
-    const design = designs[i];
-    if (!design) return;
+  const used = new Set(plan.flatMap((p) => p.regions));
+  const groups: { regions: number[]; design: CanvasImageSource | null }[] = [
+    ...plan.map((p) => ({ regions: p.regions, design: designs[p.pos] ?? null })),
+    ...model.regions.map((_, i) => i).filter((i) => !used.has(i)).map((i) => ({ regions: [i], design: null })),
+  ];
+  for (const g of groups) {
+    const rs = g.regions.map((i) => model.regions[i]).filter(Boolean);
+    if (!rs.length) continue;
     lctx.setTransform(1, 0, 0, 1, 0, 0);
     lctx.clearRect(0, 0, n, n);
-    lctx.fillStyle = rg.fill;
+    lctx.fillStyle = rs[0].fill;
     lctx.fillRect(0, 0, n, n);
-    // 以「填滿」方式放進外接矩形
-    const dw = (design as HTMLImageElement).naturalWidth || (design as HTMLCanvasElement).width;
-    const dh = (design as HTMLImageElement).naturalHeight || (design as HTMLCanvasElement).height;
-    const k = Math.max(rg.w / dw, rg.h / dh);
-    lctx.translate(rg.cx, rg.cy);
-    lctx.rotate(rg.angle);
-    lctx.drawImage(design, (-dw * k) / 2, (-dh * k) / 2, dw * k, dh * k);
+    if (g.design) {
+      // 多個區塊時以它們的聯集外框為準，設計才會連續
+      let cx = rs[0].cx, cy = rs[0].cy, w = rs[0].w, h = rs[0].h, angle = rs[0].angle;
+      if (rs.length > 1) {
+        let x0 = n, y0 = n, x1 = 0, y1 = 0;
+        for (const r of rs) for (let j = 0; j < n * n; j++) if (r.mask[j] > 127) {
+          const x = j % n, y = (j / n) | 0;
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+        cx = (x0 + x1) / 2; cy = (y0 + y1) / 2; w = x1 - x0 + 1; h = y1 - y0 + 1; angle = 0;
+      }
+      const dw = (g.design as HTMLImageElement).naturalWidth || (g.design as HTMLCanvasElement).width;
+      const dh = (g.design as HTMLImageElement).naturalHeight || (g.design as HTMLCanvasElement).height;
+      const k = Math.max(w / dw, h / dh);
+      lctx.translate(cx, cy);
+      lctx.rotate(angle);
+      lctx.drawImage(g.design, (-dw * k) / 2, (-dh * k) / 2, dw * k, dh * k);
+    }
     const px = lctx.getImageData(0, 0, n, n);
     const p = px.data;
     for (let j = 0; j < n * n; j++) {
-      const s = Math.min(1, model.shade[j] / 248);
-      p[j * 4] *= s; p[j * 4 + 1] *= s; p[j * 4 + 2] *= s;
-      p[j * 4 + 3] = rg.mask[j];
+      const sh = Math.min(1, model.shade[j] / 248);
+      p[j * 4] *= sh; p[j * 4 + 1] *= sh; p[j * 4 + 2] *= sh;
+      let a = 0;
+      for (const r of rs) if (r.mask[j] > a) a = r.mask[j];
+      p[j * 4 + 3] = a;
     }
     lctx.setTransform(1, 0, 0, 1, 0, 0);
     lctx.putImageData(px, 0, 0);
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(layer, 0, 0, size, size);
-  });
+  }
 }

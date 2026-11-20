@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Canvas, FabricObject, FabricImage, Textbox } from "fabric";
 import { t } from "@/i18n";
 import { loadDraft, useCart, type Draft } from "@/lib/cart";
-import { analyze, renderMockup, type MockupModel } from "@/lib/mockup";
+import { analyze, planMockup, renderMockup, type MockupModel, type Placement } from "@/lib/mockup";
 
 export type DesignerProduct = {
   id: number;
@@ -91,6 +91,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const mockRef = useRef<HTMLCanvasElement>(null);
   const baseImg = useRef<HTMLImageElement | null>(null);
   const modelRef = useRef<MockupModel | null>(null);
+  const planRef = useRef<Placement[]>([]);
   const editItem = useRef<string | null>(null);
   const outputs = useRef<Record<string, Output>>({});
   const loading = useRef(false);
@@ -191,12 +192,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       const m = modelRef.current, base = baseImg.current;
       if (!target || !m || !base || !m.regions.length) return false;
       const designOf = (code: string) => (live && code === currentCode.current ? (hasContent() ? cropCanvas(activeRef.current) : null) : flats.current[code] ?? null);
-      const single = product.positions.length === 1;
-      const designs = m.regions.map((_, r) => {
-        const pos = product.positions[single ? 0 : r];
-        return pos ? designOf(pos.code) : null;
-      });
-      renderMockup(target, base, m, designs, 800);
+      const designs = product.positions.map((pos) => designOf(pos.code));
+      renderMockup(target, base, m, planRef.current, designs, 800);
       return true;
     },
     [cropCanvas, product.positions],
@@ -299,12 +296,13 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         const m = analyze(img);
         baseImg.current = img;
         modelRef.current = m.regions.length ? m : null;
+        planRef.current = planMockup(product.positions.map((x) => x.name), m.regions);
         setModel(modelRef.current);
         setMockState(m.regions.length ? "ready" : "none");
       })
       .catch(() => { if (!cancelled) setMockState("none"); });
     return () => { cancelled = true; };
-  }, [auto, baseUrl]);
+  }, [auto, baseUrl, product.positions]);
   useEffect(() => { if (model && ready) drawMock(mockRef.current, true); }, [model, ready, drawMock]);
 
   // ---------- 初始化 fabric ----------
@@ -806,6 +804,9 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                   </div>
                 )}
                 <p className="mt-2 text-xs leading-relaxed text-mute">{mockState === "none" ? t.designer.flatNote : t.designer.mockSim}</p>
+                {mockState === "ready" && !planRef.current.some((pl) => product.positions[pl.pos]?.code === cur.pos.code) && (
+                  <p className="mt-2 rounded-lg bg-gold/10 p-2 text-xs leading-relaxed text-gold">{t.designer.notInPhoto(cur.pos.name)}</p>
+                )}
               </>
             ) : (
               <>

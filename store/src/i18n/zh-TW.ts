@@ -53,6 +53,7 @@ const dict = {
     printArea: "印刷範圍", printPx: "印刷檔",  safeLine: "安全線", legendCut: "裁切線", legendFold: "摺線", legendArea: "印刷範圍", legendSafe: "安全線（重要內容請放在內側）",
     mockup: "成品示意圖", mockupNote: "示意圖僅供版面參考，實際顏色與位置以審稿確認為準。", noMockup: "此商品提供刀模展開圖預覽。", flatNote: "此商品暫時無法自動產生示意圖，左側為印刷面的平面排版，會依印刷檔尺寸輸出。", productRef: "商品參考圖",
     mockSim: "示意圖為系統模擬效果，僅供版面參考；實際位置、比例與顏色以審稿確認為準。", analyzing: "示意圖產生中…",
+    notInPhoto: (name: string) => `「${name}」不在這張商品照片上，示意圖只顯示看得到的印刷面；這一面的設計仍會照常輸出印刷檔。`,
     bg: "底色", clearBg: "清除", cover: "鋪滿印刷範圍", flipH: "水平翻轉", flipV: "垂直翻轉", layersTitle: "圖層", layerText: "文字", layerImage: "圖片", hide: "隱藏", show: "顯示",
     saveEdit: "儲存修改",
     lowDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi，低於建議的 150 dpi，印刷可能模糊。`,
