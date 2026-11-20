@@ -59,7 +59,7 @@ const dict = {
     okDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi`,
     colorLimit: (n: number, method: string) => `此位置選擇「${method}」${n} 色，請確認設計不超過 ${n} 個顏色。`,
     save: "完成排版，加入購物車", saving: "儲存中…", empty: "請至少在一個印刷位置加入圖片或文字。", saveFailed: "儲存失敗，請稍後再試。",
-    tips: "提示：可把圖片檔直接拖進排版區。圖片建議 300 dpi、去背 PNG 或向量檔效果最好。", layers: "物件",
+    tips: "提示：手機可用雙指縮放、旋轉選取的物件；電腦可把圖片檔直接拖進排版區。圖片建議 300 dpi、去背 PNG 或向量檔效果最好。", layers: "物件",
     selectHint: "點選畫布上的物件即可編輯。",
   },
   cart: {

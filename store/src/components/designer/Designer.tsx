@@ -392,6 +392,59 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // 雙指縮放與旋轉（觸控裝置）
+  useEffect(() => {
+    if (!ready) return;
+    const stage = host.current;
+    let start: { dist: number; ang: number; sx: number; sy: number; rot: number; o: FabricObject } | null = null;
+    const measure = (e: TouchEvent) => {
+      const [a, b] = [e.touches[0], e.touches[1]];
+      return { dist: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY), ang: (Math.atan2(b.clientY - a.clientY, b.clientX - a.clientX) * 180) / Math.PI };
+    };
+    const onStart = (e: TouchEvent) => {
+      const canvas = canvasRef.current;
+      const o = canvas?.getActiveObject() as (FabricObject & { isEditing?: boolean }) | undefined;
+      if (e.touches.length !== 2 || !o || o.isEditing || !stage?.contains(e.target as Node)) return;
+      const m = measure(e);
+      if (m.dist > 0) start = { ...m, sx: o.scaleX, sy: o.scaleY, rot: o.angle, o };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start || e.touches.length !== 2) return;
+      // 攔下事件，避免畫布把它當成單指拖曳
+      e.preventDefault();
+      e.stopPropagation();
+      const fabric = fabricRef.current!, canvas = canvasRef.current!, { o } = start;
+      const m = measure(e), k = Math.max(0.05, m.dist / start.dist), c = o.getCenterPoint();
+      o.set({ scaleX: start.sx * k, scaleY: start.sy * k });
+      o.rotate(start.rot + (m.ang - start.ang));
+      o.setPositionByOrigin(new fabric.Point(c.x, c.y), "center", "center");
+      o.setCoords();
+      canvas.requestRenderAll();
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const { o } = start;
+      start = null;
+      // 畫布會把「手指放開」當成點了一下文字而進入打字模式：手勢結束後退出
+      setTimeout(() => {
+        const tb = o as FabricObject & { isEditing?: boolean; exitEditing?: () => void };
+        if (tb.isEditing) tb.exitEditing?.();
+        canvasRef.current?.requestRenderAll();
+        canvasRef.current?.fire("object:modified", { target: o } as never);
+      }, 0);
+    };
+    window.addEventListener("touchstart", onStart, { capture: true, passive: true });
+    window.addEventListener("touchmove", onMove, { capture: true, passive: false });
+    window.addEventListener("touchend", onEnd, { capture: true });
+    window.addEventListener("touchcancel", onEnd, { capture: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart, { capture: true });
+      window.removeEventListener("touchmove", onMove, { capture: true });
+      window.removeEventListener("touchend", onEnd, { capture: true });
+      window.removeEventListener("touchcancel", onEnd, { capture: true });
+    };
+  }, [ready]);
+
   async function switchTo(i: number) {
     if (i === active || !canvasRef.current) return;
     capture(active);
@@ -627,7 +680,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
 
       <div className="mt-4 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
         {/* 工具列 */}
-        <aside className="space-y-4">
+        <aside className="order-2 space-y-4 lg:order-none">
           <div className="card space-y-2 p-3">
             <button type="button" className={tool} onClick={addText} disabled={!ready}>Ｔ　{t.designer.addText}</button>
             <button type="button" className={tool} onClick={() => fileInput.current?.click()} disabled={!ready}>▣　{t.designer.addImage}</button>
@@ -706,7 +759,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         </aside>
 
         {/* 排版區：底色 → fabric 畫布 → 刀模 → 印刷範圍標示 */}
-        <section ref={stageWrap} className="min-w-0" data-testid="dropzone"
+        <section ref={stageWrap} className="order-1 min-w-0 lg:order-none" data-testid="dropzone"
           onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
           onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); addImage(f); } }}>
           <div className="card flex justify-center overflow-auto bg-sand p-4">
@@ -738,7 +791,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         </section>
 
         {/* 示意圖 */}
-        <aside>
+        <aside className="order-3 lg:order-none">
           <div className="card p-3">
             <div className="mb-2 text-sm font-medium">{t.designer.mockup}</div>
             {auto ? (
