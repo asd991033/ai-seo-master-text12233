@@ -32,7 +32,7 @@ type PosState = { on: boolean; areaCode: string; methodCode: string; colors: num
 export function Configurator({ p }: { p: ConfigProduct }) {
   const router = useRouter();
   const add = useCart((s) => s.add);
-  const [color, setColor] = useState((p.colors.find((c) => c.display && c.display === p.image) ?? p.colors[0])?.name ?? null);
+  const [color, setColor] = useState((p.colors.find((c) => (c.display ?? c.image) === p.image) ?? p.colors[0])?.name ?? null);
   const [size, setSize] = useState(p.sizes[0] ?? null);
   const [qtyText, setQtyText] = useState(String(p.pricing.moq));
   const [zoneCode, setZoneCode] = useState(p.zones.find((z) => z.code === site.defaultZone)?.code ?? p.zones[0]?.code ?? "");
