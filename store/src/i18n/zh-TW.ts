@@ -34,7 +34,7 @@ const dict = {
   product: {
     sku: "商品編號", material: "材質", size: "尺寸", leadDays: "生產天數", days: "個工作天", weight: "單件重量", packing: "裝箱",
     packingValue: (qty: number, l: number, w: number, h: number, kg: number) => `${qty} 件 / 箱，${l} × ${w} × ${h} cm，約 ${kg} kg`,
-    color: "顏色", sizePick: "尺碼", qty: "數量", tierTitle: "區間價格（素面單價）", tierQty: "數量", tierPrice: "單價", andUp: "以上",
+    color: "顏色", sizePick: "尺碼", qty: "數量", tierTitle: "數量區間價（每件單價）", tierQty: "數量", tierPrice: "單價", andUp: "以上",
     printTitle: "印刷設定", printNone: "不印刷", position: "印刷位置", area: "印刷面積", method: "印刷方式", colors: "色數",
     colorsUnit: "色", included: "已含於單價", quoteTitle: "價格試算", goods: "商品", setup: "版費", subtotal: "小計（未含運費與稅）", unitAllIn: "含印刷每件均價",
     shipTitle: "運費試算", shipTo: "運送至", air: "空運", sea: "海運", chargeableKg: "計費重", chargeableCbm: "計費體積", eta: "約", etaDays: "天",
