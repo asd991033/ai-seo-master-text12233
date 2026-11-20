@@ -41,6 +41,14 @@ const FONTS = [
   { v: "Courier New", n: "Courier New" },
 ];
 
+/** 判斷底色是否偏暗，用來決定預設文字顏色 */
+const isDark = (hex: string) => {
+  const m = /^#?([0-9a-f]{6})/i.exec(hex);
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 110;
+};
+
 const loadImg = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
@@ -292,7 +300,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     const fontSize = Math.max(12, Math.min(g.ah * 0.18, g.aw * 0.14));
     const tb = new fabric.Textbox(t.designer.defaultText, {
       left: g.ax + g.aw / 2, top: g.ay + g.ah / 2, originX: "center", originY: "center", width: Math.min(g.aw * 0.9, fontSize * 6),
-      fontSize, fontFamily: FONTS[0].v, fill: "#1f1e1b", textAlign: "center",
+      fontSize, fontFamily: FONTS[0].v, fill: isDark(colorHex) ? "#ffffff" : "#1f1e1b", textAlign: "center",
     });
     canvas.add(tb);
     canvas.setActiveObject(tb);
@@ -534,7 +542,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                 <img src={cur.pos.dielineUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full" data-testid="dieline" />
               )}
               <div className="pointer-events-none absolute border border-dashed border-gold" style={{ left: g.ax, top: g.ay, width: g.aw, height: g.ah }}>
-                <span className="absolute -top-5 left-0 rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white">{cur.pos.pxW ? `${t.designer.printPx} ${cur.pos.pxW} × ${cur.pos.pxH} px` : `${t.designer.printArea} ${cur.area.widthMm} × ${cur.area.heightMm} mm`}</span>
+                <span className={`absolute left-0 rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white ${g.ay < 20 ? "top-1 left-1" : "-top-5"}`}>{cur.pos.pxW ? `${t.designer.printPx} ${cur.pos.pxW} × ${cur.pos.pxH} px` : `${t.designer.printArea} ${cur.area.widthMm} × ${cur.area.heightMm} mm`}</span>
                 {!cur.pos.pxW && Math.min(cur.area.widthMm, cur.area.heightMm) >= 20 && (
                   <div className="absolute border border-dotted border-forest/50" style={{ inset: SAFE_MM * g.scale }} />
                 )}
@@ -542,13 +550,13 @@ export default function Designer({ product }: { product: DesignerProduct }) {
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-mute">
-            <label className="flex items-center gap-2 text-ink">
+            {cur.pos.dielineUrl && <label className="flex items-center gap-2 text-ink">
               <input type="checkbox" checked={showDieline} onChange={(e) => setShowDieline(e.target.checked)} className="accent-[var(--color-forest)]" />{t.designer.showDieline}
-            </label>
-            <Legend style={{ borderTop: "2px solid #E6007E" }} label={t.designer.legendCut} />
-            <Legend style={{ borderTop: "2px dashed #00A0C6" }} label={t.designer.legendFold} />
+            </label>}
+            {cur.pos.dielineUrl && <Legend style={{ borderTop: "2px solid #E6007E" }} label={t.designer.legendCut} />}
+            {cur.pos.dielineUrl && <Legend style={{ borderTop: "2px dashed #00A0C6" }} label={t.designer.legendFold} />}
             <Legend style={{ borderTop: "2px dashed var(--color-gold)" }} label={t.designer.legendArea} />
-            <Legend style={{ borderTop: "2px dotted var(--color-forest)" }} label={t.designer.legendSafe} />
+            {!cur.pos.pxW && <Legend style={{ borderTop: "2px dotted var(--color-forest)" }} label={t.designer.legendSafe} />}
           </div>
         </section>
 
@@ -569,7 +577,14 @@ export default function Designer({ product }: { product: DesignerProduct }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {!cur.pos.mockupUrl && cur.pos.dielineUrl && <img src={cur.pos.dielineUrl} alt="" className="absolute inset-0 h-full w-full" />}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-mute">{cur.pos.mockupUrl ? t.designer.mockupNote : t.designer.noMockup}</p>
+            <p className="mt-2 text-xs leading-relaxed text-mute">{cur.pos.mockupUrl ? t.designer.mockupNote : cur.pos.dielineUrl ? t.designer.noMockup : t.designer.flatNote}</p>
+            {!cur.pos.mockupUrl && !cur.pos.dielineUrl && product.image && (
+              <div className="mt-3 border-t border-line pt-3">
+                <div className="mb-2 text-xs text-mute">{t.designer.productRef}</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={product.image} alt={product.name} className="w-full rounded-lg" />
+              </div>
+            )}
           </div>
         </aside>
       </div>

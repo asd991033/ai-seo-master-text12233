@@ -51,7 +51,7 @@ const dict = {
     forward: "上移一層", backward: "下移一層", centerH: "水平置中", centerV: "垂直置中", fit: "填滿印刷範圍",
     showDieline: "顯示刀模", font: "字體", fontSize: "字級", fill: "顏色", bold: "粗體", italic: "斜體", align: "對齊",
     printArea: "印刷範圍", printPx: "印刷檔",  safeLine: "安全線", legendCut: "裁切線", legendFold: "摺線", legendArea: "印刷範圍", legendSafe: "安全線（重要內容請放在內側）",
-    mockup: "成品示意圖", mockupNote: "示意圖僅供版面參考，實際顏色與位置以審稿確認為準。", noMockup: "此商品提供刀模展開圖預覽。",
+    mockup: "成品示意圖", mockupNote: "示意圖僅供版面參考，實際顏色與位置以審稿確認為準。", noMockup: "此商品提供刀模展開圖預覽。", flatNote: "上方為此印刷面的平面預覽，會依印刷檔尺寸輸出，實際成品效果以審稿確認為準。", productRef: "商品參考圖",
     lowDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi，低於建議的 150 dpi，印刷可能模糊。`,
     okDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi`,
     colorLimit: (n: number, method: string) => `此位置選擇「${method}」${n} 色，請確認設計不超過 ${n} 個顏色。`,
