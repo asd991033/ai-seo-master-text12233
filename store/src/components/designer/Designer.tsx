@@ -522,7 +522,9 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         </aside>
 
         {/* 排版區：底色 → fabric 畫布 → 刀模 → 印刷範圍標示 */}
-        <section ref={stageWrap} className="min-w-0">
+        <section ref={stageWrap} className="min-w-0" data-testid="dropzone"
+          onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+          onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); addImage(f); } }}>
           <div className="card flex justify-center overflow-auto bg-sand p-4">
             <div className="relative shrink-0 shadow-sm" style={{ width: g.W, height: g.H, background: colorHex }} data-testid="stage">
               <div ref={host} className="absolute inset-0" />
