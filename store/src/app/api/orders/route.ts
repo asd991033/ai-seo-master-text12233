@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       ok.map((l, i) => {
         const design = designs.find((d) => d.id === designIds[i] && d.productId === l.product.id);
         return {
-          orderId: order.id, productId: l.product.id, sku: l.product.sku, name: l.product.name, colorName: clip(raw[i].colorName, 40) || null,
+          orderId: order.id, productId: l.product.id, sku: l.product.sku, name: l.product.name, colorName: clip(raw[i].colorName, 40) || null, sizeName: clip(raw[i].sizeName, 40) || null,
           qty: l.quote.qty, unitPrice: l.quote.unitAllIn, lineTotal: l.quote.total, breakdown: { quote: l.quote, labels: l.labels },
           designId: design?.id ?? null, previewUrl: design?.previewUrl ?? l.product.images[0] ?? null, artworkUrl: fileUrl(raw[i].artworkUrl),
         };

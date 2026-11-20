@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { eq, isNotNull } from "drizzle-orm";
 import { priceFromCost } from "@/lib/pricing";
+import { getPricingSettings, setSetting } from "@/lib/settings";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 
@@ -80,10 +81,13 @@ export async function saveMargin(fd: FormData) {
   const pct = num(fd.get("marginPct"), -1);
   if (!(pct >= 0 && pct < 100)) return;
   const rate = pct / 100;
+  const cny = num(fd.get("fxCNY"), 0);
   await db.transaction(async (tx) => {
-    await tx.insert(schema.settings).values({ key: "margin_rate", value: String(rate) }).onConflictDoUpdate({ target: schema.settings.key, set: { value: String(rate) } });
+    await setSetting("margin_rate", String(rate), tx);
+    if (cny > 0) await setSetting("fx_CNY", String(cny), tx);
+    const { fx } = await getPricingSettings(tx);
     const tiers = await tx.select().from(schema.priceTiers).where(isNotNull(schema.priceTiers.unitCost));
-    for (const t of tiers) await tx.update(schema.priceTiers).set({ unitPrice: priceFromCost(t.unitCost!, rate) }).where(eq(schema.priceTiers.id, t.id));
+    for (const t of tiers) await tx.update(schema.priceTiers).set({ unitPrice: priceFromCost(t.unitCost!, rate, fx(t.costCurrency)) }).where(eq(schema.priceTiers.id, t.id));
   });
   revalidatePath("/admin/pricing");
 }

@@ -11,6 +11,7 @@ export type CartItem = {
   name: string;
   image: string | null;
   colorName: string | null;
+  sizeName?: string | null;
   qty: number;
   prints: PrintSelection[];
   designId?: string;
@@ -47,7 +48,7 @@ export const useCart = create<CartState>()(
 );
 
 /** 商品頁 → 線上排版 之間暫存的設定 */
-export type Draft = { slug: string; qty: number; colorName: string | null; prints: PrintSelection[] };
+export type Draft = { slug: string; qty: number; colorName: string | null; sizeName?: string | null; prints: PrintSelection[] };
 const DRAFT_KEY = "design-draft";
 export const saveDraft = (d: Draft) => sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d));
 export const loadDraft = (slug: string): Draft | null => {

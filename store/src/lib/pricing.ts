@@ -133,7 +133,8 @@ export const DEFAULT_MARGIN = 0.6;
  * 由成本價與毛利率換算售價：售價 = 成本 ÷ (1 − 毛利率)，無條件進位到整數，
  * 確保實際毛利率不低於設定值。例：成本 100、毛利率 60% → 售價 250。
  */
-export function priceFromCost(cost: number, marginRate: number): number {
+export function priceFromCost(cost: number, marginRate: number, fx = 1): number {
+  cost = cost * fx;
   if (!(marginRate >= 0 && marginRate < 1)) throw new Error("毛利率需介於 0 與 1 之間");
   return Math.ceil(cost / (1 - marginRate) - 1e-9);
 }

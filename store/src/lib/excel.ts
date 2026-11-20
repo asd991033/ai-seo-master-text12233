@@ -13,14 +13,14 @@ export const SHEETS: SheetDef[] = [
     cols: [
       c("SKU", "sku", "s", "BAG-DEMO-01"), c("品名", "name", "s", "示範帆布袋"), c("分類", "category", "s", "袋類"), c("簡述", "summary", "s", "一句話賣點"),
       c("說明", "description", "s", "詳細說明，可換行"), c("材質", "material", "s", "12oz 帆布"), c("尺寸", "size", "s", "38 × 42 cm"),
-      c("顏色", "colors", "s", "米白:#EFE7D8|黑:#111111"), c("最低訂購量", "moq", "n", 50), c("生產天數", "leadDays", "n", 12), c("單件重量(g)", "unitWeightG", "n", 180),
+      c("顏色", "colors", "s", "米白:#EFE7D8|黑:#111111"), c("尺碼", "sizes", "s", ""), c("最低訂購量", "moq", "n", 50), c("生產天數", "leadDays", "n", 12), c("單件重量(g)", "unitWeightG", "n", 180),
       c("每箱數量", "cartonQty", "n", 100), c("外箱長(cm)", "cartonLengthCm", "n", 45), c("外箱寬(cm)", "cartonWidthCm", "n", 40), c("外箱高(cm)", "cartonHeightCm", "n", 35),
       c("整箱毛重(kg)", "cartonWeightKg", "n", 19), c("精選(Y/N)", "featured", "b", "N"), c("上架(Y/N)", "active", "b", "Y"), c("圖片網址", "images", "s", ""),
     ],
   },
   {
     name: "區間價格", target: "tiers",
-    cols: [c("SKU", "sku", "s", "BAG-DEMO-01", "BAG-DEMO-01", "BAG-DEMO-01"), c("起始數量", "minQty", "n", 50, 100, 500), c("成本價", "unitCost", "n", 35, 30, 24), c("單價(留空則依毛利率換算)", "unitPrice", "n")],
+    cols: [c("SKU", "sku", "s", "BAG-DEMO-01", "BAG-DEMO-01", "BAG-DEMO-01"), c("起始數量", "minQty", "n", 50, 100, 500), c("成本價", "unitCost", "n", 35, 30, 24), c("成本幣別", "costCurrency", "s"), c("單價(留空則依毛利率換算)", "unitPrice", "n")],
   },
   {
     name: "印刷區域", target: "areas",

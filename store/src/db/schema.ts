@@ -55,6 +55,10 @@ export const products = sqliteTable("products", {
   images: text("images", { mode: "json" }).$type<string[]>().notNull().default([]),
   /** 可選顏色 */
   colors: text("colors", { mode: "json" }).$type<{ name: string; hex: string }[]>().notNull().default([]),
+  /** 可選尺碼 */
+  sizes: text("sizes", { mode: "json" }).$type<string[]>().notNull().default([]),
+  /** 供應商商品頁（僅後台參考） */
+  sourceUrl: text("source_url"),
   moq: integer("moq").notNull().default(1),
   leadDays: integer("lead_days").notNull().default(14),
   /** 單件重量（克） */
@@ -80,6 +84,8 @@ export const priceTiers = sqliteTable(
     unitPrice: real("unit_price").notNull(),
     /** 進貨成本（僅後台可見）。有成本價時，售價由毛利率自動換算 */
     unitCost: real("unit_cost"),
+    /** 成本幣別（如 CNY）；空值代表與站台幣別相同 */
+    costCurrency: text("cost_currency"),
   },
   (t) => [uniqueIndex("price_tiers_uq").on(t.productId, t.minQty)],
 );
@@ -108,6 +114,9 @@ export const printPositions = sqliteTable(
     dielineUrl: text("dieline_url"),
     widthMm: real("width_mm").notNull(),
     heightMm: real("height_mm").notNull(),
+    /** 供應商要求的印刷檔像素尺寸（有填時依此輸出） */
+    pxW: integer("px_w"),
+    pxH: integer("px_h"),
     /** 示意圖底圖，以及刀模整面在底圖上的位置（0~1 比例） */
     mockupUrl: text("mockup_url"),
     mockupX: real("mockup_x").notNull().default(0),
@@ -236,6 +245,7 @@ export const orderItems = sqliteTable("order_items", {
   sku: text("sku").notNull(),
   name: text("name").notNull(),
   colorName: text("color_name"),
+  sizeName: text("size_name"),
   qty: integer("qty").notNull(),
   unitPrice: real("unit_price").notNull(),
   lineTotal: real("line_total").notNull(),

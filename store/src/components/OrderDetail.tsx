@@ -33,7 +33,7 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
                   </div>
                   <div className="min-w-0 flex-1 text-sm">
                     <div className="flex justify-between gap-3 font-bold"><span>{it.name}</span><span className="tabular-nums">{fmtMoney(it.lineTotal)}</span></div>
-                    <div className="mt-1 text-xs text-mute">{it.sku}{it.colorName && `・${it.colorName}`}・{fmtMoney(b.quote.baseUnitPrice)} × {fmtNum(it.qty)}</div>
+                    <div className="mt-1 text-xs text-mute">{it.sku}{it.colorName && `・${it.colorName}`}{it.sizeName && `・${it.sizeName}`}・{fmtMoney(b.quote.baseUnitPrice)} × {fmtNum(it.qty)}</div>
                     <ul className="mt-2 space-y-0.5 text-xs text-mute">
                       {b.labels.length ? b.quote.prints.map((p, i) => (
                         <li key={i}>{b.labels[i]}　{p.total > 0 ? `${fmtMoney(p.unitPrice)} × ${fmtNum(it.qty)}` : t.product.included}{p.setupFee > 0 && `　＋${t.cart.setup} ${fmtMoney(p.setupFee)}`}</li>

@@ -5,7 +5,8 @@
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db, schema } from "@/db";
-import { DEFAULT_MARGIN, priceFromCost } from "./pricing";
+import { priceFromCost } from "./pricing";
+import { getPricingSettings } from "./settings";
 
 const { products, categories, priceTiers, printPositions, printAreas, printPrices, printMethods } = schema;
 
@@ -13,6 +14,9 @@ export type ProductRow = {
   sku: string; name: string; category?: string; summary?: string; description?: string; material?: string; size?: string;
   /** 例：米白:#F2EDE4|黑:#111111 */
   colors?: string;
+  /** 例：S|M|L|XL */
+  sizes?: string;
+  sourceUrl?: string;
   moq?: number; leadDays?: number; unitWeightG?: number;
   cartonQty?: number; cartonLengthCm?: number; cartonWidthCm?: number; cartonHeightCm?: number; cartonWeightKg?: number;
   featured?: boolean; active?: boolean;
@@ -20,11 +24,12 @@ export type ProductRow = {
   images?: string;
 };
 /** unitCost 有填時，售價由毛利率自動換算（unitPrice 可留空） */
-export type TierRow = { sku: string; minQty: number; unitPrice?: number; unitCost?: number };
+export type TierRow = { sku: string; minQty: number; unitPrice?: number; unitCost?: number; costCurrency?: string };
 export type AreaRow = {
   sku: string; positionCode: string; positionName: string; dielineWidthMm: number; dielineHeightMm: number;
   dielineUrl?: string; mockupUrl?: string; mockupX?: number; mockupY?: number; mockupW?: number; mockupH?: number;
   areaCode: string; areaName: string; xMm: number; yMm: number; widthMm: number; heightMm: number;
+  pxW?: number; pxH?: number;
 };
 export type PrintPriceRow = { sku: string; positionCode: string; areaCode: string; methodCode: string; minQty: number; unitPrice: number; setupFee?: number };
 
@@ -106,6 +111,8 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
           categoryId: r.category ? catByName.get(r.category.trim()) ?? null : null,
           summary: r.summary ?? "", description: r.description ?? "", material: r.material ?? "", sizeText: r.size ?? "",
           colors: parseColors(r.colors),
+          sizes: (r.sizes ?? "").split("|").map((x) => x.trim()).filter(Boolean),
+          sourceUrl: r.sourceUrl ?? null,
           moq: r.moq || 1, leadDays: r.leadDays || 14, unitWeightG: r.unitWeightG || 0,
           cartonQty: r.cartonQty || 0, cartonLengthCm: r.cartonLengthCm || 0, cartonWidthCm: r.cartonWidthCm || 0,
           cartonHeightCm: r.cartonHeightCm || 0, cartonWeightKg: r.cartonWeightKg || 0,
@@ -130,16 +137,16 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
       };
 
       // ---- 區間價格 ----
-      const [m] = await tx.select().from(schema.settings).where(eq(schema.settings.key, "margin_rate"));
-      const margin = m ? Number(m.value) : DEFAULT_MARGIN;
+      const { margin, fx } = await getPricingSettings(tx);
       for (const sku of new Set(data.tiers.map((r) => r.sku.trim()))) {
         await tx.delete(priceTiers).where(eq(priceTiers.productId, pid(sku, "區間價格")));
       }
       for (const r of data.tiers) {
         const unitCost = r.unitCost ?? null;
-        const unitPrice = unitCost != null ? priceFromCost(unitCost, margin) : r.unitPrice!;
-        await tx.insert(priceTiers).values({ productId: pid(r.sku, "區間價格"), minQty: r.minQty, unitPrice, unitCost })
-          .onConflictDoUpdate({ target: [priceTiers.productId, priceTiers.minQty], set: { unitPrice, unitCost } });
+        const costCurrency = unitCost != null && r.costCurrency ? r.costCurrency.trim().toUpperCase() : null;
+        const unitPrice = unitCost != null ? priceFromCost(unitCost, margin, fx(costCurrency)) : r.unitPrice!;
+        await tx.insert(priceTiers).values({ productId: pid(r.sku, "區間價格"), minQty: r.minQty, unitPrice, unitCost, costCurrency })
+          .onConflictDoUpdate({ target: [priceTiers.productId, priceTiers.minQty], set: { unitPrice, unitCost, costCurrency } });
         counts.tiers++;
       }
 
@@ -151,7 +158,7 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
         const posCodes = [...new Set(rows.map((r) => r.positionCode.trim()))];
         for (const [pi, code] of posCodes.entries()) {
           const first = rows.find((r) => r.positionCode.trim() === code)!;
-          const base = { name: first.positionName || code, widthMm: first.dielineWidthMm, heightMm: first.dielineHeightMm, sort: pi };
+          const base = { name: first.positionName || code, widthMm: first.dielineWidthMm, heightMm: first.dielineHeightMm, sort: pi, pxW: first.pxW ?? null, pxH: first.pxH ?? null };
           const optional = {
             ...(first.dielineUrl ? { dielineUrl: first.dielineUrl } : {}),
             ...(first.mockupUrl ? { mockupUrl: first.mockupUrl } : {}),

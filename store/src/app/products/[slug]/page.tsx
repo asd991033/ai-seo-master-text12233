@@ -45,7 +45,7 @@ export default async function ProductPage({ params }: Props) {
           <div className="mt-6">
             <Configurator
               p={{
-                id: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.images[0] ?? null, colors: p.colors, pricing: p.pricing,
+                id: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.images[0] ?? null, colors: p.colors, sizes: p.sizes, pricing: p.pricing,
                 positions: p.positions.map((x) => ({ code: x.code, name: x.name, areas: x.areas.map((a) => ({ code: a.code, name: a.name })) })),
                 ship: { unitWeightG: p.unitWeightG, cartonQty: p.cartonQty, cartonLengthCm: p.cartonLengthCm, cartonWidthCm: p.cartonWidthCm, cartonHeightCm: p.cartonHeightCm, cartonWeightKg: p.cartonWeightKg },
                 zones,

@@ -119,4 +119,5 @@ test("priceFromCost applies gross margin on selling price and rounds up", () => 
   assert.equal(priceFromCost(33.3, 0.6), 84); // 83.25 → 84，毛利率不低於 60%
   assert.equal(priceFromCost(100, 0), 100);
   assert.throws(() => priceFromCost(100, 1));
+  assert.equal(priceFromCost(10.3, 0.6, 4.5), 116); // CNY 10.3 × 4.5 = 46.35 → ÷0.4 = 115.9 → 116
 });

@@ -15,7 +15,7 @@ export type DesignerProduct = {
   colors: { name: string; hex: string }[];
   methods: { code: string; name: string; perColor: boolean }[];
   positions: {
-    code: string; name: string; dielineUrl: string | null; widthMm: number; heightMm: number;
+    code: string; name: string; dielineUrl: string | null; widthMm: number; heightMm: number; pxW: number | null; pxH: number | null;
     mockupUrl: string | null; mockupX: number; mockupY: number; mockupW: number; mockupH: number;
     areas: { code: string; name: string; xMm: number; yMm: number; widthMm: number; heightMm: number }[];
   }[];
@@ -169,7 +169,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         delete outputs.current[q.pos.code];
         return;
       }
-      const multiplier = Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
+      // 有供應商指定像素尺寸時照尺寸輸出，否則以 300 dpi 輸出
+      const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
       outputs.current[q.pos.code] = {
         areaCode: q.area.code,
         json,
@@ -422,7 +423,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       const res = await fetch("/api/designs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id, positions, preview: previewImg }) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.designer.saveFailed);
-      addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
+      addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, sizeName: draft.sizeName ?? null, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
       router.push("/cart");
     } catch (e) {
       setError((e as Error).message || t.designer.saveFailed);
@@ -533,8 +534,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                 <img src={cur.pos.dielineUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full" data-testid="dieline" />
               )}
               <div className="pointer-events-none absolute border border-dashed border-gold" style={{ left: g.ax, top: g.ay, width: g.aw, height: g.ah }}>
-                <span className="absolute -top-5 left-0 rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white">{t.designer.printArea} {cur.area.widthMm} × {cur.area.heightMm} mm</span>
-                {Math.min(cur.area.widthMm, cur.area.heightMm) >= 20 && (
+                <span className="absolute -top-5 left-0 rounded bg-gold px-1.5 text-[10px] leading-4 whitespace-nowrap text-white">{cur.pos.pxW ? `${t.designer.printPx} ${cur.pos.pxW} × ${cur.pos.pxH} px` : `${t.designer.printArea} ${cur.area.widthMm} × ${cur.area.heightMm} mm`}</span>
+                {!cur.pos.pxW && Math.min(cur.area.widthMm, cur.area.heightMm) >= 20 && (
                   <div className="absolute border border-dotted border-forest/50" style={{ inset: SAFE_MM * g.scale }} />
                 )}
               </div>

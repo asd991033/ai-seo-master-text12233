@@ -15,6 +15,7 @@ export type ConfigProduct = {
   name: string;
   image: string | null;
   colors: { name: string; hex: string }[];
+  sizes: string[];
   pricing: ProductPricing;
   positions: { code: string; name: string; areas: { code: string; name: string }[] }[];
   ship: Omit<ShipItem, "qty">;
@@ -27,6 +28,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   const router = useRouter();
   const add = useCart((s) => s.add);
   const [color, setColor] = useState(p.colors[0]?.name ?? null);
+  const [size, setSize] = useState(p.sizes[0] ?? null);
   const [qtyText, setQtyText] = useState(String(p.pricing.moq));
   const [zoneCode, setZoneCode] = useState(p.zones.find((z) => z.code === site.defaultZone)?.code ?? p.zones[0]?.code ?? "");
   const [artwork, setArtwork] = useState<{ url: string; name: string } | null>(null);
@@ -103,14 +105,14 @@ export function Configurator({ p }: { p: ConfigProduct }) {
 
   function addToCart(next: "/cart" | "/checkout") {
     if (!quote) return;
-    add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
+    add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, sizeName: size, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
     router.push(next);
   }
 
   function goDesign() {
     if (!quote) return;
     if (!prints.length) return setNotice(t.product.needPrint);
-    saveDraft({ slug: p.slug, qty, colorName: color, prints });
+    saveDraft({ slug: p.slug, qty, colorName: color, sizeName: size, prints });
     router.push(`/design/${p.slug}`);
   }
 
@@ -128,9 +130,20 @@ export function Configurator({ p }: { p: ConfigProduct }) {
         </div>
       )}
 
+      {p.sizes.length > 1 && (
+        <div>
+          <div className="label">{t.product.sizePick}</div>
+          <div className="flex flex-wrap gap-2">
+            {p.sizes.map((s) => (
+              <button key={s} type="button" aria-pressed={size === s} onClick={() => setSize(s)} className={size === s ? "chip-on" : "chip"}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <div className="label">{t.product.tierTitle}</div>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {p.pricing.tiers.map((tier) => (
             <button key={tier.minQty} type="button" onClick={() => setQtyText(String(tier.minQty))}
               className={`rounded-xl border px-2 py-2 text-center transition ${activeTier?.minQty === tier.minQty ? "border-forest bg-forest text-white" : "border-line bg-white hover:border-ink"}`}>

@@ -24,10 +24,11 @@ const FACTOR = [1, 0.86, 0.72, 0.62, 0.54];
 const ladder = (base: number, qtys = QTYS) => qtys.map((q, i) => ({ minQty: q, unitPrice: Math.round(base * FACTOR[i] * 10) / 10 }));
 
 async function main() {
-  // ---- 分類 ----
-  const cats = [
+  const demo = process.env.SEED_DEMO === "1" || (process.env.NODE_ENV !== "production" && process.env.SEED_DEMO !== "0");
+  // ---- 分類（示範） ----
+  const cats = demo ? [
     ["bags", "袋類"], ["drinkware", "杯瓶"], ["stationery", "文具"], ["apparel", "服飾"], ["packaging", "包裝禮盒"],
-  ] as const;
+  ] as const : [];
   for (const [i, [slug, name]] of cats.entries()) {
     await db.insert(schema.categories).values({ slug, name, sort: i }).onConflictDoUpdate({ target: schema.categories.slug, set: { name, sort: i } });
   }
@@ -40,6 +41,9 @@ async function main() {
     { code: "laser", name: "雷射雕刻", description: "金屬、木質、皮革表面永久雕刻，質感內斂不掉色。", perColor: false, maxColors: 1 },
     { code: "hotstamp", name: "燙金 / 燙銀", description: "金屬箔熱壓，精品感首選，適合 Logo 與線條。", perColor: false, maxColors: 1 },
     { code: "sublimation", name: "熱昇華", description: "滿版全彩、色彩滲入塗層，適合馬克杯等專用素材。", perColor: false, maxColors: 1 },
+    { code: "transfer", name: "全彩轉印", description: "全彩滿版轉印，照片、漸層、滿版圖案都能完整呈現，一件起訂。", perColor: false, maxColors: 1 },
+    { code: "heat", name: "燙畫", description: "圖案燙印於布料表面，色彩鮮明、手感平滑。", perColor: false, maxColors: 1 },
+    { code: "dtg", name: "數位直噴", description: "直接噴印於布料纖維，透氣柔軟，適合棉質服飾。", perColor: false, maxColors: 1 },
   ];
   for (const [i, m] of methods.entries()) {
     await db.insert(schema.printMethods).values({ ...m, sort: i }).onConflictDoUpdate({ target: schema.printMethods.code, set: { ...m, sort: i } });
@@ -67,6 +71,8 @@ async function main() {
       ...seaTiers.map(([minUnits, f]) => ({ zoneId: z.id, mode: "sea" as const, minUnits, rate: Math.round(sea * f), baseFee: 1500, minCharge: 3000, daysMin: seaDays[0], daysMax: seaDays[1] })),
     ]);
   }
+
+  if (!demo) return seedAdmin();
 
   // ---- 示範商品 ----
   const data: ImportData = { products: [], tiers: [], areas: [], printPrices: [] };
@@ -202,9 +208,14 @@ async function main() {
   if (!res.ok) throw new Error("seed import failed:\n" + res.errors.join("\n"));
   console.log("catalog:", res.counts);
 
+  await seedAdmin();
+}
+
+async function seedAdmin() {
   // ---- 管理員 ----
   const email = (process.env.ADMIN_EMAIL ?? "admin@example.com").toLowerCase();
-  const password = process.env.ADMIN_PASSWORD ?? "change-me-please";
+  const password = process.env.ADMIN_PASSWORD ?? (process.env.NODE_ENV === "production" ? "" : "change-me-please");
+  if (!password) return console.warn("ADMIN_PASSWORD not set; admin account not created");
   const salt = randomBytes(16);
   const passwordHash = `scrypt$${salt.toString("hex")}$${scryptSync(password, salt, 64).toString("hex")}`;
   const existing = await db.select().from(schema.users).where(eq(schema.users.email, email));

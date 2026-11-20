@@ -135,7 +135,7 @@ export function CartView() {
                   <Link href={`/products/${item.slug}`} className="font-bold hover:text-forest">{item.name}</Link>
                   <button type="button" onClick={() => remove(item.id)} className="no-print shrink-0 text-xs text-mute hover:text-danger">{t.cart.remove}</button>
                 </div>
-                <div className="mt-1 text-xs text-mute">{item.sku}{item.colorName && `・${item.colorName}`}</div>
+                <div className="mt-1 text-xs text-mute">{item.sku}{item.colorName && `・${item.colorName}`}{item.sizeName && `・${item.sizeName}`}</div>
                 <ul className="mt-2 space-y-0.5 text-xs text-mute">
                   {line?.ok ? (line.labels.length ? line.labels.map((l) => <li key={l}>{l}</li>) : <li>{t.cart.blank}</li>) : null}
                   {item.prints.length > 0 && <li className="text-gold">{item.designId ? `✓ ${t.cart.design}` : item.artworkUrl ? `✓ ${t.cart.artwork}：${item.artworkName ?? ""}` : t.cart.artworkLater}</li>}

@@ -97,7 +97,7 @@ export function CheckoutForm({ defaults }: { defaults: Defaults }) {
                 <div className="scale-75 origin-top-left -mr-6 -mb-6"><ItemThumb item={item} /></div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{item.name}</div>
-                  <div className="text-xs text-mute">× {item.qty}{item.colorName && `・${item.colorName}`}</div>
+                  <div className="text-xs text-mute">× {item.qty}{item.colorName && `・${item.colorName}`}{item.sizeName && `・${item.sizeName}`}</div>
                 </div>
                 <div className="tabular-nums">{line?.ok ? fmtMoney(line.quote.total) : "—"}</div>
               </li>
