@@ -26,6 +26,7 @@ type CartState = {
   mode: "air" | "sea";
   add: (item: Omit<CartItem, "id">) => void;
   setQty: (id: string, qty: number) => void;
+  replace: (id: string, patch: Partial<CartItem>) => void;
   remove: (id: string) => void;
   setShipping: (zoneCode: string, mode: "air" | "sea") => void;
   clear: () => void;
@@ -39,6 +40,7 @@ export const useCart = create<CartState>()(
       mode: "air",
       add: (item) => set((s) => ({ items: [...s.items, { ...item, id: crypto.randomUUID() }] })),
       setQty: (id, qty) => set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, qty } : i)) })),
+      replace: (id, patch) => set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) })),
       remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
       setShipping: (zoneCode, mode) => set({ zoneCode, mode }),
       clear: () => set({ items: [] }),

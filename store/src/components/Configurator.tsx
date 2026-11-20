@@ -14,7 +14,7 @@ export type ConfigProduct = {
   sku: string;
   name: string;
   image: string | null;
-  colors: { name: string; hex: string }[];
+  colors: { name: string; hex: string; image?: string }[];
   sizes: string[];
   pricing: ProductPricing;
   positions: { code: string; name: string; areas: { code: string; name: string }[] }[];
@@ -123,7 +123,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
           <div className="label">{t.product.color}：<span className="text-ink">{color}</span></div>
           <div className="flex flex-wrap gap-2">
             {p.colors.map((c) => (
-              <button key={c.name} type="button" title={c.name} aria-label={c.name} aria-pressed={color === c.name} onClick={() => setColor(c.name)}
+              <button key={c.name} type="button" title={c.name} aria-label={c.name} aria-pressed={color === c.name} onClick={() => { setColor(c.name); if (c.image) window.dispatchEvent(new CustomEvent("product-image", { detail: c.image })); }}
                 className={`h-9 w-9 rounded-full border-2 ${color === c.name ? "border-forest ring-2 ring-forest/30" : "border-line"}`} style={{ background: c.hex }} />
             ))}
           </div>

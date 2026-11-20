@@ -138,7 +138,12 @@ export function CartView() {
                 <div className="mt-1 text-xs text-mute">{item.sku}{item.colorName && `・${item.colorName}`}{item.sizeName && `・${item.sizeName}`}</div>
                 <ul className="mt-2 space-y-0.5 text-xs text-mute">
                   {line?.ok ? (line.labels.length ? line.labels.map((l) => <li key={l}>{l}</li>) : <li>{t.cart.blank}</li>) : null}
-                  {item.prints.length > 0 && <li className="text-gold">{item.designId ? `✓ ${t.cart.design}` : item.artworkUrl ? `✓ ${t.cart.artwork}：${item.artworkName ?? ""}` : t.cart.artworkLater}</li>}
+                  {item.prints.length > 0 && (
+                    <li className="text-gold">
+                      {item.designId ? `✓ ${t.cart.design}` : item.artworkUrl ? `✓ ${t.cart.artwork}：${item.artworkName ?? ""}` : t.cart.artworkLater}
+                      {item.designId && <Link href={`/design/${item.slug}?edit=${item.designId}&item=${item.id}`} className="no-print ml-2 underline hover:text-forest">{t.cart.editDesign}</Link>}
+                    </li>
+                  )}
                 </ul>
                 <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
                   <label className="flex items-center gap-2 text-xs text-mute">
