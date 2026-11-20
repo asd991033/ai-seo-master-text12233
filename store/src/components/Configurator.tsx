@@ -16,11 +16,16 @@ export type ConfigProduct = {
   image: string | null;
   colors: { name: string; hex: string; image?: string }[];
   sizes: string[];
+  /** 滿版印刷：整面都由客戶的設計決定，沒有底色可選 */
+  fullPrint: boolean;
   pricing: ProductPricing;
   positions: { code: string; name: string; areas: { code: string; name: string }[] }[];
   ship: Omit<ShipItem, "qty">;
   zones: { code: string; name: string; rates: RateRow[] }[];
 };
+
+/** 供應商有時把款式放在顏色欄位，用名稱判斷是不是真的顏色 */
+const isColorName = (name: string) => /[色白黑紅藍綠黃灰粉紫橙棕金銀青]|卡其|透明|米|咖啡|彩|迷彩/.test(name);
 
 type PosState = { on: boolean; areaCode: string; methodCode: string; colors: number };
 
@@ -34,6 +39,13 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   const [artwork, setArtwork] = useState<{ url: string; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  /** 選項全都不是顏色名稱時（例如「無帽繩」），當成款式顯示 */
+  const styleOnly = p.colors.length > 0 && p.colors.every((c) => !isColorName(c.name));
+  const pickColor = (c: { name: string; image?: string }) => {
+    setColor(c.name);
+    if (c.image) window.dispatchEvent(new CustomEvent("product-image", { detail: c.image }));
+  };
 
   const methodsFor = (pos: string, area: string) => {
     const codes = new Set(p.pricing.printPrices.filter((r) => r.positionCode === pos && r.areaCode === area).map((r) => r.methodCode));
@@ -118,14 +130,40 @@ export function Configurator({ p }: { p: ConfigProduct }) {
 
   return (
     <div className="space-y-6">
-      {p.colors.length > 0 && (
+      {p.fullPrint && (
+        <div className="rounded-xl border border-gold/40 bg-gold/5 p-4" data-testid="full-print">
+          <div className="text-sm font-bold text-gold">{t.product.fullPrint}</div>
+          <p className="mt-1 text-sm leading-relaxed text-mute">{t.product.fullPrintDesc}</p>
+          {p.colors.length === 1 && isColorName(p.colors[0].name) && (
+            <p className="mt-2 flex items-center gap-2 text-xs text-mute">
+              <span className="h-3.5 w-3.5 rounded-full border border-line" style={{ background: p.colors[0].hex }} />
+              {t.product.trimColor}：{p.colors[0].name}
+            </p>
+          )}
+        </div>
+      )}
+      {p.colors.length === 1 && !isColorName(p.colors[0].name) && (
+        <div className="text-sm"><span className="text-mute">{t.product.style}：</span>{p.colors[0].name}</div>
+      )}
+      {p.colors.length === 1 && !p.fullPrint && isColorName(p.colors[0].name) && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-mute">{t.product.color}：</span>
+          <span className="h-4 w-4 rounded-full border border-line" style={{ background: p.colors[0].hex }} />
+          {p.colors[0].name}
+        </div>
+      )}
+      {p.colors.length > 1 && (
         <div>
-          <div className="label">{t.product.color}：<span className="text-ink">{color}</span></div>
+          <div className="label">{styleOnly ? t.product.style : t.product.color}：<span className="text-ink">{color}</span></div>
           <div className="flex flex-wrap gap-2">
-            {p.colors.map((c) => (
-              <button key={c.name} type="button" title={c.name} aria-label={c.name} aria-pressed={color === c.name} onClick={() => { setColor(c.name); if (c.image) window.dispatchEvent(new CustomEvent("product-image", { detail: c.image })); }}
-                className={`h-9 w-9 rounded-full border-2 ${color === c.name ? "border-forest ring-2 ring-forest/30" : "border-line"}`} style={{ background: c.hex }} />
-            ))}
+            {p.colors.map((c) =>
+              styleOnly ? (
+                <button key={c.name} type="button" aria-pressed={color === c.name} onClick={() => pickColor(c)} className={color === c.name ? "chip-on" : "chip"}>{c.name}</button>
+              ) : (
+                <button key={c.name} type="button" title={c.name} aria-label={c.name} aria-pressed={color === c.name} onClick={() => pickColor(c)}
+                  className={`h-9 w-9 rounded-full border-2 ${color === c.name ? "border-forest ring-2 ring-forest/30" : "border-line"}`} style={{ background: c.hex }} />
+              ),
+            )}
           </div>
         </div>
       )}

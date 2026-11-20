@@ -34,7 +34,8 @@ const dict = {
   product: {
     sku: "商品編號", material: "材質", size: "尺寸", leadDays: "生產天數", days: "個工作天", weight: "單件重量", packing: "裝箱",
     packingValue: (qty: number, l: number, w: number, h: number, kg: number) => `${qty} 件 / 箱，${l} × ${w} × ${h} cm，約 ${kg} kg`,
-    color: "顏色", sizePick: "尺碼", qty: "數量", tierTitle: "數量區間價（每件單價）", tierQty: "數量", tierPrice: "單價", andUp: "以上",
+    color: "顏色", style: "款式", fullPrint: "滿版印刷", fullPrintDesc: "這項商品整面都能印上你的設計，成品的顏色與圖案由你的設計決定，沒有固定底色。沒印到的地方會是白色。",
+    trimColor: "配件顏色（拉鍊、織帶、車線等）", sizePick: "尺碼", qty: "數量", tierTitle: "數量區間價（每件單價）", tierQty: "數量", tierPrice: "單價", andUp: "以上",
     printTitle: "印刷設定", printNone: "不印刷", position: "印刷位置", area: "印刷面積", method: "印刷方式", colors: "色數",
     colorsUnit: "色", included: "已含於單價", quoteTitle: "價格試算", goods: "商品", setup: "版費", subtotal: "小計（未含運費與稅）", unitAllIn: "含印刷每件均價",
     shipTitle: "運費試算", shipTo: "運送至", air: "空運", sea: "海運", chargeableKg: "計費重", chargeableCbm: "計費體積", eta: "約", etaDays: "天",
@@ -53,6 +54,7 @@ const dict = {
     printArea: "印刷範圍", printPx: "印刷檔",  safeLine: "安全線", legendCut: "裁切線", legendFold: "摺線", legendArea: "印刷範圍", legendSafe: "安全線（重要內容請放在內側）",
     mockup: "成品示意圖", mockupNote: "示意圖僅供版面參考，實際顏色與位置以審稿確認為準。", noMockup: "此商品提供刀模展開圖預覽。", flatNote: "此商品暫時無法自動產生示意圖，左側為印刷面的平面排版，會依印刷檔尺寸輸出。", productRef: "商品參考圖",
     mockSim: "示意圖為系統模擬效果，僅供版面參考；實際位置、比例與顏色以審稿確認為準。", analyzing: "示意圖產生中…",
+    fullArea: "虛線框內整面都會印刷。沒有放圖的地方會是白色，想要整面有顏色可以用左側的「底色」。",
     notInPhoto: (name: string) => `「${name}」不在這張商品照片上，示意圖只顯示看得到的印刷面；這一面的設計仍會照常輸出印刷檔。`,
     bg: "底色", clearBg: "清除", cover: "鋪滿印刷範圍", flipH: "水平翻轉", flipV: "垂直翻轉", layersTitle: "圖層", layerText: "文字", layerImage: "圖片", hide: "隱藏", show: "顯示",
     saveEdit: "儲存修改",

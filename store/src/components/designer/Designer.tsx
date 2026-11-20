@@ -777,6 +777,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
               </div>
             </div>
           </div>
+          {auto && <p className="mt-3 text-xs leading-relaxed text-mute">{t.designer.fullArea}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-mute">
             {cur.pos.dielineUrl && <label className="flex items-center gap-2 text-ink">
               <input type="checkbox" checked={showDieline} onChange={(e) => setShowDieline(e.target.checked)} className="accent-[var(--color-forest)]" />{t.designer.showDieline}

@@ -46,6 +46,7 @@ export default async function ProductPage({ params }: Props) {
             <Configurator
               p={{
                 id: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.images[0] ?? null, colors: p.colors, sizes: p.sizes, pricing: p.pricing,
+                fullPrint: p.colors.length <= 1 && p.positions.length > 0 && p.methods.some((m) => m.code === "transfer" || m.code === "sublimation"),
                 positions: p.positions.map((x) => ({ code: x.code, name: x.name, areas: x.areas.map((a) => ({ code: a.code, name: a.name })) })),
                 ship: { unitWeightG: p.unitWeightG, cartonQty: p.cartonQty, cartonLengthCm: p.cartonLengthCm, cartonWidthCm: p.cartonWidthCm, cartonHeightCm: p.cartonHeightCm, cartonWeightKg: p.cartonWeightKg },
                 zones,
