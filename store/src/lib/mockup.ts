@@ -63,6 +63,7 @@ export function analyze(img: CanvasImageSource): MockupModel {
   ctx.drawImage(img, 0, 0, n, n);
   const d = ctx.getImageData(0, 0, n, n).data;
   const seed = new Uint8Array(n * n), light = new Uint8Array(n * n), white = new Uint8Array(n * n), lum = new Uint8ClampedArray(n * n);
+  const blue = new Uint8ClampedArray(n * n), isText = new Uint8Array(n * n);
   for (let i = 0; i < n * n; i++) {
     const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
     const l = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -70,6 +71,8 @@ export function analyze(img: CanvasImageSource): MockupModel {
     const text = b >= 140 && r <= 110 && b - r >= 70;
     const pale = b - r >= 12 && b >= g && Math.min(r, g) >= 130 && b >= 190;
     if (text || pale) seed[i] = 255;
+    blue[i] = b;
+    if (b - r >= 85 && r < 175) isText[i] = 1;
     // 佔位圖本體：白色、淡藍或藍字（排除深色配件與其他顏色）
     const bluish = b >= r + 12 && b >= g && b >= 120;
     if (text || pale || bluish || (l >= 150 && Math.max(r, g, b) - Math.min(r, g, b) <= 40)) light[i] = 1;
@@ -117,8 +120,10 @@ export function analyze(img: CanvasImageSource): MockupModel {
   {
     const tmp = new Uint8ClampedArray(n * n);
     for (let i = 0; i < n * n; i++) tmp[i] = m[i] ? 255 : 0;
-    const sm = boxBlur(tmp, n, 3);
-    for (let i = 0; i < n * n; i++) m[i] = sm[i] >= 128 && !bg[i] ? 1 : 0;
+    let sm = boxBlur(tmp, n, 4);
+    for (let i = 0; i < n * n; i++) tmp[i] = sm[i] >= 128 ? 255 : 0;
+    sm = boxBlur(tmp, n, 3);
+    for (let i = 0; i < n * n; i++) m[i] = sm[i] >= 128 ? 1 : 0;
   }
 
   // 連通元件
@@ -174,11 +179,19 @@ export function analyze(img: CanvasImageSource): MockupModel {
       if (!bg[i] && !light[i]) { on++; sr += d[i * 4]; sg += d[i * 4 + 1]; sb += d[i * 4 + 2]; }
     }
     const fill = ring > 0 && on / ring > 0.6 ? `rgb(${Math.round(sr / on)},${Math.round(sg / on)},${Math.round(sb / on)})` : "#ffffff";
-    return { mask: boxBlur(hard, n, 1), area, cx: mx + uc * b.cos - vc * b.sin, cy: my + uc * b.sin + vc * b.cos, w: b.u1 - b.u0 + 1, h: b.v1 - b.v0 + 1, angle, fill };
+    return { mask: boxBlur(boxBlur(hard, n, 2), n, 2), area, cx: mx + uc * b.cos - vc * b.sin, cy: my + uc * b.sin + vc * b.cos, w: b.u1 - b.u0 + 1, h: b.v1 - b.v0 + 1, angle, fill };
   });
 
-  // 陰影：取區域最大亮度（去掉斜紋與文字），再模糊，保留布料的明暗
-  const shade = boxBlur(boxMax(lum, n, Math.round(n * 0.035)), n, Math.round(n * 0.012));
+  // 陰影：佔位圖的淡藍斜紋在「藍色通道」幾乎和白底一樣亮，所以藍色通道就是去掉斜紋後的布料明暗，
+  // 縫線、皺褶、陰影都還在。藍字的部分用周圍的亮度補上。
+  const textNear = boxMax(isText.map((v) => (v ? 255 : 0)) as unknown as Uint8Array, n, 3);
+  // 以周圍「非文字」像素的平均亮度補上文字的位置，才不會留下字的殘影
+  const rr = Math.round(n * 0.03);
+  const num = boxBlur(blue.map((v, i) => (textNear[i] ? 0 : v)), n, rr);
+  const den = boxBlur(textNear.map((v) => (v ? 0 : 255)), n, rr);
+  const src = new Uint8ClampedArray(n * n);
+  for (let i = 0; i < n * n; i++) src[i] = textNear[i] ? (den[i] > 6 ? (num[i] * 255) / den[i] : 245) : blue[i];
+  const shade = boxBlur(src, n, 1);
   return { n, regions, shade };
 }
 
@@ -224,6 +237,8 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
   const layer = document.createElement("canvas");
   layer.width = layer.height = n;
   const lctx = layer.getContext("2d", { willReadFrequently: true })!;
+  const big = document.createElement("canvas");
+  const bctx = big.getContext("2d", { willReadFrequently: true })!;
   const used = new Set(plan.flatMap((p) => p.regions));
   const groups: { regions: number[]; design: CanvasImageSource | null }[] = [
     ...plan.map((p) => ({ regions: p.regions, design: designs[p.pos] ?? null })),
@@ -257,7 +272,7 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
     const px = lctx.getImageData(0, 0, n, n);
     const p = px.data;
     for (let j = 0; j < n * n; j++) {
-      const sh = Math.min(1, model.shade[j] / 248);
+      const sh = Math.min(1, model.shade[j] / 250);
       p[j * 4] *= sh; p[j * 4 + 1] *= sh; p[j * 4 + 2] *= sh;
       let a = 0;
       for (const r of rs) if (r.mask[j] > a) a = r.mask[j];
@@ -265,7 +280,18 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
     }
     lctx.setTransform(1, 0, 0, 1, 0, 0);
     lctx.putImageData(px, 0, 0);
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(layer, 0, 0, size, size);
+    // 放大到輸出尺寸後再把半透明邊緣收斂成平滑的輪廓，避免鋸齒與毛邊
+    big.width = big.height = size;
+    bctx.imageSmoothingQuality = "high";
+    bctx.clearRect(0, 0, size, size);
+    bctx.drawImage(layer, 0, 0, size, size);
+    const bp = bctx.getImageData(0, 0, size, size);
+    const q = bp.data;
+    for (let j = 3; j < q.length; j += 4) {
+      const t = Math.min(1, Math.max(0, (q[j] / 255 - 0.4) / 0.2));
+      q[j] = 255 * t * t * (3 - 2 * t);
+    }
+    bctx.putImageData(bp, 0, 0);
+    ctx.drawImage(big, 0, 0);
   }
 }
