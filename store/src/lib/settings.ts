@@ -4,8 +4,8 @@ import { DEFAULT_MARGIN } from "./pricing";
 
 type Db = Pick<typeof db, "select">;
 
-/** 匯率：1 單位外幣 = 多少站台幣別。預設人民幣 4.5 */
-export const DEFAULT_FX: Record<string, number> = { CNY: 4.5 };
+/** 匯率：1 單位外幣 = 多少站台幣別。預設人民幣 5 */
+export const DEFAULT_FX: Record<string, number> = { CNY: 5 };
 
 export async function getPricingSettings(tx: Db = db) {
   const rows = await tx.select().from(schema.settings);
