@@ -101,10 +101,10 @@ export function Configurator({ p }: { p: ConfigProduct }) {
     }
   }
 
-  function addToCart() {
+  function addToCart(next: "/cart" | "/checkout") {
     if (!quote) return;
     add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
-    router.push("/cart");
+    router.push(next);
   }
 
   function goDesign() {
@@ -270,9 +270,11 @@ export function Configurator({ p }: { p: ConfigProduct }) {
             <span className="hidden text-xs font-normal opacity-80 sm:inline">— {t.product.designHint}</span>
           </button>
         )}
-        <button type="button" onClick={addToCart} disabled={!quote || uploading} className="btn-outline w-full py-3">
-          {!prints.length ? t.product.addBlank : artwork ? t.product.addToCart : t.product.addLater}
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => addToCart("/cart")} disabled={!quote || uploading} className="btn-outline py-3">{t.product.addToCart}</button>
+          <button type="button" onClick={() => addToCart("/checkout")} disabled={!quote || uploading} className={`${p.positions.length ? "btn-outline" : "btn-primary"} py-3`} data-testid="buy-now">{t.product.buyNow}</button>
+        </div>
+        {prints.length > 0 && !artwork && <p className="text-center text-xs text-mute">{t.product.addLater}</p>}
         {prints.length > 0 && (
           <label className="block cursor-pointer rounded-xl border border-dashed border-line p-3 text-center text-sm hover:border-ink">
             <input type="file" className="sr-only" accept=".ai,.pdf,.eps,.psd,.png,.jpg,.jpeg,.svg,.zip" onChange={(e) => onUpload(e.target.files?.[0])} />

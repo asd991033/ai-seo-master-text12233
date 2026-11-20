@@ -169,7 +169,6 @@ export function CartView() {
           ) : (
             <button type="button" disabled className="btn-primary w-full py-3">{q.loading ? t.cart.updating : t.cart.checkout}</button>
           )}
-          <button type="button" onClick={() => window.print()} className="btn-ghost w-full">{t.cart.printQuote}</button>
         </div>
       </aside>
     </div>
