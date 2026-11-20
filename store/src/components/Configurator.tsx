@@ -212,7 +212,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
             <Row k={`${t.product.goods} ${fmtMoney(quote.baseUnitPrice)} × ${fmtNum(quote.qty)}`} v={fmtMoney(quote.goodsTotal)} />
             {quote.prints.map((x) => (
               <div key={x.positionCode}>
-                <Row k={`${label(x)}　${fmtMoney(x.unitPrice)} × ${fmtNum(quote.qty)}`} v={fmtMoney(x.total)} />
+                <Row k={x.total > 0 ? `${label(x)}　${fmtMoney(x.unitPrice)} × ${fmtNum(quote.qty)}` : label(x)} v={x.total > 0 ? fmtMoney(x.total) : t.product.included} />
                 {x.setupFee > 0 && <Row k={`　${t.product.setup}`} v={fmtMoney(x.setupFee)} muted />}
               </div>
             ))}

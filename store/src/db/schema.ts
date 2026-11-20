@@ -78,6 +78,8 @@ export const priceTiers = sqliteTable(
     productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
     minQty: integer("min_qty").notNull(),
     unitPrice: real("unit_price").notNull(),
+    /** 進貨成本（僅後台可見）。有成本價時，售價由毛利率自動換算 */
+    unitCost: real("unit_cost"),
   },
   (t) => [uniqueIndex("price_tiers_uq").on(t.productId, t.minQty)],
 );
@@ -148,6 +150,12 @@ export const printPrices = sqliteTable(
   },
   (t) => [uniqueIndex("print_prices_uq").on(t.areaId, t.methodId, t.minQty), index("print_prices_product").on(t.productId)],
 );
+
+/** 全站設定（例如毛利率） */
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
 
 export const shippingZones = sqliteTable("shipping_zones", {
   id: integer("id").primaryKey({ autoIncrement: true }),

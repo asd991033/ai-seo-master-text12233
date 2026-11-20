@@ -36,7 +36,7 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
                     <div className="mt-1 text-xs text-mute">{it.sku}{it.colorName && `・${it.colorName}`}・{fmtMoney(b.quote.baseUnitPrice)} × {fmtNum(it.qty)}</div>
                     <ul className="mt-2 space-y-0.5 text-xs text-mute">
                       {b.labels.length ? b.quote.prints.map((p, i) => (
-                        <li key={i}>{b.labels[i]}　{fmtMoney(p.unitPrice)} × {fmtNum(it.qty)}{p.setupFee > 0 && `　＋${t.cart.setup} ${fmtMoney(p.setupFee)}`}</li>
+                        <li key={i}>{b.labels[i]}　{p.total > 0 ? `${fmtMoney(p.unitPrice)} × ${fmtNum(it.qty)}` : t.product.included}{p.setupFee > 0 && `　＋${t.cart.setup} ${fmtMoney(p.setupFee)}`}</li>
                       )) : <li>{t.cart.blank}</li>}
                     </ul>
                   </div>

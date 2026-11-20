@@ -126,3 +126,14 @@ export function computeTotals(lines: LineQuote[], shippingFee: number, taxRate: 
   const tax = money((goodsTotal + printTotal + setupTotal + shippingFee) * taxRate);
   return { goodsTotal, printTotal, setupTotal, shippingFee, tax, total: money(goodsTotal + printTotal + setupTotal + shippingFee + tax) };
 }
+
+export const DEFAULT_MARGIN = 0.6;
+
+/**
+ * 由成本價與毛利率換算售價：售價 = 成本 ÷ (1 − 毛利率)，無條件進位到整數，
+ * 確保實際毛利率不低於設定值。例：成本 100、毛利率 60% → 售價 250。
+ */
+export function priceFromCost(cost: number, marginRate: number): number {
+  if (!(marginRate >= 0 && marginRate < 1)) throw new Error("毛利率需介於 0 與 1 之間");
+  return Math.ceil(cost / (1 - marginRate) - 1e-9);
+}

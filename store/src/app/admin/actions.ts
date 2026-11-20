@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
+import { priceFromCost } from "@/lib/pricing";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 
@@ -71,4 +72,18 @@ export async function saveMethod(fd: FormData) {
   const values = { name, description: String(fd.get("description") ?? "").trim(), perColor: fd.get("perColor") === "on", maxColors: Math.max(1, Math.floor(num(fd.get("maxColors"), 1))), sort: Math.floor(num(fd.get("sort"))) };
   await db.insert(schema.printMethods).values({ code, ...values }).onConflictDoUpdate({ target: schema.printMethods.code, set: values });
   revalidatePath("/admin/methods");
+}
+
+/** 更新毛利率，並把所有有成本價的級距重新換算售價 */
+export async function saveMargin(fd: FormData) {
+  await requireAdmin();
+  const pct = num(fd.get("marginPct"), -1);
+  if (!(pct >= 0 && pct < 100)) return;
+  const rate = pct / 100;
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.settings).values({ key: "margin_rate", value: String(rate) }).onConflictDoUpdate({ target: schema.settings.key, set: { value: String(rate) } });
+    const tiers = await tx.select().from(schema.priceTiers).where(isNotNull(schema.priceTiers.unitCost));
+    for (const t of tiers) await tx.update(schema.priceTiers).set({ unitPrice: priceFromCost(t.unitCost!, rate) }).where(eq(schema.priceTiers.id, t.id));
+  });
+  revalidatePath("/admin/pricing");
 }

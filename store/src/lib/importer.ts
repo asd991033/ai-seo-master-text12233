@@ -5,6 +5,7 @@
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db, schema } from "@/db";
+import { DEFAULT_MARGIN, priceFromCost } from "./pricing";
 
 const { products, categories, priceTiers, printPositions, printAreas, printPrices, printMethods } = schema;
 
@@ -18,7 +19,8 @@ export type ProductRow = {
   /** 以 | 分隔的圖片網址；留空則保留既有圖片 */
   images?: string;
 };
-export type TierRow = { sku: string; minQty: number; unitPrice: number };
+/** unitCost 有填時，售價由毛利率自動換算（unitPrice 可留空） */
+export type TierRow = { sku: string; minQty: number; unitPrice?: number; unitCost?: number };
 export type AreaRow = {
   sku: string; positionCode: string; positionName: string; dielineWidthMm: number; dielineHeightMm: number;
   dielineUrl?: string; mockupUrl?: string; mockupX?: number; mockupY?: number; mockupW?: number; mockupH?: number;
@@ -61,7 +63,8 @@ export function validate(data: ImportData): string[] {
     const at = `「區間價格」第 ${i + 2} 列`;
     if (!r.sku) errors.push(`${at}：缺少 SKU`);
     if (!pos(r.minQty) || !Number.isInteger(r.minQty)) errors.push(`${at}：起始數量需為正整數`);
-    if (!nonNeg(r.unitPrice)) errors.push(`${at}：單價格式錯誤`);
+    if (r.unitCost == null && r.unitPrice == null) errors.push(`${at}：「成本價」與「單價」至少填一個`);
+    if ((r.unitCost != null && !nonNeg(r.unitCost)) || (r.unitPrice != null && !nonNeg(r.unitPrice))) errors.push(`${at}：成本價或單價格式錯誤`);
   });
   data.areas.forEach((r, i) => {
     const at = `「印刷區域」第 ${i + 2} 列`;
@@ -127,12 +130,16 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
       };
 
       // ---- 區間價格 ----
+      const [m] = await tx.select().from(schema.settings).where(eq(schema.settings.key, "margin_rate"));
+      const margin = m ? Number(m.value) : DEFAULT_MARGIN;
       for (const sku of new Set(data.tiers.map((r) => r.sku.trim()))) {
         await tx.delete(priceTiers).where(eq(priceTiers.productId, pid(sku, "區間價格")));
       }
       for (const r of data.tiers) {
-        await tx.insert(priceTiers).values({ productId: pid(r.sku, "區間價格"), minQty: r.minQty, unitPrice: r.unitPrice })
-          .onConflictDoUpdate({ target: [priceTiers.productId, priceTiers.minQty], set: { unitPrice: r.unitPrice } });
+        const unitCost = r.unitCost ?? null;
+        const unitPrice = unitCost != null ? priceFromCost(unitCost, margin) : r.unitPrice!;
+        await tx.insert(priceTiers).values({ productId: pid(r.sku, "區間價格"), minQty: r.minQty, unitPrice, unitCost })
+          .onConflictDoUpdate({ target: [priceTiers.productId, priceTiers.minQty], set: { unitPrice, unitCost } });
         counts.tiers++;
       }
 

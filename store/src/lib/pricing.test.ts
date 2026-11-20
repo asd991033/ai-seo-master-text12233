@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { quoteLine, pickTier, priceRange, QuoteError, type ProductPricing } from "./pricing";
+import { quoteLine, pickTier, priceRange, priceFromCost, QuoteError, type ProductPricing } from "./pricing";
 import { packItems, quoteShipping, type RateRow } from "./shipping";
 
 const p: ProductPricing = {
@@ -111,4 +111,12 @@ test("sea charges by CBM with a minimum charge; no carton data falls back to uni
   assert.equal(pack.weightKg, 13.2);
   assert.equal(quoteShipping(rates, "air", pack)!.fee, 300 + 13.5 * 180);
   assert.equal(quoteShipping([], "air", pack), null);
+});
+
+test("priceFromCost applies gross margin on selling price and rounds up", () => {
+  assert.equal(priceFromCost(100, 0.6), 250);
+  assert.equal(priceFromCost(40, 0.6), 100);
+  assert.equal(priceFromCost(33.3, 0.6), 84); // 83.25 → 84，毛利率不低於 60%
+  assert.equal(priceFromCost(100, 0), 100);
+  assert.throws(() => priceFromCost(100, 1));
 });
