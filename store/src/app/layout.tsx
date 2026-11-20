@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: { default: `${site.brand} ${site.brandZh}｜${t.home.eyebrow}`, template: `%s｜${site.brand} ${site.brandZh}` },
+  title: { default: `${site.brand}｜${t.home.eyebrow}`, template: `%s｜${site.brand}` },
   description: t.home.lead,
 };
 

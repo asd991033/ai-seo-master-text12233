@@ -1,4 +1,4 @@
-# Giftelier 禮匠 — 客製化禮品一站式電商
+# Giftevo — 客製化禮品一站式電商
 
 Next.js 15（App Router）＋ Drizzle ORM ＋ SQLite/libSQL ＋ Fabric.js。
 
@@ -54,3 +54,9 @@ npm run dev               # http://localhost:3000
 - 資料庫：本機為 SQLite 檔；正式環境可把 `DATABASE_URL` 指向 Turso（libSQL）。
 - 通知信（訂單成立、狀態變更）、忘記密碼、登入頻率限制尚未實作。
 - 示範商品、運費費率、稅率 5% 皆為示意，請以實際資料取代。
+
+## LINE / Google 登入
+
+在 `.env` 填入 `GOOGLE_CLIENT_ID/SECRET`、`LINE_CHANNEL_ID/SECRET` 後，登入與註冊頁會自動出現對應按鈕（沒填就不顯示）。
+各平台後台的回呼網址設為 `{SITE_URL}/api/auth/google/callback` 與 `{SITE_URL}/api/auth/line/callback`。
+LINE 若未提供 Email，結帳時會請客戶自行填寫。

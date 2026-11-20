@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { t } from "@/i18n";
 import { fmtDate, fmtMoney } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
+import { isPlaceholderEmail } from "@/lib/oauth";
 import { logoutAction } from "@/app/actions";
 import { StatusBadge } from "@/components/OrderDetail";
 
@@ -20,7 +21,7 @@ export default async function AccountPage() {
         <h1 className="text-3xl font-bold">{t.auth.hello(user.name)}</h1>
         <form action={logoutAction} className="ml-auto"><button className="btn-ghost">{t.nav.logout}</button></form>
       </div>
-      <p className="mt-2 text-sm text-mute">{user.email}{user.company && `・${user.company}`}</p>
+      <p className="mt-2 text-sm text-mute">{isPlaceholderEmail(user.email) ? "" : user.email}{user.company && `・${user.company}`}</p>
       <h2 className="mt-10 mb-4 text-xl font-bold">{t.order.myOrders}</h2>
       {orders.length ? (
         <div className="card divide-y divide-line">

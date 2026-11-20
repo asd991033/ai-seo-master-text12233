@@ -81,7 +81,7 @@ const dict = {
   auth: {
     login: "登入", register: "註冊", email: "Email", password: "密碼", name: "姓名", phone: "電話", company: "公司名稱（選填）",
     noAccount: "還沒有帳號？", haveAccount: "已經有帳號？", badLogin: "Email 或密碼錯誤", emailTaken: "此 Email 已註冊", weakPassword: "密碼至少需 8 個字元",
-    invalid: "請確認欄位格式", profile: "會員資料", hello: (n: string) => `${n}，你好`,
+    invalid: "請確認欄位格式", or: "或", google: "使用 Google 登入", line: "使用 LINE 登入", oauthFailed: "第三方登入失敗，請再試一次", useSocial: "此帳號是用 Google / LINE 建立的，請改用下方按鈕登入", profile: "會員資料", hello: (n: string) => `${n}，你好`,
   },
   guide: {
     title: "訂購流程與稿件規範",

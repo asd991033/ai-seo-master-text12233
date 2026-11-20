@@ -13,6 +13,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   const email = str(fd, "email").toLowerCase();
   const password = String(fd.get("password") ?? "");
   const [user] = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
+  if (user && user.passwordHash.startsWith("oauth$")) return { error: t.auth.useSocial };
   if (!user || !verifyPassword(password, user.passwordHash)) return { error: t.auth.badLogin };
   await createSession(user.id);
   redirect(safeNext(fd.get("next"), user.role === "admin" ? "/admin" : "/account"));
