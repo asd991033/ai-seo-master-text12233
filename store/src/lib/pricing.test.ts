@@ -121,3 +121,27 @@ test("priceFromCost applies gross margin on selling price and rounds up", () => 
   assert.throws(() => priceFromCost(100, 1));
   assert.equal(priceFromCost(10.3, 0.6, 5), 129); // CNY 10.3 × 5 = 51.5 → ÷0.4 = 128.75 → 129
 });
+
+test("variant tiers and extra-face surcharge", () => {
+  const v: ProductPricing = {
+    ...p,
+    tiers: [{ minQty: 1, unitPrice: 100 }],
+    moq: 1,
+    variants: { "白|L": [{ minQty: 1, unitPrice: 160 }, { minQty: 10, unitPrice: 140 }] },
+    extraFacePrice: 150,
+    printPrices: [
+      { positionCode: "front", areaCode: "s", methodCode: "dtf", minQty: 1, unitPrice: 0, setupFee: 0 },
+      { positionCode: "back", areaCode: "s", methodCode: "dtf", minQty: 1, unitPrice: 0, setupFee: 0 },
+    ],
+  };
+  const sel = (code: string) => ({ positionCode: code, areaCode: "s", methodCode: "dtf", colors: 1 });
+  assert.equal(quoteLine(v, 2, [], "白|L").total, 320); // 款式有自己的價格
+  assert.equal(quoteLine(v, 10, [], "白|L").baseUnitPrice, 140);
+  assert.throws(() => quoteLine(v, 2, [], "黑|S"), /顏色與尺碼/); // 不存在的款式不能套最低價
+  assert.equal(quoteLine(p, 100, [], "任意|款式").total, 7200); // 沒有款式價差的商品不受影響
+  assert.equal(quoteLine(v, 2, [sel("front")]).extraFaceTotal, 0); // 第一面已含
+  const two = quoteLine(v, 2, [sel("front"), sel("back")]);
+  assert.equal(two.extraFaces, 1);
+  assert.equal(two.extraFaceTotal, 300);
+  assert.equal(two.total, 200 + 300);
+});

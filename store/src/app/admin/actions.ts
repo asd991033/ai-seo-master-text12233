@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { eq, isNotNull } from "drizzle-orm";
 import { priceFromCost } from "@/lib/pricing";
 import { getPricingSettings, setSetting } from "@/lib/settings";
+import { derivePrices } from "@/lib/importer";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 
@@ -88,6 +89,13 @@ export async function saveMargin(fd: FormData) {
     const { fx } = await getPricingSettings(tx);
     const tiers = await tx.select().from(schema.priceTiers).where(isNotNull(schema.priceTiers.unitCost));
     for (const t of tiers) await tx.update(schema.priceTiers).set({ unitPrice: priceFromCost(t.unitCost!, rate, fx(t.costCurrency)) }).where(eq(schema.priceTiers.id, t.id));
+    // 各款式售價與加印面售價也一併重算
+    const prods = await tx.select({ id: schema.products.id, variantCosts: schema.products.variantCosts, extraFaceCost: schema.products.extraFaceCost, costCurrency: schema.products.costCurrency }).from(schema.products);
+    for (const p of prods) {
+      if (!p.variantCosts && p.extraFaceCost == null) continue;
+      const d = derivePrices(p.variantCosts, p.extraFaceCost, p.costCurrency, rate, fx);
+      await tx.update(schema.products).set({ variantPrices: d.variantPrices, extraFacePrice: d.extraFacePrice }).where(eq(schema.products.id, p.id));
+    }
   });
   revalidatePath("/admin/pricing");
 }

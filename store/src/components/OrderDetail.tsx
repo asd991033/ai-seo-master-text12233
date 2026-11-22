@@ -38,6 +38,7 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
                       {b.labels.length ? b.quote.prints.map((p, i) => (
                         <li key={i}>{b.labels[i]}　{p.total > 0 ? `${fmtMoney(p.unitPrice)} × ${fmtNum(it.qty)}` : t.product.included}{p.setupFee > 0 && `　＋${t.cart.setup} ${fmtMoney(p.setupFee)}`}</li>
                       )) : <li>{t.cart.blank}</li>}
+                      {b.quote.extraFaceTotal > 0 && <li>{t.product.extraFace(b.quote.extraFaces)}　{fmtMoney(b.quote.extraFaceUnit * b.quote.extraFaces)} × {fmtNum(it.qty)}</li>}
                     </ul>
                   </div>
                 </div>

@@ -95,6 +95,8 @@ async function hydrate(rows: (Product & { categoryName: string | null; categoryS
       methods: usedMethods,
       pricing: {
         moq: r.moq,
+        ...(r.variantPrices ? { variants: Object.fromEntries(Object.entries(r.variantPrices).map(([k, rows]) => [k, rows.map(([minQty, unitPrice]) => ({ minQty, unitPrice }))])) } : {}),
+        ...(r.extraFacePrice > 0 ? { extraFacePrice: r.extraFacePrice } : {}),
         tiers: tiers.filter((t) => t.productId === r.id).map((t) => ({ minQty: t.minQty, unitPrice: t.unitPrice })),
         methods: usedMethods.map((m) => ({ code: m.code, name: m.name, perColor: m.perColor, maxColors: m.maxColors })),
         printPrices: myPrices.flatMap((x) => {

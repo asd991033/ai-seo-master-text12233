@@ -138,6 +138,7 @@ export function CartView() {
                 <div className="mt-1 text-xs text-mute">{item.sku}{item.colorName && `・${item.colorName}`}{item.sizeName && `・${item.sizeName}`}</div>
                 <ul className="mt-2 space-y-0.5 text-xs text-mute">
                   {line?.ok ? (line.labels.length ? line.labels.map((l) => <li key={l}>{l}</li>) : <li>{t.cart.blank}</li>) : null}
+                  {line?.ok && line.quote.extraFaceTotal > 0 && <li>{t.product.extraFace(line.quote.extraFaces)}　{fmtMoney(line.quote.extraFaceUnit * line.quote.extraFaces)} × {fmtNum(line.quote.qty)}</li>}
                   {item.prints.length > 0 && (
                     <li className="text-gold">
                       {item.designId ? `✓ ${t.cart.design}` : item.artworkUrl ? `✓ ${t.cart.artwork}：${item.artworkName ?? ""}` : t.cart.artworkLater}

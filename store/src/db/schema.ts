@@ -70,6 +70,14 @@ export const products = sqliteTable("products", {
   cartonHeightCm: real("carton_height_cm").notNull().default(0),
   cartonWeightKg: real("carton_weight_kg").notNull().default(0),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+  /** 依「顏色|尺碼」區分的成本級距 [[起始數量, 成本]...]；沒有價差的商品為空 */
+  variantCosts: text("variant_costs", { mode: "json" }).$type<Record<string, [number, number][]>>(),
+  /** 由成本換算出的各款式售價級距（同上結構） */
+  variantPrices: text("variant_prices", { mode: "json" }).$type<Record<string, [number, number][]>>(),
+  /** 每多印一個印刷面的加價：成本與換算後的售價（第一面已含在單價內） */
+  extraFaceCost: real("extra_face_cost"),
+  extraFacePrice: real("extra_face_price").notNull().default(0),
+  costCurrency: text("cost_currency"),
   /** 熱銷排序（數字越大越熱門） */
   popularity: integer("popularity").notNull().default(0),
   active: integer("active", { mode: "boolean" }).notNull().default(true),

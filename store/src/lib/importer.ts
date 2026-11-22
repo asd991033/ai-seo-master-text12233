@@ -21,6 +21,12 @@ export type ProductRow = {
   /** 顏色名稱 → 前台展示用的乾淨商品圖 */
   colorDisplay?: Record<string, string>;
   popularity?: number;
+  /** 依「顏色|尺碼」的成本級距 [[起始數量, 成本]...] */
+  variantCosts?: Record<string, [number, number][]>;
+  /** 每多印一面的加價成本 */
+  extraFaceCost?: number;
+  /** variantCosts / extraFaceCost 的幣別（如 CNY） */
+  costCurrency?: string;
   sourceUrl?: string;
   moq?: number; leadDays?: number; unitWeightG?: number;
   cartonQty?: number; cartonLengthCm?: number; cartonWidthCm?: number; cartonHeightCm?: number; cartonWeightKg?: number;
@@ -40,6 +46,18 @@ export type PrintPriceRow = { sku: string; positionCode: string; areaCode: strin
 
 export type ImportData = { products: ProductRow[]; tiers: TierRow[]; areas: AreaRow[]; printPrices: PrintPriceRow[] };
 export type ImportResult = { ok: boolean; errors: string[]; counts: { products: number; tiers: number; areas: number; printPrices: number } };
+
+/** 由成本換算各款式售價與加印面售價（匯入與調整毛利率時共用） */
+export function derivePrices(variantCosts: Record<string, [number, number][]> | null, extraFaceCost: number | null, costCurrency: string | null, margin: number, fx: (c: string | null | undefined) => number) {
+  const rate = fx(costCurrency);
+  return {
+    variantCosts,
+    variantPrices: variantCosts ? Object.fromEntries(Object.entries(variantCosts).map(([k, rows]) => [k, rows.map(([q, c]) => [q, priceFromCost(c, margin, rate)] as [number, number])])) : null,
+    extraFaceCost,
+    extraFacePrice: extraFaceCost != null ? priceFromCost(extraFaceCost, margin, rate) : 0,
+    costCurrency,
+  };
+}
 
 export const slugify = (s: string) =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -109,6 +127,8 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
         catByName.set(name, row.id);
       }
 
+      const { margin, fx } = await getPricingSettings(tx);
+
       // ---- 產品 ----
       for (const r of data.products) {
         const values = {
@@ -117,6 +137,7 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
           summary: r.summary ?? "", description: r.description ?? "", material: r.material ?? "", sizeText: r.size ?? "",
           colors: parseColors(r.colors).map((c) => ({ ...c, ...(r.colorImages?.[c.name] ? { image: r.colorImages[c.name] } : {}), ...(r.colorDisplay?.[c.name] ? { display: r.colorDisplay[c.name] } : {}) })),
           popularity: r.popularity ?? 0,
+          ...derivePrices(r.variantCosts ?? null, r.extraFaceCost ?? null, r.costCurrency ?? null, margin, fx),
           sizes: (r.sizes ?? "").split("|").map((x) => x.trim()).filter(Boolean),
           sourceUrl: r.sourceUrl ?? null,
           moq: r.moq || 1, leadDays: r.leadDays || 14, unitWeightG: r.unitWeightG || 0,
@@ -143,7 +164,6 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
       };
 
       // ---- 區間價格 ----
-      const { margin, fx } = await getPricingSettings(tx);
       for (const sku of new Set(data.tiers.map((r) => r.sku.trim()))) {
         await tx.delete(priceTiers).where(eq(priceTiers.productId, pid(sku, "區間價格")));
       }

@@ -27,7 +27,12 @@ export type PrintSelection = {
 
 export type ProductPricing = {
   moq: number;
+  /** 預設級距（最便宜的款式，用於「NT$ 起」） */
   tiers: Tier[];
+  /** 依「顏色|尺碼」區分的級距；沒有價差的商品不會有 */
+  variants?: Record<string, Tier[]>;
+  /** 每多印一面的加價（第一面已含） */
+  extraFacePrice?: number;
   printPrices: PrintPriceRow[];
   methods: MethodInfo[];
 };
@@ -43,6 +48,11 @@ export type LineQuote = {
   baseUnitPrice: number;
   goodsTotal: number;
   prints: PrintLine[];
+  /** 加印的面數（超過第一面的部分）與每面每件加價 */
+  extraFaces: number;
+  extraFaceUnit: number;
+  extraFaceTotal: number;
+  /** 印刷費合計（含加印面） */
   printTotal: number;
   setupTotal: number;
   total: number;
@@ -52,7 +62,7 @@ export type LineQuote = {
 
 export class QuoteError extends Error {
   constructor(
-    public code: "BELOW_MOQ" | "NO_TIER" | "NO_PRINT_PRICE" | "BAD_COLORS" | "DUP_POSITION" | "BAD_QTY",
+    public code: "BELOW_MOQ" | "BAD_VARIANT" | "NO_TIER" | "NO_PRINT_PRICE" | "BAD_COLORS" | "DUP_POSITION" | "BAD_QTY",
     message: string,
   ) {
     super(message);
@@ -70,10 +80,19 @@ export function pickTier<T extends { minQty: number }>(rows: T[], qty: number): 
   return best;
 }
 
-export function quoteLine(p: ProductPricing, qty: number, selections: PrintSelection[]): LineQuote {
+export const variantKey = (color?: string | null, size?: string | null) => `${color ?? ""}|${size ?? ""}`;
+
+/** 取得某個款式（顏色＋尺碼）適用的級距 */
+export function tiersFor(p: ProductPricing, variant?: string | null): Tier[] {
+  return (variant && p.variants?.[variant]) || p.tiers;
+}
+
+export function quoteLine(p: ProductPricing, qty: number, selections: PrintSelection[], variant?: string | null): LineQuote {
   if (!Number.isInteger(qty) || qty <= 0) throw new QuoteError("BAD_QTY", "數量必須為正整數");
   if (qty < p.moq) throw new QuoteError("BELOW_MOQ", `最低訂購量為 ${p.moq}`);
-  const tier = pickTier(p.tiers, qty);
+  // 有款式價差的商品必須指定存在的「顏色＋尺碼」，不能用不存在的組合套到最低價
+  if (variant != null && p.variants && !p.variants[variant]) throw new QuoteError("BAD_VARIANT", "請選擇顏色與尺碼");
+  const tier = pickTier(tiersFor(p, variant), qty);
   if (!tier) throw new QuoteError("NO_TIER", "此數量沒有對應的價格級距");
 
   const seen = new Set<string>();
@@ -95,7 +114,10 @@ export function quoteLine(p: ProductPricing, qty: number, selections: PrintSelec
   });
 
   const goodsTotal = money(tier.unitPrice * qty);
-  const printTotal = money(prints.reduce((a, x) => a + x.total, 0));
+  const extraFaces = p.extraFacePrice ? Math.max(0, prints.length - 1) : 0;
+  const extraFaceUnit = extraFaces ? p.extraFacePrice! : 0;
+  const extraFaceTotal = money(extraFaces * extraFaceUnit * qty);
+  const printTotal = money(prints.reduce((a, x) => a + x.total, 0) + extraFaceTotal);
   const setupTotal = money(prints.reduce((a, x) => a + x.setupFee, 0));
   const total = money(goodsTotal + printTotal + setupTotal);
   return {
@@ -103,6 +125,9 @@ export function quoteLine(p: ProductPricing, qty: number, selections: PrintSelec
     baseUnitPrice: tier.unitPrice,
     goodsTotal,
     prints,
+    extraFaces,
+    extraFaceUnit,
+    extraFaceTotal,
     printTotal,
     setupTotal,
     total,

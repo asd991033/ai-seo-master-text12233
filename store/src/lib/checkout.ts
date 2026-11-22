@@ -1,10 +1,10 @@
 import "server-only";
 import { getProductsByIds, listZones, type ProductFull } from "./catalog";
-import { quoteLine, QuoteError, type LineQuote, type PrintSelection } from "./pricing";
+import { quoteLine, QuoteError, variantKey, type LineQuote, type PrintSelection } from "./pricing";
 import { packItems, quoteAllModes, type Pack, type ShipQuote } from "./shipping";
 import { t } from "@/i18n";
 
-export type CartLineInput = { id: string; productId: number; qty: number; prints: PrintSelection[] };
+export type CartLineInput = { id: string; productId: number; qty: number; prints: PrintSelection[]; colorName?: string | null; sizeName?: string | null };
 
 export type PricedLine =
   | { id: string; ok: true; quote: LineQuote; labels: string[]; product: ProductFull }
@@ -30,6 +30,8 @@ export function sanitizeLines(raw: unknown): CartLineInput[] | null {
       id: String(x.id ?? ""),
       productId: x.productId,
       qty: Number(x.qty),
+      colorName: typeof x.colorName === "string" ? x.colorName.slice(0, 40) : null,
+      sizeName: typeof x.sizeName === "string" ? x.sizeName.slice(0, 40) : null,
       prints: (x.prints as Record<string, unknown>[]).map((p) => ({
         positionCode: String(p?.positionCode ?? ""), areaCode: String(p?.areaCode ?? ""), methodCode: String(p?.methodCode ?? ""), colors: Number(p?.colors ?? 1),
       })),
@@ -53,7 +55,7 @@ export async function priceCart(inputs: CartLineInput[], zoneCode: string | null
     const product = byId.get(i.productId);
     if (!product) return { id: i.id, ok: false, error: t.cart.lineError };
     try {
-      const quote = quoteLine(product.pricing, i.qty, i.prints);
+      const quote = quoteLine(product.pricing, i.qty, i.prints, variantKey(i.colorName, i.sizeName));
       return { id: i.id, ok: true, quote, labels: quote.prints.map((s) => printLabel(product, s)), product };
     } catch (e) {
       return { id: i.id, ok: false, error: e instanceof QuoteError ? e.message : t.cart.lineError };

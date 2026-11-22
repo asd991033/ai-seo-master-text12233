@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
 import { fmtMoney, fmtNum } from "@/lib/format";
-import { pickTier, quoteLine, QuoteError, type LineQuote, type PrintSelection, type ProductPricing } from "@/lib/pricing";
+import { pickTier, quoteLine, QuoteError, tiersFor, variantKey, type LineQuote, type PrintSelection, type ProductPricing } from "@/lib/pricing";
 import { packItems, quoteAllModes, type RateRow, type ShipItem } from "@/lib/shipping";
 import { saveDraft, useCart } from "@/lib/cart";
 import { site } from "@/config/site";
@@ -72,21 +72,23 @@ export function Configurator({ p }: { p: ConfigProduct }) {
     });
 
   const qty = Number(qtyText);
+  const variant = variantKey(color, size);
+  const tiers = tiersFor(p.pricing, variant);
   const prints: PrintSelection[] = p.positions
     .filter((pos) => posState[pos.code].on && posState[pos.code].methodCode)
     .map((pos) => ({ positionCode: pos.code, areaCode: posState[pos.code].areaCode, methodCode: posState[pos.code].methodCode, colors: posState[pos.code].colors }));
 
   const { quote, error } = useMemo((): { quote: LineQuote | null; error: string | null } => {
     try {
-      return { quote: quoteLine(p.pricing, qty, prints), error: null };
+      return { quote: quoteLine(p.pricing, qty, prints, variant), error: null };
     } catch (e) {
       return { quote: null, error: e instanceof QuoteError ? e.message : String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qty, JSON.stringify(prints)]);
+  }, [qty, JSON.stringify(prints), variant]);
 
-  const activeTier = pickTier(p.pricing.tiers, qty);
-  const nextTier = p.pricing.tiers.find((x) => x.minQty > qty);
+  const activeTier = pickTier(tiers, qty);
+  const nextTier = tiers.find((x) => x.minQty > qty);
   const zone = p.zones.find((z) => z.code === zoneCode);
   const pack = quote ? packItems([{ ...p.ship, qty }]) : null;
   const shipQuotes = zone && pack ? quoteAllModes(zone.rates, pack) : [];
@@ -187,9 +189,9 @@ export function Configurator({ p }: { p: ConfigProduct }) {
       )}
 
       <div>
-        <div className="label">{t.product.tierTitle}</div>
+        <div className="label">{t.product.tierTitle}{p.pricing.variants && <span className="ml-2 font-normal text-gold">{t.product.variantNote}</span>}</div>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {p.pricing.tiers.map((tier) => (
+          {tiers.map((tier) => (
             <button key={tier.minQty} type="button" onClick={() => setQtyText(String(tier.minQty))}
               className={`rounded-xl border px-2 py-2 text-center transition ${activeTier?.minQty === tier.minQty ? "border-forest bg-forest text-white" : "border-line bg-white hover:border-ink"}`}>
               <div className="text-xs opacity-80">{fmtNum(tier.minQty)}+</div>
@@ -214,6 +216,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
       {p.positions.length > 0 && (
         <div>
           <div className="label">{t.product.printTitle}</div>
+          {p.pricing.extraFacePrice ? <p className="mb-2 text-xs text-gold" data-testid="extra-face-note">{t.product.extraFaceNote(fmtMoney(p.pricing.extraFacePrice))}</p> : p.positions.length > 1 ? <p className="mb-2 text-xs text-mute">{t.product.allFacesIncluded}</p> : null}
           <div className="space-y-3">
             {p.positions.map((pos) => {
               const st = posState[pos.code];
@@ -274,6 +277,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
                 {x.setupFee > 0 && <Row k={`　${t.product.setup}`} v={fmtMoney(x.setupFee)} muted />}
               </div>
             ))}
+            {quote.extraFaceTotal > 0 && <Row k={`${t.product.extraFace(quote.extraFaces)}　${fmtMoney(quote.extraFaceUnit * quote.extraFaces)} × ${fmtNum(quote.qty)}`} v={fmtMoney(quote.extraFaceTotal)} />}
             <div className="flex items-end justify-between border-t border-line pt-3">
               <dt>
                 <div className="text-xs text-mute">{t.product.subtotal}</div>
