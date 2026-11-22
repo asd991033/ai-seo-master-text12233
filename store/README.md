@@ -1,4 +1,4 @@
-# Giftevo — 客製化禮品一站式電商
+# Open Gift — 客製化禮品一站式電商
 
 Next.js 15（App Router）＋ Drizzle ORM ＋ SQLite/libSQL ＋ Fabric.js。
 

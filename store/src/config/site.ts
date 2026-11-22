@@ -3,7 +3,7 @@
  * 之後做其他國家版時，每個國家站各自部署並用環境變數覆寫即可。
  */
 export const site = {
-  brand: process.env.NEXT_PUBLIC_BRAND ?? "Giftevo",
+  brand: process.env.NEXT_PUBLIC_BRAND ?? "Open Gift",
   brandZh: process.env.NEXT_PUBLIC_BRAND_LOCAL ?? "",
   locale: process.env.NEXT_PUBLIC_SITE_LOCALE ?? "zh-TW",
   currency: process.env.NEXT_PUBLIC_CURRENCY ?? "TWD",
