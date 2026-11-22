@@ -267,10 +267,16 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
       }
       const dw = (g.design as HTMLImageElement).naturalWidth || (g.design as HTMLCanvasElement).width;
       const dh = (g.design as HTMLImageElement).naturalHeight || (g.design as HTMLCanvasElement).height;
-      const k = Math.max(w / dw, h / dh);
+      // 比例接近時直接對齊外框，排版區的左上角就是商品上的左上角，位置才對得上；
+      // 比例差太多（例如繞一圈的印刷面只拍到正面）才改用置中填滿，避免嚴重變形
+      const ratio = (w / h) / (dw / dh);
       lctx.translate(cx, cy);
       lctx.rotate(angle);
-      lctx.drawImage(g.design, (-dw * k) / 2, (-dh * k) / 2, dw * k, dh * k);
+      if (ratio > 0.62 && ratio < 1.6) lctx.drawImage(g.design, -w / 2, -h / 2, w, h);
+      else {
+        const k = Math.max(w / dw, h / dh);
+        lctx.drawImage(g.design, (-dw * k) / 2, (-dh * k) / 2, dw * k, dh * k);
+      }
     }
     const px = lctx.getImageData(0, 0, n, n);
     const p = px.data;

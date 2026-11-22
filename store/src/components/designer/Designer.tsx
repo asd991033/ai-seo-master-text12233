@@ -79,6 +79,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const [mockState, setMockState] = useState<"idle" | "loading" | "ready" | "none">("idle");
   const [guides, setGuides] = useState({ v: false, h: false });
   const [bg, setBg] = useState<string | null>(null);
+  const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [, setTick] = useState(0);
 
   const stageWrap = useRef<HTMLDivElement>(null);
@@ -188,15 +189,29 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   );
   /** 把各印刷面的設計貼到商品照片上 */
   const drawMock = useCallback(
-    (target: HTMLCanvasElement | null, live: boolean) => {
+    (target: HTMLCanvasElement | null, live: boolean, size = 800) => {
       const m = modelRef.current, base = baseImg.current;
       if (!target || !m || !base || !m.regions.length) return false;
       const designOf = (code: string) => (live && code === currentCode.current ? (hasContent() ? cropCanvas(activeRef.current) : null) : flats.current[code] ?? null);
       const designs = product.positions.map((pos) => designOf(pos.code));
-      renderMockup(target, base, m, planRef.current, designs, 800);
+      renderMockup(target, base, m, planRef.current, designs, size);
       return true;
     },
     [cropCanvas, product.positions],
+  );
+
+  /** 更新某一面的平面預覽縮圖 */
+  const refreshThumb = useCallback(
+    (i: number) => {
+      const s0 = selected[i];
+      if (!s0 || !canvasRef.current) return;
+      const q = geom(i);
+      const url = hasContent()
+        ? canvasRef.current.toDataURL({ format: "png", left: q.ax, top: q.ay, width: q.aw, height: q.ah, multiplier: Math.min(2, 520 / Math.max(q.aw, q.ah)) })
+        : null;
+      setThumbs((t0) => (t0[s0.pos.code] === url ? t0 : { ...t0, [s0.pos.code]: url }));
+    },
+    [geom, selected],
   );
 
   const updatePreview = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,7 +222,19 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       if (!c) return;
       if (modelRef.current) drawMock(mockRef.current, true);
       else setPreview(hasContent() ? c.toDataURL({ format: "png", multiplier: 1 }) : null);
-    }, 150);
+      refreshThumb(activeRef.current);
+    }, 120);
+  }, [drawMock, refreshThumb]);
+
+  /** 拖曳、縮放、旋轉的過程中即時更新示意圖（用較小的尺寸換取流暢度） */
+  const liveBusy = useRef(false);
+  const livePreview = useCallback(() => {
+    if (liveBusy.current || !modelRef.current) return;
+    liveBusy.current = true;
+    requestAnimationFrame(() => {
+      drawMock(mockRef.current, true, 520);
+      liveBusy.current = false;
+    });
   }, [drawMock]);
 
   const pushHistory = useCallback(() => {
@@ -360,6 +387,11 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       canvas.on("object:removed", changed),
       canvas.on("object:modified", changed),
       canvas.on("object:moving", moving as never),
+      canvas.on("object:moving", livePreview),
+      canvas.on("object:scaling", livePreview),
+      canvas.on("object:rotating", livePreview),
+      canvas.on("object:resizing", livePreview),
+      canvas.on("text:changed", livePreview),
       canvas.on("mouse:up", () => setGuides({ v: false, h: false })),
       canvas.on("text:changed", () => schedulePreview()),
       canvas.on("selection:created", refreshSel),
@@ -367,7 +399,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       canvas.on("selection:cleared", refreshSel),
     ];
     return () => offs.forEach((off) => off());
-  }, [ready, pushHistory, schedulePreview, refreshSel]);
+  }, [ready, pushHistory, schedulePreview, refreshSel, livePreview]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -656,6 +688,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       label: o.isType("textbox", "i-text", "text") ? `${t.designer.layerText}：${(o as Textbox).text.replace(/\s+/g, " ").slice(0, 14)}` : `${t.designer.layerImage} ${i + 1}`,
     }))
     .reverse();
+  /** 目前這一面有沒有出現在商品照片上 */
+  const inPhoto = planRef.current.some((pl) => product.positions[pl.pos]?.code === cur.pos.code);
   const tool = "btn-ghost w-full justify-start rounded-lg px-3 py-2";
   const mini = "rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs hover:border-ink disabled:opacity-40";
 
@@ -795,8 +829,23 @@ export default function Designer({ product }: { product: DesignerProduct }) {
             <div className="mb-2 text-sm font-medium">{t.designer.mockup}</div>
             {auto ? (
               <>
+                {/* 目前這一面不在商品照片上：先顯示這一面實際會印出來的畫面 */}
+                {mockState === "ready" && !inPhoto && (
+                  <div className="mb-3" data-testid="face-flat">
+                    <div className="grid place-items-center rounded-lg bg-sand p-4">
+                      <div className="w-full overflow-hidden rounded bg-white shadow-md" style={{ aspectRatio: `${g.aw} / ${g.ah}`, maxHeight: 320, maxWidth: (320 * g.aw) / g.ah }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {thumbs[cur.pos.code] && <img src={thumbs[cur.pos.code]!} alt="" className="h-full w-full" />}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs font-medium">{t.designer.flatOf(cur.pos.name)}</div>
+                  </div>
+                )}
                 {mockState === "ready" ? (
-                  <canvas ref={mockRef} className="block w-full rounded-lg" data-testid="mockup-canvas" />
+                  <div className={inPhoto ? "" : "flex items-center gap-3 rounded-lg border border-line p-2"}>
+                    <canvas ref={mockRef} className={`block rounded-lg ${inPhoto ? "w-full" : "w-24 shrink-0"}`} data-testid="mockup-canvas" />
+                    {!inPhoto && <span className="text-xs leading-relaxed text-mute">{t.designer.notInPhoto(cur.pos.name)}</span>}
+                  </div>
                 ) : (
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -805,8 +854,25 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                   </div>
                 )}
                 <p className="mt-2 text-xs leading-relaxed text-mute">{mockState === "none" ? t.designer.flatNote : t.designer.mockSim}</p>
-                {mockState === "ready" && !planRef.current.some((pl) => product.positions[pl.pos]?.code === cur.pos.code) && (
-                  <p className="mt-2 rounded-lg bg-gold/10 p-2 text-xs leading-relaxed text-gold">{t.designer.notInPhoto(cur.pos.name)}</p>
+                {selected.length > 1 && (
+                  <div className="mt-4 border-t border-line pt-3" data-testid="face-tiles">
+                    <div className="mb-2 text-xs font-medium">{t.designer.allFaces}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selected.map((s0, i) => (
+                        <button key={s0.pos.code} type="button" onClick={() => switchTo(i)} className={`rounded-lg border p-1.5 text-left transition ${i === active ? "border-forest ring-1 ring-forest" : "border-line hover:border-ink"}`}>
+                          <div className="grid aspect-square place-items-center overflow-hidden rounded bg-sand">
+                            {thumbs[s0.pos.code] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={thumbs[s0.pos.code]!} alt="" className="max-h-full max-w-full bg-white shadow-sm" />
+                            ) : (
+                              <span className="text-[10px] text-mute">{((docs.current[s0.pos.code]?.canvas as { objects?: unknown[] } | undefined)?.objects?.length ?? 0) > 0 ? t.designer.doneFace : t.designer.emptyFace}</span>
+                            )}
+                          </div>
+                          <div className="mt-1 truncate text-[11px]">{s0.pos.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             ) : (
