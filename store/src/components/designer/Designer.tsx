@@ -355,13 +355,39 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       const el = document.createElement("canvas");
       host.current.appendChild(el);
       const canvas = new fabric.Canvas(el, { preserveObjectStacking: true, controlsAboveOverlay: true, selection: true });
-      fabric.FabricObject.ownDefaults.cornerColor = "#23423a";
-      fabric.FabricObject.ownDefaults.borderColor = "#23423a";
+      fabric.FabricObject.ownDefaults.cornerColor = "#111111";
+      fabric.FabricObject.ownDefaults.borderColor = "#111111";
       fabric.FabricObject.ownDefaults.cornerStyle = "circle";
       fabric.FabricObject.ownDefaults.transparentCorners = false;
       canvasRef.current = canvas;
       await loadPosition(0);
       history.current = { stack: [JSON.stringify(snapshot())], index: 0 };
+      // 重新編輯：把其他面原本的設計也先算出預覽與輸出檔，沒點開的面才不會在儲存時遺失
+      for (let i = 1; i < selected.length; i++) {
+        const q = geom(i), doc = docs.current[q.pos.code];
+        if (!doc || !((doc.canvas as { objects?: unknown[] }).objects?.length || (doc.canvas as { background?: string }).background)) continue;
+        const sc = new fabric.StaticCanvas(undefined, { width: q.W, height: q.H });
+        await sc.loadFromJSON(doc.canvas as Record<string, unknown>);
+        const k = q.scale / doc.pxPerMm;
+        if (Math.abs(k - 1) > 1e-3) sc.getObjects().forEach((o) => { o.set({ left: o.left * k, top: o.top * k, scaleX: o.scaleX * k, scaleY: o.scaleY * k }); o.setCoords(); });
+        sc.clipPath = new fabric.Rect({ left: q.ax, top: q.ay, width: q.aw, height: q.ah, absolutePositioned: true });
+        sc.renderAll();
+        const json = sc.toJSON() as Record<string, unknown>;
+        delete json.clipPath;
+        docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
+        const crop = { left: q.ax, top: q.ay, width: q.aw, height: q.ah };
+        const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
+        outputs.current[q.pos.code] = {
+          areaCode: q.area.code, json, pxPerMm: q.scale,
+          print: sc.toDataURL({ format: "png", ...crop, multiplier }),
+          svg: sc.toSVG({ viewBox: { x: q.ax, y: q.ay, width: q.aw, height: q.ah }, width: `${q.area.widthMm}mm`, height: `${q.area.heightMm}mm` }),
+          flat: sc.toDataURL({ format: "png", multiplier: Math.min(2, 1000 / Math.max(q.W, q.H)) }),
+        };
+        flats.current[q.pos.code] = sc.toCanvasElement(Math.min(2, 900 / Math.max(q.aw, q.ah)), crop);
+        const thumb = sc.toDataURL({ format: "png", ...crop, multiplier: Math.min(2, 520 / Math.max(q.aw, q.ah)) });
+        setThumbs((t0) => ({ ...t0, [q.pos.code]: thumb }));
+        sc.dispose();
+      }
       (window as unknown as { __designer?: Canvas }).__designer = canvas;
       setReady(true);
       Promise.all(FONTS.slice(0, 2).map((f) => document.fonts.load(`16px "${f.v}"`))).then(() => canvas.requestRenderAll(), () => {});
@@ -737,23 +763,23 @@ export default function Designer({ product }: { product: DesignerProduct }) {
 
       <div className="mt-4 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
         {/* 工具列 */}
-        <aside className="order-2 space-y-4 lg:order-none">
-          <div className="card space-y-2 p-3">
+        <aside className="max-lg:contents lg:space-y-4">
+          <div className="card grid grid-cols-2 gap-2 p-3 max-lg:order-1 lg:block lg:space-y-2">
             <button type="button" className={tool} onClick={addText} disabled={!ready}>Ｔ　{t.designer.addText}</button>
             <button type="button" className={tool} onClick={() => fileInput.current?.click()} disabled={!ready}>▣　{t.designer.addImage}</button>
             <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp,.svg" className="sr-only" onChange={(e) => addImage(e.target.files?.[0])} data-testid="image-input" />
-            <div className="flex items-center gap-2 px-1 py-1 text-sm">
+            <div className="col-span-2 flex items-center gap-2 px-1 py-1 text-sm">
               <span className="flex-1">{t.designer.bg}</span>
               <input type="color" aria-label={t.designer.bg} className="h-8 w-10 rounded border border-line" value={bg ?? "#ffffff"} onChange={(e) => setBackground(e.target.value)} disabled={!ready} />
               <button type="button" className={mini} onClick={() => setBackground(null)} disabled={!bg}>{t.designer.clearBg}</button>
             </div>
-            <div className="flex gap-2 pt-1">
+            <div className="col-span-2 flex gap-2 pt-1">
               <button type="button" className={mini} onClick={() => travel(-1)} disabled={!hist.undo}>↶ {t.designer.undo}</button>
               <button type="button" className={mini} onClick={() => travel(1)} disabled={!hist.redo}>↷ {t.designer.redo}</button>
             </div>
           </div>
 
-          <div className="card p-3 text-sm">
+          <div className="card p-3 text-sm max-lg:order-4">
             <div className="mb-2 font-medium">{t.designer.layers}</div>
             {!sel && <p className="text-xs text-mute">{t.designer.selectHint}</p>}
             {sel?.kind === "text" && (
@@ -799,7 +825,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
             )}
           </div>
           {layers.length > 0 && (
-            <div className="card p-3 text-sm">
+            <div className="card p-3 text-sm max-lg:order-5">
               <div className="mb-2 font-medium">{t.designer.layersTitle}</div>
               <ul className="space-y-1">
                 {layers.map(({ o, label }, i) => (
@@ -811,12 +837,12 @@ export default function Designer({ product }: { product: DesignerProduct }) {
               </ul>
             </div>
           )}
-          {cur.method?.perColor && <p className="rounded-lg bg-gold/10 p-3 text-xs leading-relaxed text-gold">{t.designer.colorLimit(cur.colors, cur.method.name)}</p>}
-          <p className="text-xs leading-relaxed text-mute">{t.designer.tips}</p>
+          {cur.method?.perColor && <p className="max-lg:order-6 rounded-lg bg-gold/10 p-3 text-xs leading-relaxed text-gold">{t.designer.colorLimit(cur.colors, cur.method.name)}</p>}
+          <p className="text-xs leading-relaxed text-mute max-lg:order-7">{t.designer.tips}</p>
         </aside>
 
         {/* 排版區：底色 → fabric 畫布 → 刀模 → 印刷範圍標示 */}
-        <section ref={stageWrap} className="order-1 min-w-0 lg:order-none" data-testid="dropzone"
+        <section ref={stageWrap} className="min-w-0 max-lg:order-2" data-testid="dropzone"
           onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
           onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); addImage(f); } }}>
           <div className="card flex justify-center overflow-auto bg-sand p-4">
@@ -849,7 +875,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         </section>
 
         {/* 示意圖 */}
-        <aside className="order-3 lg:order-none">
+        <aside className="max-lg:order-3">
           <div className="card p-3">
             <div className="mb-2 text-sm font-medium">{t.designer.mockup}</div>
             {auto ? (

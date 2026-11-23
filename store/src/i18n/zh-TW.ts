@@ -107,7 +107,7 @@ const dict = {
     variantNote: "不同尺碼／顏色價格不同，以所選款式為準。", quoteTitle: "價格試算", goods: "商品", setup: "版費", subtotal: "小計（未含運費與稅）", unitAllIn: "含印刷每件均價",
     shipTitle: "運費試算", shipTo: "運送至", air: "空運", sea: "海運", chargeableKg: "計費重", chargeableCbm: "計費體積", eta: "約", etaDays: "天",
     grossWeight: "預估毛重", cartons: "箱數", noShip: "此地區暫無報價，請聯繫客服",
-    design: "線上排版", designHint: "在刀模上直接排版並預覽成品示意圖",
+    design: "線上排版", designHint: "上傳 Logo，即時預覽印在商品上的樣子",
     addToCart: "加入購物車", buyNow: "立即下單", addLater: "還沒有設計稿也可以先下單，稿件可於下單後再提供。",
     artwork: "已有設計稿？直接上傳", artworkHint: "支援 AI / PDF / EPS / PSD / PNG / JPG / ZIP，50MB 以內", artworkUploaded: "已上傳",
     uploading: "上傳中…", added: "已加入購物車", desc: "商品說明", specs: "規格",
