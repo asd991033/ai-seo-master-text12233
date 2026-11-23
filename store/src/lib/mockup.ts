@@ -13,7 +13,16 @@ export type Region = {
   /** 印刷區是否被商品本體包住（如 T 恤胸前）；false 代表整個商品都是印刷區（滿版） */
   enclosed: boolean;
 };
-export type MockupModel = { n: number; regions: Region[]; shade: Uint8ClampedArray };
+export type MockupModel = {
+  n: number;
+  regions: Region[];
+  /** 低解析度的布料明暗（已補掉佔位文字） */
+  shade: Uint8ClampedArray;
+  /** 佔位文字的位置（低解析度），高解析度合成時這些位置改用補過的明暗 */
+  textMask: Uint8ClampedArray;
+  /** 依輸出尺寸快取的明暗圖與遮罩，避免每次重算 */
+  cache: Map<string, HTMLCanvasElement>;
+};
 
 const N = 440;
 
@@ -190,12 +199,14 @@ export function analyze(img: CanvasImageSource): MockupModel {
   const textNear = boxMax(isText.map((v) => (v ? 255 : 0)) as unknown as Uint8Array, n, 3);
   // 以周圍「非文字」像素的平均亮度補上文字的位置，才不會留下字的殘影
   const rr = Math.round(n * 0.03);
-  const num = boxBlur(blue.map((v, i) => (textNear[i] ? 0 : v)), n, rr);
-  const den = boxBlur(textNear.map((v) => (v ? 0 : 255)), n, rr);
+  // 只取「非文字、且夠亮」的布料像素來補，帽繩、拉鍊這類深色配件不算進去，否則會留下一塊暗影
+  const usable = (i: number) => !textNear[i] && blue[i] >= 150;
+  const num = boxBlur(blue.map((v, i) => (usable(i) ? v : 0)), n, rr);
+  const den = boxBlur(blue.map((_, i) => (usable(i) ? 255 : 0)), n, rr);
   const src = new Uint8ClampedArray(n * n);
   for (let i = 0; i < n * n; i++) src[i] = textNear[i] ? (den[i] > 6 ? (num[i] * 255) / den[i] : 245) : blue[i];
   const shade = boxBlur(src, n, 1);
-  return { n, regions, shade };
+  return { n, regions, shade, textMask: textNear, cache: new Map() };
 }
 
 export type Placement = { regions: number[]; pos: number };
@@ -226,22 +237,96 @@ export function planMockup(names: string[], regions: Region[]): Placement[] {
   return main >= 0 ? [{ regions: all, pos: main }] : [];
 }
 
+/** 陰影加強係數：原圖多半是白色商品，皺褶很淡，換上深色後要加強才有布料的立體感 */
+const SHADE_GAMMA = 2.3;
+
+/** 輸出尺寸的布料明暗圖（灰階）。細節取自原圖解析度，佔位文字的位置用低解析度補過的值 */
+function shadeCanvas(model: MockupModel, base: CanvasImageSource, size: number): HTMLCanvasElement {
+  const key = `shade:${size}`;
+  const hit = model.cache.get(key);
+  if (hit) return hit;
+  const { n } = model;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d", { willReadFrequently: true })!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, size, size);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(base, 0, 0, size, size);
+  const img = ctx.getImageData(0, 0, size, size);
+  const d = img.data;
+  const k = n / size;
+  for (let y = 0; y < size; y++) {
+    const ly = Math.min(n - 1, (y * k) | 0) * n;
+    for (let x = 0; x < size; x++) {
+      const j = (y * size + x) * 4, li = ly + Math.min(n - 1, (x * k) | 0);
+      const v = model.textMask[li] ? model.shade[li] : d[j + 2];
+      const g = 255 * Math.pow(Math.min(1, v / 250), SHADE_GAMMA);
+      d[j] = d[j + 1] = d[j + 2] = g;
+      d[j + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // 輕微柔化，壓掉 JPEG 壓縮造成的方塊雜訊，保留皺褶與縫線
+  const soft = document.createElement("canvas");
+  soft.width = soft.height = size;
+  const sctx = soft.getContext("2d")!;
+  sctx.filter = "blur(0.7px)";
+  sctx.drawImage(c, 0, 0);
+  model.cache.set(key, soft);
+  return soft;
+}
+
+/** 輸出尺寸的遮罩（只用到透明度），邊緣收斂成平滑輪廓 */
+function maskCanvas(model: MockupModel, regions: number[], size: number): HTMLCanvasElement {
+  const key = `mask:${size}:${regions.join(",")}`;
+  const hit = model.cache.get(key);
+  if (hit) return hit;
+  const { n } = model;
+  const small = document.createElement("canvas");
+  small.width = small.height = n;
+  const sctx = small.getContext("2d")!;
+  const im = sctx.createImageData(n, n);
+  for (let j = 0; j < n * n; j++) {
+    let a = 0;
+    for (const r of regions) { const m = model.regions[r]?.mask[j] ?? 0; if (m > a) a = m; }
+    im.data[j * 4 + 3] = a;
+  }
+  sctx.putImageData(im, 0, 0);
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d", { willReadFrequently: true })!;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(small, 0, 0, size, size);
+  const big = ctx.getImageData(0, 0, size, size);
+  const q = big.data;
+  for (let j = 3; j < q.length; j += 4) {
+    const t = Math.min(1, Math.max(0, (q[j] / 255 - 0.4) / 0.2));
+    q[j] = 255 * t * t * (3 - 2 * t);
+  }
+  ctx.putImageData(big, 0, 0);
+  model.cache.set(key, c);
+  return c;
+}
+
 /**
- * 把設計貼到商品照上。每個 placement 的設計會以「填滿」方式鋪在它涵蓋的區塊上；
- * 沒有設計的區塊顯示為空白布料（不保留佔位圖）。
+ * 把設計貼到商品照上。每個 placement 的設計會鋪在它涵蓋的區塊上；沒有設計的區塊顯示為空白布料。
+ * 全程以輸出解析度合成（設計 → 乘上布料明暗 → 套遮罩），圖案與布料紋理才不會糊掉。
  */
 export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, model: MockupModel, plan: Placement[], designs: (CanvasImageSource | null)[], size = 800) {
   const { n } = model;
+  const f = size / n;
   out.width = out.height = size;
   const ctx = out.getContext("2d")!;
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, size, size);
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(base, 0, 0, size, size);
+  const shade = shadeCanvas(model, base, size);
   const layer = document.createElement("canvas");
-  layer.width = layer.height = n;
-  const lctx = layer.getContext("2d", { willReadFrequently: true })!;
-  const big = document.createElement("canvas");
-  const bctx = big.getContext("2d", { willReadFrequently: true })!;
+  layer.width = layer.height = size;
+  const lctx = layer.getContext("2d")!;
+  lctx.imageSmoothingQuality = "high";
   const used = new Set(plan.flatMap((p) => p.regions));
   const groups: { regions: number[]; design: CanvasImageSource | null }[] = [
     ...plan.map((p) => ({ regions: p.regions, design: designs[p.pos] ?? null })),
@@ -250,10 +335,11 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
   for (const g of groups) {
     const rs = g.regions.map((i) => model.regions[i]).filter(Boolean);
     if (!rs.length) continue;
+    lctx.globalCompositeOperation = "source-over";
     lctx.setTransform(1, 0, 0, 1, 0, 0);
-    lctx.clearRect(0, 0, n, n);
+    lctx.clearRect(0, 0, size, size);
     lctx.fillStyle = rs[0].fill;
-    lctx.fillRect(0, 0, n, n);
+    lctx.fillRect(0, 0, size, size);
     if (g.design) {
       // 多個區塊時以它們的聯集外框為準，設計才會連續
       let cx = rs[0].cx, cy = rs[0].cy, w = rs[0].w, h = rs[0].h, angle = rs[0].angle;
@@ -267,40 +353,22 @@ export function renderMockup(out: HTMLCanvasElement, base: CanvasImageSource, mo
       }
       const dw = (g.design as HTMLImageElement).naturalWidth || (g.design as HTMLCanvasElement).width;
       const dh = (g.design as HTMLImageElement).naturalHeight || (g.design as HTMLCanvasElement).height;
-      // 比例接近時直接對齊外框，排版區的左上角就是商品上的左上角，位置才對得上；
-      // 比例差太多（例如繞一圈的印刷面只拍到正面）才改用置中填滿，避免嚴重變形
+      // 比例接近時直接對齊外框，排版區的位置就是商品上的位置；差太多才置中填滿，避免嚴重變形
       const ratio = (w / h) / (dw / dh);
-      lctx.translate(cx, cy);
+      lctx.translate(cx * f, cy * f);
       lctx.rotate(angle);
-      if (ratio > 0.62 && ratio < 1.6) lctx.drawImage(g.design, -w / 2, -h / 2, w, h);
+      if (ratio > 0.62 && ratio < 1.6) lctx.drawImage(g.design, (-w * f) / 2, (-h * f) / 2, w * f, h * f);
       else {
-        const k = Math.max(w / dw, h / dh);
+        const k = Math.max(w / dw, h / dh) * f;
         lctx.drawImage(g.design, (-dw * k) / 2, (-dh * k) / 2, dw * k, dh * k);
       }
+      lctx.setTransform(1, 0, 0, 1, 0, 0);
     }
-    const px = lctx.getImageData(0, 0, n, n);
-    const p = px.data;
-    for (let j = 0; j < n * n; j++) {
-      const sh = Math.min(1, model.shade[j] / 250);
-      p[j * 4] *= sh; p[j * 4 + 1] *= sh; p[j * 4 + 2] *= sh;
-      let a = 0;
-      for (const r of rs) if (r.mask[j] > a) a = r.mask[j];
-      p[j * 4 + 3] = a;
-    }
-    lctx.setTransform(1, 0, 0, 1, 0, 0);
-    lctx.putImageData(px, 0, 0);
-    // 放大到輸出尺寸後再把半透明邊緣收斂成平滑的輪廓，避免鋸齒與毛邊
-    big.width = big.height = size;
-    bctx.imageSmoothingQuality = "high";
-    bctx.clearRect(0, 0, size, size);
-    bctx.drawImage(layer, 0, 0, size, size);
-    const bp = bctx.getImageData(0, 0, size, size);
-    const q = bp.data;
-    for (let j = 3; j < q.length; j += 4) {
-      const t = Math.min(1, Math.max(0, (q[j] / 255 - 0.4) / 0.2));
-      q[j] = 255 * t * t * (3 - 2 * t);
-    }
-    bctx.putImageData(bp, 0, 0);
-    ctx.drawImage(big, 0, 0);
+    // 乘上布料明暗，再套遮罩
+    lctx.globalCompositeOperation = "multiply";
+    lctx.drawImage(shade, 0, 0);
+    lctx.globalCompositeOperation = "destination-in";
+    lctx.drawImage(maskCanvas(model, g.regions, size), 0, 0);
+    ctx.drawImage(layer, 0, 0);
   }
 }
