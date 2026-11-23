@@ -7,18 +7,19 @@ import type { ProductCard as Card } from "@/lib/catalog";
 /** 白底圓角卡片：圖片、品名、起始價、「開始設計」按鈕（對應 B2B 站的 Add to Quote） */
 export function ProductCard({ p }: { p: Card }) {
   const range = priceRange(p.tiers);
-  // 滑過時顯示「印上圖案後」的成品範例；沒有範例圖的商品才退回第二張商品照
-  const hover = p.sampleImage ?? p.images[1];
+  // 主圖用「印上圖案後」的成品範例，滑過時換成空白版讓客戶看到可印的範圍；沒有範例圖的商品維持原本的商品照
+  const main = p.sampleImage ?? p.images[0];
+  const hover = p.sampleImage ? p.images[0] : p.images[1];
   return (
     <Link href={`/products/${p.slug}`} className="group flex flex-col rounded-[14px] border border-line bg-white p-2.5 transition hover:shadow-[0_10px_30px_-14px_rgba(0,0,0,.35)]">
       <div className="relative aspect-square overflow-hidden rounded-[10px] bg-sand">
-        {p.images[0] && (
+        {main && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.images[0]} alt={p.name} loading="lazy" className={`h-full w-full object-cover transition duration-500 ${hover ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`} />
+          <img src={main} alt={p.name} loading="lazy" className={`h-full w-full object-cover transition duration-500 ${hover ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`} />
         )}
         {hover && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={hover} alt={`${p.name}｜客製化成品範例`} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
+          <img src={hover} alt={`${p.name}｜${p.sampleImage ? "可印刷範圍" : "另一個角度"}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
         )}
       </div>
       <div className="flex flex-1 flex-col px-1.5 pt-3 pb-1">

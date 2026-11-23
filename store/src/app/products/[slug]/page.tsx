@@ -26,16 +26,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const range = priceRange(p.pricing.tiers);
   // 說明帶入價格、起訂量與運送資訊，搜尋結果與 AI 摘要才有具體內容可引用
   const description = [p.summary || p.name, range ? `${site.currencySymbol}${range.min} 起，${p.pricing.moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${site.flatShipping.days} 個工作天`].filter(Boolean).join("；").slice(0, 155);
-  return { title: `${p.name}｜印 Logo 圖案・${p.pricing.moq} 件起訂`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: p.images.slice(0, 1) } };
+  return { title: `${p.name}｜印 Logo 圖案・${p.pricing.moq} 件起訂`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: [p.sampleImage ?? p.images[0]].filter(Boolean) as string[] } };
 }
 
 export default async function ProductPage({ params }: Props) {
   const [p, zones] = await Promise.all([getProductBySlug((await params).slug), listZones()]);
   if (!p) notFound();
+  // 圖片順序：印上圖案的成品範例放第一張，接著才是標示可印範圍的商品照
+  const gallery = p.sampleImage ? [p.sampleImage, ...p.images] : p.images;
   const related = p.categorySlug ? await listProducts({ category: p.categorySlug, exclude: p.id, limit: 4 }) : [];
   const range = priceRange(p.pricing.tiers);
   const jsonLd = {
-    "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: p.images.slice(0, 4),
+    "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4),
     ...(p.categoryName ? { category: p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
     ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: site.currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
     url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
@@ -59,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,460px)]">
         <div className="min-w-0">
           <div className="lg:sticky lg:top-32">
-            <Gallery images={p.images} alt={p.name} />
+            <Gallery images={gallery} alt={p.name} />
           </div>
         </div>
         <div className="min-w-0">
