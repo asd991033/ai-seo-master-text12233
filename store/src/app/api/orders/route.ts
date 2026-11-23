@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const priced = await priceCart(lines, clip(body.zoneCode, 20));
   const bad = priced.lines.find((l) => !l.ok);
   if (bad && !bad.ok) return NextResponse.json({ error: bad.error }, { status: 400 });
-  const ship = priced.shipping.find((s) => s.mode === mode);
+  const ship = priced.shipping.find((s) => s.mode === mode) ?? priced.shipping.find((s) => s.flat);
   const zone = priced.zones.find((z) => z.code === priced.zoneCode);
   if (!ship || !zone) return NextResponse.json({ error: "此地區暫無該運送方式的報價" }, { status: 400 });
   const ok = priced.lines.flatMap((l) => (l.ok ? [l] : []));

@@ -41,7 +41,16 @@ export type ShipQuote = {
   unit: "kg" | "cbm";
   daysMin: number;
   daysMax: number;
+  /** 統一運費（不依重量計算） */
+  flat?: boolean;
 };
+
+/** 統一運費：固定金額，商品金額達門檻免運 */
+export function flatShipping(rule: { fee: number; freeOver: number }, subtotal: number): ShipQuote[] | null {
+  if (!(rule.fee >= 0)) return null;
+  const free = rule.freeOver > 0 && subtotal >= rule.freeOver;
+  return [{ mode: "air", fee: free ? 0 : rule.fee, chargeable: 0, unit: "kg", daysMin: 0, daysMax: 0, flat: true }];
+}
 
 /** 依產品重量與裝箱資料估算整批貨的毛重與體積 */
 export function packItems(items: ShipItem[]): Pack {

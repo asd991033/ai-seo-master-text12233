@@ -61,7 +61,7 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
         </div>
         <div className="card space-y-1.5 p-5 text-sm">
           <div className="mb-2 font-bold">{t.order.ship}</div>
-          <div>{order.zoneName}・{order.shippingMode === "air" ? t.product.air : t.product.sea}</div>
+          <div>{order.zoneName}{site.flatShipping.fee >= 0 ? "" : `・${order.shippingMode === "air" ? t.product.air : t.product.sea}`}</div>
           <div className="text-xs text-mute">{t.cart.weight} {fmtNum(order.totalWeightKg)} kg・{t.cart.volume} {fmtNum(order.totalCbm)} CBM</div>
           {order.trackingNo && <div>{t.order.tracking}：{order.trackingNo}</div>}
           <div className="border-t border-line pt-3 text-mute">

@@ -152,7 +152,7 @@ export function computeTotals(lines: LineQuote[], shippingFee: number, taxRate: 
   return { goodsTotal, printTotal, setupTotal, shippingFee, tax, total: money(goodsTotal + printTotal + setupTotal + shippingFee + tax) };
 }
 
-export const DEFAULT_MARGIN = 0.6;
+export const DEFAULT_MARGIN = 0.7;
 
 /**
  * 由成本價與毛利率換算售價：售價 = 成本 ÷ (1 − 毛利率)，無條件進位到整數，

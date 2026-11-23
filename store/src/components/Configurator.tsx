@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
 import { fmtMoney, fmtNum } from "@/lib/format";
 import { pickTier, quoteLine, QuoteError, tiersFor, variantKey, type LineQuote, type PrintSelection, type ProductPricing } from "@/lib/pricing";
-import { packItems, quoteAllModes, type RateRow, type ShipItem } from "@/lib/shipping";
+import { flatShipping, packItems, quoteAllModes, type RateRow, type ShipItem } from "@/lib/shipping";
 import { saveDraft, useCart } from "@/lib/cart";
 import { site } from "@/config/site";
 
@@ -91,7 +91,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   const nextTier = tiers.find((x) => x.minQty > qty);
   const zone = p.zones.find((z) => z.code === zoneCode);
   const pack = quote ? packItems([{ ...p.ship, qty }]) : null;
-  const shipQuotes = zone && pack ? quoteAllModes(zone.rates, pack) : [];
+  const shipQuotes = zone && pack && quote ? flatShipping(site.flatShipping, quote.goodsTotal + quote.printTotal + quote.setupTotal) ?? quoteAllModes(zone.rates, pack) : [];
 
   const label = (s: PrintSelection) => {
     const pos = p.positions.find((x) => x.code === s.positionCode);
@@ -302,7 +302,12 @@ export function Configurator({ p }: { p: ConfigProduct }) {
               </select>
             </label>
           </div>
-          {pack && shipQuotes.length ? (
+          {pack && shipQuotes[0]?.flat ? (
+            <div className="flex items-baseline justify-between rounded-xl border border-line p-3" data-testid="flat-ship">
+              <span className="text-sm text-mute">{t.cart.flatShipNote}</span>
+              <span className="font-bold text-forest">{shipQuotes[0].fee > 0 ? fmtMoney(shipQuotes[0].fee) : t.cart.freeShip}</span>
+            </div>
+          ) : pack && shipQuotes.length ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 {shipQuotes.map((s) => (

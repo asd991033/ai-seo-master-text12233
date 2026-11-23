@@ -1,7 +1,8 @@
 import "server-only";
 import { getProductsByIds, listZones, type ProductFull } from "./catalog";
 import { quoteLine, QuoteError, variantKey, type LineQuote, type PrintSelection } from "./pricing";
-import { packItems, quoteAllModes, type Pack, type ShipQuote } from "./shipping";
+import { flatShipping, packItems, quoteAllModes, type Pack, type ShipQuote } from "./shipping";
+import { site } from "@/config/site";
 import { t } from "@/i18n";
 
 export type CartLineInput = { id: string; productId: number; qty: number; prints: PrintSelection[]; colorName?: string | null; sizeName?: string | null };
@@ -68,6 +69,8 @@ export async function priceCart(inputs: CartLineInput[], zoneCode: string | null
     pack,
     zones: zones.map((z) => ({ code: z.code, name: z.name })),
     zoneCode: zone?.code ?? null,
-    shipping: zone && lines.some((l) => l.ok) ? quoteAllModes(zone.rates, pack) : [],
+    shipping: zone && lines.some((l) => l.ok)
+      ? flatShipping(site.flatShipping, lines.reduce((a, l) => a + (l.ok ? l.quote.goodsTotal + l.quote.printTotal + l.quote.setupTotal : 0), 0)) ?? quoteAllModes(zone.rates, pack)
+      : [],
   };
 }

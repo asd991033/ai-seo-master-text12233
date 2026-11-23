@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site } from "@/config/site";
 import type { schema } from "@/db";
 import { fmtDate, fmtMoney } from "@/lib/format";
 import { StatusBadge } from "@/components/OrderDetail";
@@ -13,7 +14,7 @@ export function OrderTable({ orders }: { orders: (typeof schema.orders.$inferSel
           <span className="text-mute">{fmtDate(o.createdAt)}</span>
           <span>{o.contactName}{o.company && `（${o.company}）`}</span>
           <StatusBadge status={o.status} />
-          <span className="text-xs text-mute">{o.zoneName}・{o.shippingMode === "air" ? "空運" : "海運"}</span>
+          <span className="text-xs text-mute">{o.zoneName}{site.flatShipping.fee >= 0 ? "" : `・${o.shippingMode === "air" ? "空運" : "海運"}`}</span>
           <span className="ml-auto font-bold tabular-nums">{fmtMoney(o.total)}</span>
         </Link>
       ))}

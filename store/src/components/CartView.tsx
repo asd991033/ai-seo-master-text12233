@@ -43,7 +43,7 @@ export function useCartQuote() {
 
   const okLines = data?.lines.flatMap((l) => (l.ok ? [l.quote] : [])) ?? [];
   const allOk = !!data && data.lines.length === items.length && data.lines.every((l) => l.ok);
-  const ship = data?.shipping.find((s) => s.mode === mode) ?? null;
+  const ship = data?.shipping.find((s) => s.mode === mode) ?? data?.shipping.find((s) => s.flat) ?? null;
   const totals: Totals | null = data && ship ? computeTotals(okLines, ship.fee, site.taxRate) : null;
   return { items, hydrated, data, loading, zoneCode, mode, ship, totals, allOk };
 }
@@ -69,6 +69,15 @@ export function ShippingPicker({ q }: { q: ReturnType<typeof useCartQuote> }) {
           {q.data.zones.map((z) => <option key={z.code} value={z.code}>{z.name}</option>)}
         </select>
       </label>
+      {q.data.shipping[0]?.flat ? (
+        <div className="rounded-xl border border-line bg-white p-3 text-sm" data-testid="flat-ship">
+          <div className="flex items-baseline justify-between">
+            <span className="font-medium">{t.cart.shipping}</span>
+            <span className="font-bold text-forest">{q.data.shipping[0].fee > 0 ? fmtMoney(q.data.shipping[0].fee) : t.cart.freeShip}</span>
+          </div>
+          <div className="mt-1 text-xs text-mute">{t.cart.flatShipNote}</div>
+        </div>
+      ) : (<>
       <div>
         <span className="label">{t.cart.shipMode}</span>
         <div className="grid grid-cols-2 gap-2">
@@ -87,6 +96,7 @@ export function ShippingPicker({ q }: { q: ReturnType<typeof useCartQuote> }) {
         {!q.data.shipping.length && <p className="text-sm text-danger">{t.product.noShip}</p>}
       </div>
       <p className="text-xs text-mute">{t.cart.weight} {fmtNum(q.data.pack.weightKg)} kg・{t.cart.volume} {fmtNum(q.data.pack.cbm)} CBM{q.data.pack.cartons > 0 && `・${t.product.cartons} ${q.data.pack.cartons}`}</p>
+      </>)}
     </div>
   );
 }
