@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbLd, itemListLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
 import { categoryCounts, countProducts, listProducts, PAGE_SIZE } from "@/lib/catalog";
@@ -11,7 +13,10 @@ type SP = { category?: string; q?: string; sort?: string; page?: string };
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const sp = await searchParams;
   const cat = sp.category ? (await categoryCounts()).find((c) => c.slug === sp.category) : null;
-  return { title: cat?.name ?? (sp.q ? t.products.resultFor(sp.q) : t.products.title) };
+  const title = cat ? `${cat.name}客製化印刷` : sp.q ? t.products.resultFor(sp.q) : t.products.title;
+  const description = cat ? `${cat.name}共 ${cat.count} 款可客製化商品，一件起訂、數量越多單價越低，線上排版即時看效果圖。` : t.home.catAllDesc + "一件起訂，線上排版即時看效果圖。";
+  // 搜尋結果與排序頁不收錄，避免重複內容
+  return { title, description, alternates: { canonical: cat ? `/products?category=${encodeURIComponent(cat.slug)}` : "/products" }, ...(sp.q || sp.sort ? { robots: { index: false, follow: true } } : {}) };
 }
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -33,9 +38,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     <div className="-mt-[70px]">
       <div className="relative h-[190px] overflow-hidden rounded-b-[22px] bg-sand md:h-[230px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/eg/coll-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src="/eg/coll-banner.jpg" alt={t.alt.collection} className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="container-x pt-8 pb-20">
+        <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(sp.category && cats.find((c) => c.slug === sp.category) ? [[cats.find((c) => c.slug === sp.category)!.name, `/products?category=${encodeURIComponent(sp.category)}`] as [string, string]] : [])])} />
+        <JsonLd data={itemListLd(t.products.title, items.map((x) => ({ name: x.name, path: `/products/${x.slug}`, image: x.images[0] })))} />
         <h1 className="text-[32px] md:text-[38px]">{sp.q ? t.products.resultFor(sp.q) : current?.name ?? t.products.title}</h1>
         <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-mute">{t.products.listLead}</p>
 

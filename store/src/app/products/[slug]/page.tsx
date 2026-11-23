@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
+import { abs, baseUrl, breadcrumbLd, faqLd, shippingLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
@@ -20,7 +22,11 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p = await getProductBySlug((await params).slug);
-  return p ? { title: p.name, description: p.summary || p.name, openGraph: { title: p.name, description: p.summary, images: p.images.slice(0, 1) } } : {};
+  if (!p) return {};
+  const range = priceRange(p.pricing.tiers);
+  // 說明帶入價格、起訂量與運送資訊，搜尋結果與 AI 摘要才有具體內容可引用
+  const description = [p.summary || p.name, range ? `${site.currencySymbol}${range.min} 起，${p.pricing.moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${site.flatShipping.days} 個工作天`].filter(Boolean).join("；").slice(0, 155);
+  return { title: `${p.name}｜客製化印刷`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: p.images.slice(0, 1) } };
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -31,7 +37,8 @@ export default async function ProductPage({ params }: Props) {
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: p.images.slice(0, 4),
     ...(p.categoryName ? { category: p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
-    ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: site.currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock" } } : {}),
+    ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: site.currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
+    url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
   };
   const points = [[IconLayers, t.home.promise[0].t], [IconTag, t.home.promise[1].t], [IconBrush, t.home.promise[2].t], [IconTruck, t.home.promise[3].t]] as const;
   const specs: [string, string][] = [
@@ -173,7 +180,9 @@ export default async function ProductPage({ params }: Props) {
     )}
 
     <Faq eyebrow={t.product.faqEyebrow} title={t.product.faqTitle} cta={t.home.faqCta} href="#top" items={t.product.faq} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(p.categoryName && p.categorySlug ? [[p.categoryName, `/products?category=${encodeURIComponent(p.categorySlug)}`] as [string, string]] : []), [p.name, `/products/${p.slug}`]])} />
+      <JsonLd data={faqLd(t.product.faq)} />
       <div className="h-20 bg-[#111] lg:hidden" />
     </>
   );

@@ -38,6 +38,7 @@ export function MobileMenu({ categories, loggedIn, admin }: { categories: { slug
               <Link href="/guide" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.guide}</Link>
               <Link href="/guide#methods" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.methods}</Link>
               <Link href="/guide#faq" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.faq}</Link>
+              <Link href="/blog" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.blog}</Link>
               <Link href={loggedIn ? "/account" : "/login"} className="block rounded-lg px-3 py-2.5 hover:bg-sand">{loggedIn ? t.nav.account : t.nav.login}</Link>
               {admin && <Link href="/admin" className="block rounded-lg px-3 py-2.5 text-gold hover:bg-sand">{t.nav.admin}</Link>}
             </nav>

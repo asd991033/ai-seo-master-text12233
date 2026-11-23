@@ -4,7 +4,14 @@ const FLAT_SHIP = `每張訂單運費 ${site.currencySymbol}${site.flatShipping.
 
 /** 繁體中文字典。新增語系時複製本檔翻譯，並在 i18n/index.ts 註冊。 */
 const dict = {
-  nav: { catalogue: "商品目錄", methods: "印刷方式", faq: "常見問題", contact: "聯絡我們", menu: "選單", categories: "商品分類", announce: "一件起訂・數量越多越划算・線上排版即時看示意圖", products: "全部商品", guide: "訂購流程", cart: "購物車", login: "登入 / 註冊", account: "會員中心", admin: "後台", search: "搜尋商品、SKU…", logout: "登出" },
+  nav: { catalogue: "商品目錄", methods: "印刷方式", faq: "常見問題", contact: "聯絡我們", menu: "選單", categories: "商品分類", announce: "一件起訂・數量越多越划算・線上排版即時看示意圖", products: "全部商品", guide: "訂購流程", blog: "部落格", cart: "購物車", login: "登入 / 註冊", account: "會員中心", admin: "後台", search: "搜尋商品、SKU…", logout: "登出" },
+  alt: {
+    hero: "印上品牌圖案的客製化禮品組合", banner: "客製化禮品的印刷與製作過程", occasions: "適合各種送禮場合的客製化禮品", category: "客製化商品分類", collection: "各式客製化禮品商品",
+  },
+  blog: {
+    title: "部落格", eyebrow: "文章", home: "首頁", lead: "客製化禮品的挑選方法、印刷檔案準備與企業贈品實務，幫你少走冤枉路。", empty: "文章準備中。", updated: "更新於", toc: "本文重點",
+    more: "延伸閱讀", latest: "最新文章", viewAll: "看全部文章", ctaTitle: "想把點子做成實品？", ctaText: "挑一款商品，上傳圖案就能即時看到效果圖，一件也能訂。", ctaButton: "瀏覽全部商品",
+  },
   home: {
     eyebrow: "客製化禮品・一站完成",
     title: "讓企業禮品，帶著你的品牌",
@@ -189,6 +196,7 @@ const dict = {
     invalid: "請確認欄位格式", or: "或", google: "使用 Google 登入", line: "使用 LINE 登入", oauthFailed: "第三方登入失敗，請再試一次", useSocial: "此帳號是用 Google / LINE 建立的，請改用下方按鈕登入", profile: "會員資料", hello: (n: string) => `${n}，你好`,
   },
   guide: {
+    metaDesc: `客製化禮品的訂購流程、印刷方式、檔案準備與運送說明。${FLAT_SHIP}`,
     title: "訂購流程與稿件規範",
     lead: "從選品到收到貨，每一步會發生什麼事、需要準備什麼，都寫在這裡。",
     methodsTitle: "印刷方式比較",

@@ -1,4 +1,5 @@
 "use server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq, isNotNull } from "drizzle-orm";
 import { priceFromCost } from "@/lib/pricing";
@@ -98,4 +99,38 @@ export async function saveMargin(fd: FormData) {
     }
   });
   revalidatePath("/admin/pricing");
+}
+
+/** 新增或更新部落格文章 */
+export async function savePost(fd: FormData) {
+  await requireAdmin();
+  const str = (k: string, max: number) => String(fd.get(k) ?? "").trim().slice(0, max);
+  const title = str("title", 200);
+  if (!title) return;
+  const id = Number(fd.get("id")) || 0;
+  const raw = str("slug", 120) || title;
+  const slug = raw.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 120) || `post-${Date.now()}`;
+  const values = {
+    title, slug, excerpt: str("excerpt", 500), content: String(fd.get("content") ?? "").slice(0, 100_000),
+    coverUrl: str("coverUrl", 500) || null, coverAlt: str("coverAlt", 200) || null, seoTitle: str("seoTitle", 200) || null, seoDescription: str("seoDescription", 300) || null,
+    published: fd.get("published") === "on", updatedAt: Math.floor(Date.now() / 1000),
+  };
+  let savedId = id;
+  if (id) await db.update(schema.posts).set(values).where(eq(schema.posts.id, id));
+  else {
+    // 網址代稱重複時加上尾碼
+    const clash = await db.select({ id: schema.posts.id }).from(schema.posts).where(eq(schema.posts.slug, slug));
+    const [row] = await db.insert(schema.posts).values({ ...values, slug: clash.length ? `${slug}-${Date.now().toString(36)}` : slug }).returning();
+    savedId = row.id;
+  }
+  revalidatePath("/blog");
+  redirect(`/admin/blog?edit=${savedId}`);
+}
+
+export async function deletePost(fd: FormData) {
+  await requireAdmin();
+  const id = Number(fd.get("id")) || 0;
+  if (id) await db.delete(schema.posts).where(eq(schema.posts.id, id));
+  revalidatePath("/blog");
+  redirect("/admin/blog");
 }

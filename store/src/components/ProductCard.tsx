@@ -17,7 +17,7 @@ export function ProductCard({ p }: { p: Card }) {
         )}
         {hover && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={hover} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
+          <img src={hover} alt={`${p.name}｜另一個角度`} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
         )}
       </div>
       <div className="flex flex-1 flex-col px-1.5 pt-3 pb-1">

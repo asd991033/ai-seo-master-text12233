@@ -30,6 +30,7 @@ export async function Footer() {
           <ul className="space-y-3">
             <li><Link href="/guide#methods" className="text-mute hover:text-ink">{t.nav.methods}</Link></li>
             <li><Link href="/guide" className="text-mute hover:text-ink">{t.nav.guide}</Link></li>
+            <li><Link href="/blog" className="text-mute hover:text-ink">{t.nav.blog}</Link></li>
             <li><Link href="/guide#files" className="text-mute hover:text-ink">{t.guide.fileTitle}</Link></li>
             <li><Link href="/guide#shipping" className="text-mute hover:text-ink">{t.guide.shipTitle}</Link></li>
           </ul>

@@ -2,6 +2,7 @@
  * 建立示範資料：分類、印刷方式、運費表、6 個示範商品（含刀模與示意圖）、管理員帳號。
  * 可重複執行（以代碼 upsert）。
  */
+import { seedPosts } from "./posts-seed";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomBytes, scryptSync } from "node:crypto";
@@ -72,6 +73,7 @@ async function main() {
     ]);
   }
 
+  await seedPosts();
   if (!demo) return seedAdmin();
 
   // ---- 示範商品 ----

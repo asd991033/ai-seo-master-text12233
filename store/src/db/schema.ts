@@ -267,3 +267,22 @@ export const orderItems = sqliteTable("order_items", {
   artworkUrl: text("artwork_url"),
   previewUrl: text("preview_url"),
 });
+
+/** 部落格文章 */
+export const posts = sqliteTable("posts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  /** 摘要：列表頁與搜尋結果的說明文字 */
+  excerpt: text("excerpt").notNull().default(""),
+  /** 內文（Markdown） */
+  content: text("content").notNull().default(""),
+  coverUrl: text("cover_url"),
+  coverAlt: text("cover_alt"),
+  /** 搜尋結果標題／說明；留空就用文章標題與摘要 */
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  published: integer("published", { mode: "boolean" }).notNull().default(true),
+  publishedAt: integer("published_at").notNull().default(now),
+  updatedAt: integer("updated_at").notNull().default(now),
+});

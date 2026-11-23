@@ -21,7 +21,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
           {images.map((src, n) => (
             <button key={src} type="button" onClick={() => { setI(n); setOverride(null); }} aria-label={`${alt} ${n + 1}`} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${n === i ? "border-forest" : "border-line"}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img src={src} alt={`${alt}｜圖片 ${n + 1}`} loading="lazy" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

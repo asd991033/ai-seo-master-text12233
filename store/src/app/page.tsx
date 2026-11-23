@@ -1,4 +1,9 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { faqLd } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { PostCard } from "@/components/PostCard";
+import { listPosts } from "@/lib/blog";
 import { t } from "@/i18n";
 import { site } from "@/config/site";
 import { categoryCounts, listProducts } from "@/lib/catalog";
@@ -11,8 +16,10 @@ export const dynamic = "force-dynamic";
 const USP_ICONS = [IconLayers, IconBrush, IconTruck, IconTag];
 const pill = "inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-sm font-medium transition";
 
+export const metadata: Metadata = { description: t.home.lead, alternates: { canonical: "/" }, openGraph: { title: `${site.brand}｜${t.home.eyebrow}`, description: t.home.lead, type: "website", images: ["/eg/hero-2.jpg"] } };
+
 export default async function Home() {
-  const [featured, cats] = await Promise.all([listProducts({ limit: 8 }), categoryCounts()]);
+  const [featured, cats, posts] = await Promise.all([listProducts({ limit: 8 }), categoryCounts(), listPosts(3)]);
   const slugOf = (name: string) => cats.find((c) => c.name === name)?.slug;
   const catHref = (name: string) => (slugOf(name) ? `/products?category=${encodeURIComponent(slugOf(name)!)}` : "/products");
   return (
@@ -20,7 +27,7 @@ export default async function Home() {
       {/* 主視覺 */}
       <section className="relative overflow-hidden rounded-b-[22px] bg-sand">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/eg/hero-2.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src="/eg/hero-2.jpg" alt={t.alt.hero} className="absolute inset-0 h-full w-full object-cover" />
         <div className="container-x relative flex min-h-[560px] flex-col justify-end pt-32 pb-12 md:min-h-[640px] md:pb-16">
           <h1 className="max-w-[560px] text-[38px] leading-[1.12] md:text-[52px]">{t.home.title}</h1>
           <p className="mt-4 max-w-[400px] text-[15px] leading-relaxed">{t.home.lead}</p>
@@ -90,7 +97,7 @@ export default async function Home() {
             {t.home.steps.map((s, i) => (
               <li key={s.t} className="rounded-[14px] bg-white p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/eg/step-${i + 1}.jpg`} alt="" loading="lazy" className="aspect-[4/3.1] w-full rounded-[10px] object-cover" />
+                <img src={`/eg/step-${i + 1}.jpg`} alt={`${t.home.stepsTitle}：${s.t}`} loading="lazy" className="aspect-[4/3.1] w-full rounded-[10px] object-cover" />
                 <div className="px-2 pt-4 pb-3">
                   <div className="flex items-center justify-between text-[11px] text-gold"><span>0{i + 1}</span><span aria-hidden>→</span></div>
                   <div className="mt-3 text-[14px] font-bold tracking-tight">{s.t}</div>
@@ -105,7 +112,7 @@ export default async function Home() {
       {/* 黑色橫幅 */}
       <section className="relative overflow-hidden bg-[#111] text-white">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/eg/banner.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+        <img src="/eg/banner.jpg" alt={t.alt.banner} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" />
         <div className="container-x relative py-24">
           <div className="text-[11px] font-medium tracking-[0.22em] text-white/60 uppercase">{t.home.bannerEyebrow}</div>
           <h2 className="mt-4 text-[30px] md:text-[38px]">{t.home.bannerTitle}</h2>
@@ -129,7 +136,7 @@ export default async function Home() {
       <section className="grid border-y border-line md:grid-cols-[1fr_1.1fr]">
         <div className="relative min-h-[320px] overflow-hidden bg-[#111] text-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/eg/hero-3.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-55 grayscale" />
+          <img src="/eg/hero-3.jpg" alt={t.alt.occasions} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-55 grayscale" />
           <div className="relative flex h-full flex-col justify-end p-8 sm:p-12">
             <div className="text-[11px] font-medium tracking-[0.22em] text-white/60 uppercase">{t.home.useEyebrow}</div>
             <h2 className="mt-3 text-[28px] md:text-[34px]">{t.home.useTitle}</h2>
@@ -147,7 +154,18 @@ export default async function Home() {
         </div>
       </section>
 
+      {posts.length > 0 && (
+        <section className="container-x py-16">
+          <div className="flex items-end justify-between gap-4">
+            <div><div className="eyebrow">{t.blog.eyebrow}</div><h2 className="mt-3 text-[26px] md:text-[32px]">{t.blog.latest}</h2></div>
+            <Link href="/blog" className="shrink-0 text-xs font-semibold underline underline-offset-4">{t.blog.viewAll}</Link>
+          </div>
+          <div className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">{posts.map((p) => <PostCard key={p.id} p={p} />)}</div>
+        </section>
+      )}
+
       <Faq eyebrow={t.home.faqEyebrow} title={t.home.faqTitle} cta={t.home.faqCta} href="/products" items={t.home.faq} />
+      <JsonLd data={faqLd(t.home.faq)} />
     </div>
   );
 }
@@ -156,7 +174,7 @@ function Tile({ href, img, title, desc, className = "" }: { href: string; img: s
   return (
     <Link href={href} className={`group relative block min-h-[190px] overflow-hidden rounded-[14px] bg-[#111] text-white ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+      <img src={img} alt={`${title}｜${t.alt.category}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
         <div>

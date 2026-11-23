@@ -36,6 +36,7 @@ export async function Header() {
           <Link href="/guide" className="hover:opacity-60">{t.nav.guide}</Link>
           <Link href="/guide#methods" className="hover:opacity-60">{t.nav.methods}</Link>
           <Link href="/guide#faq" className="hover:opacity-60">{t.nav.faq}</Link>
+          <Link href="/blog" className="hover:opacity-60">{t.nav.blog}</Link>
           <a href={`mailto:${site.contactEmail}`} className="hover:opacity-60">{t.nav.contact}</a>
         </nav>
         <div className="ml-auto flex items-center">
