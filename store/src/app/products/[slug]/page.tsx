@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: Props) {
   const related = p.categorySlug ? await listProducts({ category: p.categorySlug, exclude: p.id, limit: 4 }) : [];
   const range = priceRange(p.pricing.tiers);
   const jsonLd = {
-    "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4),
+    "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4).map((u) => abs(u)),
     ...(p.categoryName ? { category: p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
     ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: site.currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
     url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
