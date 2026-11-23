@@ -6,6 +6,7 @@ import type { Canvas, FabricObject, FabricImage, Textbox } from "fabric";
 import { t } from "@/i18n";
 import { loadDraft, useCart, type Draft } from "@/lib/cart";
 import { analyze, planMockup, renderMockup, type MockupModel, type Placement } from "@/lib/mockup";
+import type { HcDesign } from "@/lib/hc3d";
 
 export type DesignerProduct = {
   id: number;
@@ -63,6 +64,27 @@ const loadImg = (src: string, cors = false) =>
     img.src = src;
   });
 
+/** 存檔時印刷區左上角在畫布上的位置（舊資料沒有這個欄位，當時是 0,0） */
+const docOrigin = (canvas: unknown) => {
+  const c = (canvas ?? {}) as { __ox?: number; __oy?: number };
+  return { x: typeof c.__ox === "number" ? c.__ox : 0, y: typeof c.__oy === "number" ? c.__oy : 0 };
+};
+/** 可印範圍的裁切形狀：供應商有提供外形（soft_svg）就照外形，否則是矩形 */
+function clipFor(fabric: Fabric, q: { ax: number; ay: number; aw: number; ah: number; W: number; view: HcDesign["views"][number] | null }) {
+  const svg = q.view?.pa.svg;
+  if (svg && q.view) {
+    try {
+      const k = q.W / q.view.pa.vw;
+      const path = new fabric.Path(svg, { absolutePositioned: true });
+      // fabric 的 Path 以外框左上為原點：依外框位置放回 view 座標再縮放
+      const b = path.getBoundingRect();
+      path.set({ left: b.left * k, top: b.top * k, scaleX: k, scaleY: k, originX: "left", originY: "top", strokeWidth: 0 });
+      return path;
+    } catch { /* 外形解析失敗就用矩形 */ }
+  }
+  return new fabric.Rect({ left: q.ax, top: q.ay, width: q.aw, height: q.ah, absolutePositioned: true });
+}
+
 export default function Designer({ product }: { product: DesignerProduct }) {
   const router = useRouter();
   const addToCart = useCart((s) => s.add);
@@ -84,6 +106,13 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const [bg, setBg] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [, setTick] = useState(0);
+  /** 供應商排版器的設定（印刷面、刀模、效果圖貼法）；有這份資料就完全照它呈現 */
+  const [hc, setHc] = useState<HcDesign | null>(null);
+  const [hcState, setHcState] = useState<"loading" | "ready" | "none">("loading");
+  const [hcIdx, setHcIdx] = useState(0);
+  const [hcBusy, setHcBusy] = useState(false);
+  const hcRef = useRef<{ hc: HcDesign; color: HcDesign["colors"][number]; idx: number } | null>(null);
+  const hcJob = useRef<{ running: boolean; want: number | null }>({ running: false, want: null });
 
   const stageWrap = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -130,6 +159,15 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       .catch(() => setDraft(loadDraft(product.slug)));
   }, [product.slug]);
 
+  useEffect(() => {
+    let off = false;
+    fetch(`/api/hc-design/${encodeURIComponent(product.sku)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((j: HcDesign | null) => { if (off) return; const ok = !!j && j.colors?.some((c) => c.details.some((d) => d.parts.some((x) => x.type === 0 || x.type === 2))); setHc(ok ? j : null); setHcState(ok ? "ready" : "none"); })
+      .catch(() => { if (!off) setHcState("none"); });
+    return () => { off = true; };
+  }, [product.sku]);
+
   /** 客戶在商品頁選了哪些位置 / 面積 */
   const selected = useMemo(
     () =>
@@ -146,16 +184,32 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const colorHex = color?.hex ?? "#ffffff";
   /** 沒有專屬示意圖與刀模的商品：用商品照片自動產生示意圖 */
   const baseUrl = color?.image ?? product.image;
-  const auto = !!baseUrl && selected.length > 0 && selected.every((s) => !s.pos.mockupUrl && !s.pos.dielineUrl);
+  /** 供應商資料裡對應目前顏色的那一組（先比色碼，再比順序） */
+  const hcColor = useMemo(() => {
+    if (!hc) return null;
+    const hex = colorHex.replace("#", "").toLowerCase();
+    const idx = product.colors.findIndex((c) => c.name === draft?.colorName);
+    return hc.colors.find((c) => c.hex && c.hex.toLowerCase() === hex) ?? hc.colors[idx] ?? hc.colors[0] ?? null;
+  }, [hc, colorHex, product.colors, draft?.colorName]);
+  const hcDetails = useMemo(() => (hcColor?.details ?? []).map((d, i) => ({ d, i })).filter((x) => x.d.parts.some((p) => p.type === 0 || p.type === 2)), [hcColor]);
+  const hcMode = !!hc && !!hcColor && hcDetails.length > 0;
+  const auto = hcState === "none" && !!baseUrl && selected.length > 0 && selected.every((s) => !s.pos.mockupUrl && !s.pos.dielineUrl);
   const stageBg = cur?.pos.pxW ? "#ffffff" : colorHex;
 
   const geom = useCallback(
     (i: number) => {
       const { pos, area } = selected[i];
+      const view = hc ? hc.views[product.positions.findIndex((x) => x.code === pos.code)] ?? null : null;
+      if (view) {
+        // 供應商的座標：整個畫面是正方形的「view」，印刷區在其中的固定位置。照這個比例排，位置才會和他們一致
+        const pa = view.pa, mm = area.widthMm / pa.w, side = pa.vw * mm;
+        const scale = Math.min(maxW / side, MAX_H / side);
+        return { pos, area, view, scale, W: side * scale, H: side * scale, ax: pa.x * mm * scale, ay: pa.y * mm * scale, aw: pa.w * mm * scale, ah: pa.h * mm * scale };
+      }
       const scale = Math.min(maxW / pos.widthMm, MAX_H / pos.heightMm);
-      return { pos, area, scale, W: pos.widthMm * scale, H: pos.heightMm * scale, ax: area.xMm * scale, ay: area.yMm * scale, aw: area.widthMm * scale, ah: area.heightMm * scale };
+      return { pos, area, view: null as HcDesign["views"][number] | null, scale, W: pos.widthMm * scale, H: pos.heightMm * scale, ax: area.xMm * scale, ay: area.yMm * scale, aw: area.widthMm * scale, ah: area.heightMm * scale };
     },
-    [selected, maxW],
+    [selected, maxW, hc, product.positions],
   );
   const g = cur ? geom(active) : null;
   const gRef = useRef(g);
@@ -212,6 +266,50 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     [cropCanvas, product.positions],
   );
 
+  /** 供應商相容的效果圖：把各面的設計放進他們的座標，再照他們的設定（平面四角或 3D 模型）渲染 */
+  const renderHc = useCallback(
+    async (live: boolean, size: number, idx?: number): Promise<HTMLCanvasElement | null> => {
+      const ref = hcRef.current;
+      if (!ref) return null;
+      const { renderDetail, faceSquare } = await import("@/lib/hc3d");
+      const det = ref.color.details[idx ?? ref.idx] ?? ref.color.details[0];
+      if (!det) return null;
+      const faces: Record<number, CanvasImageSource> = {};
+      const tex = size >= 700 ? 1536 : 768;
+      for (const [pi, pos] of product.positions.entries()) {
+        const view = ref.hc.views[pi] ?? ref.hc.views.find((v) => v.name === pos.name);
+        if (!view) continue;
+        const flat = live && pos.code === currentCode.current ? (hasContent() ? cropCanvas(activeRef.current) : null) : flats.current[pos.code] ?? null;
+        if (flat) faces[view.id] = await faceSquare(ref.hc, view, flat, tex);
+      }
+      return renderDetail(det, ref.hc, faces, size, tex);
+    },
+    [cropCanvas, product.positions],
+  );
+  /** 排隊渲染：同時間只跑一張，期間有新的變更就在結束後補畫最新的 */
+  const requestHc = useCallback(
+    (size: number) => {
+      const job = hcJob.current;
+      job.want = Math.max(job.want ?? 0, size);
+      if (job.running) return;
+      job.running = true;
+      (async () => {
+        while (job.want !== null) {
+          const sz = job.want;
+          job.want = null;
+          try {
+            const c = await renderHc(true, sz);
+            const target = mockRef.current;
+            if (c && target) { target.width = c.width; target.height = c.height; target.getContext("2d")!.drawImage(c, 0, 0); target.dataset.rendered = String(Date.now()); }
+          } catch { /* 模型載入失敗時保留上一張 */ }
+        }
+        job.running = false;
+        setHcBusy(false);
+      })();
+    },
+    [renderHc],
+  );
+
   /** 更新某一面的平面預覽縮圖 */
   const refreshThumb = useCallback(
     (i: number) => {
@@ -232,22 +330,24 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     updatePreview.current = setTimeout(() => {
       const c = canvasRef.current;
       if (!c) return;
-      if (modelRef.current) drawMock(mockRef.current, true);
+      if (hcRef.current) requestHc(900);
+      else if (modelRef.current) drawMock(mockRef.current, true);
       else setPreview(hasContent() ? c.toDataURL({ format: "png", multiplier: 1 }) : null);
       refreshThumb(activeRef.current);
     }, 120);
-  }, [drawMock, refreshThumb]);
+  }, [drawMock, refreshThumb, requestHc]);
 
   /** 拖曳、縮放、旋轉的過程中即時更新示意圖（用較小的尺寸換取流暢度） */
   const liveBusy = useRef(false);
   const livePreview = useCallback(() => {
+    if (hcRef.current) return requestHc(420);
     if (liveBusy.current || !modelRef.current) return;
     liveBusy.current = true;
     requestAnimationFrame(() => {
       drawMock(mockRef.current, true, 520);
       liveBusy.current = false;
     });
-  }, [drawMock]);
+  }, [drawMock, requestHc]);
 
   const pushHistory = useCallback(() => {
     const h = history.current;
@@ -262,7 +362,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     (i: number) => {
       const fabric = fabricRef.current!;
       const q = geom(i);
-      canvasRef.current!.clipPath = new fabric.Rect({ left: q.ax, top: q.ay, width: q.aw, height: q.ah, absolutePositioned: true });
+      canvasRef.current!.clipPath = clipFor(fabric, q);
     },
     [geom],
   );
@@ -274,7 +374,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       if (!canvas || !selected[i]) return;
       const q = geom(i);
       canvas.discardActiveObject();
-      const json = snapshot();
+      const json = snapshot() as Record<string, unknown>;
+      json.__ox = q.ax; json.__oy = q.ay;
       docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
       if (!hasContent()) {
         delete outputs.current[q.pos.code];
@@ -311,6 +412,10 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         if (Math.abs(k - 1) > 1e-3) {
           canvas.getObjects().forEach((o) => { o.set({ left: o.left * k, top: o.top * k, scaleX: o.scaleX * k, scaleY: o.scaleY * k }); o.setCoords(); });
         }
+        // 印刷區在畫布上的位置可能和存檔時不同（例如改成供應商的座標後），把內容移到新的位置
+        const o0 = docOrigin(doc.canvas);
+        const dx = q.ax - o0.x * k, dy = q.ay - o0.y * k;
+        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) canvas.getObjects().forEach((o) => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
       }
       applyClip(i);
       canvas.requestRenderAll();
@@ -343,10 +448,30 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     return () => { cancelled = true; };
   }, [auto, baseUrl, product.positions]);
   useEffect(() => { if (model && ready) drawMock(mockRef.current, true); }, [model, ready, drawMock]);
+  useEffect(() => {
+    if (!hcMode || !hc || !hcColor) { hcRef.current = null; return; }
+    const idx = hcColor.details[hcIdx]?.parts.some((p) => p.type === 0 || p.type === 2) ? hcIdx : hcDetails.find((x) => x.d.master)?.i ?? hcDetails[0].i;
+    if (idx !== hcIdx) { setHcIdx(idx); return; }
+    hcRef.current = { hc, color: hcColor, idx };
+    if (ready) { setHcBusy(true); requestHc(900); }
+  }, [hcMode, hc, hcColor, hcIdx, hcDetails, ready, requestHc]);
+  // 切到另一個印刷面時，如果目前這張效果圖看不到那一面（例如後片），自動換成看得到的那張
+  useEffect(() => {
+    if (!hcMode || !hc || !cur) return;
+    const view = hc.views[product.positions.findIndex((x) => x.code === cur.pos.code)];
+    if (!view) return;
+    const shows = (d: HcDesign["colors"][number]["details"][number]) => d.parts.some((p) => (p.type === 0 && p.view === view.id) || (p.type === 2 && (p.d3?.uv ?? []).some((u: { faces: { v: number }[] }) => u.faces.some((f) => f.v === view.id))));
+    setHcIdx((now) => {
+      const d = hcColor?.details[now];
+      if (d && shows(d)) return now;
+      return hcDetails.find((x) => shows(x.d))?.i ?? now;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, hcMode]);
 
   // ---------- 初始化 fabric ----------
   useEffect(() => {
-    if (!selected.length || !host.current || canvasRef.current) return;
+    if (hcState === "loading" || !selected.length || !host.current || canvasRef.current) return;
     let disposed = false;
     (async () => {
       const fabric = await import("fabric");
@@ -370,10 +495,14 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         await sc.loadFromJSON(doc.canvas as Record<string, unknown>);
         const k = q.scale / doc.pxPerMm;
         if (Math.abs(k - 1) > 1e-3) sc.getObjects().forEach((o) => { o.set({ left: o.left * k, top: o.top * k, scaleX: o.scaleX * k, scaleY: o.scaleY * k }); o.setCoords(); });
-        sc.clipPath = new fabric.Rect({ left: q.ax, top: q.ay, width: q.aw, height: q.ah, absolutePositioned: true });
+        const o0 = docOrigin(doc.canvas);
+        const dx = q.ax - o0.x * k, dy = q.ay - o0.y * k;
+        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) sc.getObjects().forEach((o) => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
+        sc.clipPath = clipFor(fabric, q);
         sc.renderAll();
         const json = sc.toJSON() as Record<string, unknown>;
         delete json.clipPath;
+        json.__ox = q.ax; json.__oy = q.ay;
         docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
         const crop = { left: q.ax, top: q.ay, width: q.aw, height: q.ah };
         const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
@@ -398,7 +527,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       canvasRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected.length > 0]);
+  }, [selected.length > 0, hcState !== "loading"]);
 
   // 事件綁定（依賴目前位置的幾何）
   useEffect(() => {
@@ -656,6 +785,14 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   async function composite(i: number, flat: string): Promise<string> {
     const { pos } = selected[i];
     const c = document.createElement("canvas");
+    if (hcRef.current) {
+      // 存檔用：優先用這一面有出現的效果圖
+      const ref = hcRef.current, view = ref.hc.views[product.positions.findIndex((x) => x.code === pos.code)];
+      const { detailViews } = await import("@/lib/hc3d");
+      const hit = view ? ref.color.details.findIndex((d) => detailViews(d).includes(view.id)) : -1;
+      const out = await renderHc(false, 800, hit >= 0 && !detailViews(ref.color.details[ref.idx]).includes(view!.id) ? hit : ref.idx).catch(() => null);
+      if (out) return out.toDataURL("image/jpeg", 0.88);
+    }
     if (auto && drawMock(c, false)) return c.toDataURL("image/jpeg", 0.88);
     const ctx = c.getContext("2d")!;
     const design = await loadImg(flat);
@@ -718,7 +855,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   }
 
   // ---------- 畫面 ----------
-  if (draft === undefined) return <div ref={stageWrap} className="container-x py-20 text-center text-mute">{t.common.loading}</div>;
+  if (draft === undefined || hcState === "loading") return <div ref={stageWrap} className="container-x py-20 text-center text-mute">{t.common.loading}</div>;
   if (!draft || !selected.length || !cur || !g) {
     return (
       <div className="container-x py-20 text-center">
@@ -736,6 +873,26 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     }))
     .reverse();
   /** 目前這一面有沒有出現在商品照片上 */
+  const faceTiles = selected.length > 1 && (
+                  <div className="mt-4 border-t border-line pt-3" data-testid="face-tiles">
+                    <div className="mb-2 text-xs font-medium">{t.designer.allFaces}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selected.map((s0, i) => (
+                        <button key={s0.pos.code} type="button" onClick={() => switchTo(i)} className={`rounded-lg border p-1.5 text-left transition ${i === active ? "border-forest ring-1 ring-forest" : "border-line hover:border-ink"}`}>
+                          <div className="grid aspect-square place-items-center overflow-hidden rounded bg-sand">
+                            {thumbs[s0.pos.code] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={thumbs[s0.pos.code]!} alt="" className="max-h-full max-w-full bg-white shadow-sm" />
+                            ) : (
+                              <span className="text-[10px] text-mute">{((docs.current[s0.pos.code]?.canvas as { objects?: unknown[] } | undefined)?.objects?.length ?? 0) > 0 ? t.designer.doneFace : t.designer.emptyFace}</span>
+                            )}
+                          </div>
+                          <div className="mt-1 truncate text-[11px]">{s0.pos.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
   const inPhoto = planRef.current.some((pl) => product.positions[pl.pos]?.code === cur.pos.code);
   const tool = "btn-ghost w-full justify-start rounded-lg px-3 py-2";
   const mini = "rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs hover:border-ink disabled:opacity-40";
@@ -847,7 +1004,16 @@ export default function Designer({ product }: { product: DesignerProduct }) {
           onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); addImage(f); } }}>
           <div className="card flex justify-center overflow-auto bg-sand p-4">
             <div className="relative shrink-0 shadow-sm" style={{ width: g.W, height: g.H, background: stageBg }} data-testid="stage">
+              {g.view && hcColor?.views.find((v) => v.id === g.view!.id)?.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={hc!.base + hcColor.views.find((v) => v.id === g.view!.id)!.image} alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" data-testid="hc-view" />
+              )}
               <div ref={host} className="absolute inset-0" />
+              {g.view?.pa.svg && (
+                <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${g.view.pa.vw} ${g.view.pa.vw}`} data-testid="hc-dieline">
+                  <path d={g.view.pa.svg} fill="none" stroke="#E6007E" strokeWidth={g.view.pa.vw / 400} strokeDasharray={`${g.view.pa.vw / 80} ${g.view.pa.vw / 130}`} />
+                </svg>
+              )}
               {showDieline && cur.pos.dielineUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={cur.pos.dielineUrl} alt="" className="pointer-events-none absolute inset-0 h-full w-full" data-testid="dieline" />
@@ -878,7 +1044,24 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         <aside className="max-lg:order-3">
           <div className="card p-3">
             <div className="mb-2 text-sm font-medium">{t.designer.mockup}</div>
-            {auto ? (
+            {hcMode && hc && hcColor ? (
+              <>
+                <div className="relative">
+                  <canvas ref={mockRef} className="block w-full rounded-lg bg-white" data-testid="mockup-canvas" />
+                  {hcBusy && <span className="absolute inset-x-0 bottom-2 text-center text-xs text-mute">{t.designer.analyzing}</span>}
+                </div>
+                <div className="mt-3 grid grid-cols-5 gap-1.5" data-testid="hc-details">
+                  {hcDetails.map(({ d, i }) => (
+                    <button key={i} type="button" onClick={() => { setHcBusy(true); setHcIdx(i); }} className={`overflow-hidden rounded-md border bg-white ${i === hcIdx ? "border-forest ring-1 ring-forest" : "border-line hover:border-ink"}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={(d.effect || d.image).startsWith("http") ? d.effect || d.image : hc.base + (d.effect || d.image)} alt="" className="aspect-square w-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-mute">{t.designer.hcNote}</p>
+                {faceTiles}
+              </>
+            ) : auto ? (
               <>
                 {/* 目前這一面不在商品照片上：先顯示這一面實際會印出來的畫面 */}
                 {mockState === "ready" && !inPhoto && (
@@ -905,26 +1088,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
                   </div>
                 )}
                 <p className="mt-2 text-xs leading-relaxed text-mute">{mockState === "none" ? t.designer.flatNote : t.designer.mockSim}</p>
-                {selected.length > 1 && (
-                  <div className="mt-4 border-t border-line pt-3" data-testid="face-tiles">
-                    <div className="mb-2 text-xs font-medium">{t.designer.allFaces}</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {selected.map((s0, i) => (
-                        <button key={s0.pos.code} type="button" onClick={() => switchTo(i)} className={`rounded-lg border p-1.5 text-left transition ${i === active ? "border-forest ring-1 ring-forest" : "border-line hover:border-ink"}`}>
-                          <div className="grid aspect-square place-items-center overflow-hidden rounded bg-sand">
-                            {thumbs[s0.pos.code] ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={thumbs[s0.pos.code]!} alt="" className="max-h-full max-w-full bg-white shadow-sm" />
-                            ) : (
-                              <span className="text-[10px] text-mute">{((docs.current[s0.pos.code]?.canvas as { objects?: unknown[] } | undefined)?.objects?.length ?? 0) > 0 ? t.designer.doneFace : t.designer.emptyFace}</span>
-                            )}
-                          </div>
-                          <div className="mt-1 truncate text-[11px]">{s0.pos.name}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {faceTiles}
               </>
             ) : (
               <>

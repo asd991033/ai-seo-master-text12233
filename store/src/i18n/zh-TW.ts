@@ -148,6 +148,7 @@ const dict = {
     showDieline: "顯示刀模", font: "字體", fontSize: "字級", fill: "顏色", bold: "粗體", italic: "斜體", align: "對齊",
     printArea: "印刷範圍", printPx: "印刷檔",  safeLine: "安全線", legendCut: "裁切線", legendFold: "摺線", legendArea: "印刷範圍", legendSafe: "安全線（重要內容請放在內側）",
     mockup: "成品示意圖", mockupNote: "示意圖僅供版面參考，實際顏色與位置以審稿確認為準。", noMockup: "此商品提供刀模展開圖預覽。", flatNote: "此商品暫時無法自動產生示意圖，左側為印刷面的平面排版，會依印刷檔尺寸輸出。", productRef: "商品參考圖",
+    hcNote: "效果圖與供應商的排版器相同：點下方縮圖可切換角度，各印刷面會同步呈現。",
     mockSim: "示意圖為系統模擬效果，僅供版面參考；實際位置、比例與顏色以審稿確認為準。", analyzing: "示意圖產生中…",
     allFaces: "各印刷面預覽", propDesign: "設計編號", propFiles: "設計檔案", emptyFace: "尚未排版", doneFace: "已排版", flatOf: (name: string) => `${name}・實際印刷畫面`,
     fullArea: "虛線框內整面都會印刷。沒有放圖的地方會是白色，想要整面有顏色可以用左側的「底色」。",

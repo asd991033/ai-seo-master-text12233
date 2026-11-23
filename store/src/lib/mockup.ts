@@ -94,8 +94,33 @@ export function analyze(img: CanvasImageSource): MockupModel {
     if (r >= 252 && g >= 252 && b >= 252) white[i] = 1;
   }
   // 斜紋之間的白色用閉運算補起來，得到印刷區的大致範圍
-  const R = Math.round(n * 0.055);
-  const core = boxMax(boxMax(seed, n, R), n, R, true);
+  const RMAX = Math.round(n * 0.1);
+  // 先去掉零星的雜點（偏藍的灰色衣服在壓縮後會冒出一些），斜紋本身是成片的不受影響
+  const solid = boxMax(boxMax(seed, n, 1, true), n, 1);
+  // 斜紋的粗細每張圖不同（毯子的很寬、鑰匙圈的很細）。量出斜紋之間白色間隔的寬度，
+  // 補洞只補到剛好蓋住間隔，才不會把褲管之間、提把之間的空隙也補起來
+  const gaps: number[] = [];
+  for (let y = 0; y < n; y += 2) {
+    let last = -1;
+    for (let x = 0; x < n; x++) if (solid[y * n + x]) {
+      const g = x - last - 1;
+      if (last >= 0 && g >= 2 && g <= n * 0.3) gaps.push(g);
+      last = x;
+    }
+  }
+  gaps.sort((a, b) => a - b);
+  // 以長度加權取分位數：文字筆畫之間的小空隙很多但很短，不該拉低結果
+  let gap = Math.round(n * 0.055);
+  if (gaps.length > 20) {
+    const total = gaps.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    for (const g of gaps) { acc += g; if (acc >= total * 0.7) { gap = g; break; } }
+  }
+  const R = Math.max(6, Math.min(RMAX, Math.round(gap * 0.6 + 3)));
+  const core = boxMax(boxMax(solid, n, R), n, R, true);
+  const smoothR = Math.max(4, Math.min(11, Math.round(gap * 0.45)));
+  /** 往外長的距離：不跟著大斜紋放大，免得長過頭 */
+  const G = Math.round(Math.min(R, n * 0.055) * 0.6);
 
   // 從四邊往內填滿純白背景（商品邊緣的陰影會擋住，不會灌進商品內部）
   const bg = new Uint8Array(n * n);
@@ -109,17 +134,49 @@ export function analyze(img: CanvasImageSource): MockupModel {
     if (y > 0) push(i - n);
     if (y < n - 1) push(i + n);
   }
+  // 白色商品放在白底上時，斜紋之間的白色會被當成背景從邊緣灌進來，邊緣就變成鋸齒。
+  // 斜紋補洞後的範圍內一律不算背景
+  for (let i = 0; i < n * n; i++) if (core[i]) bg[i] = 0;
+  // 反光造成的細白線有時會從邊緣一路連進商品裡，被當成背景而缺一道。
+  // 印刷區深處、又很細的「背景」不算背景
+  {
+    const bgc = new Uint8ClampedArray(n * n);
+    for (let i = 0; i < n * n; i++) bgc[i] = bg[i] ? 255 : 0;
+    const wide = boxMax(boxMax(bgc, n, 3, true), n, 4);
+    const deepCore = boxMax(core, n, Math.round(R * 0.3), true);
+    for (let i = 0; i < n * n; i++) if (bg[i] && !wide[i] && deepCore[i]) bg[i] = 0;
+  }
+  // 商品中間的鏤空（相框、車牌框的開口）：純白、夠寬、又沒連到外面的背景。
+  // 斜紋之間的白色間隔很窄，侵蝕後會消失，所以不會被誤判
+  const hole = new Uint8Array(n * n);
+  {
+    const inner = new Uint8ClampedArray(n * n);
+    for (let i = 0; i < n * n; i++) inner[i] = white[i] && !bg[i] ? 255 : 0;
+    const deep = boxMax(inner, n, Math.round(R * 0.45), true);
+    const st: number[] = [];
+    for (let i = 0; i < n * n; i++) if (deep[i]) { hole[i] = 1; st.push(i); }
+    while (st.length) {
+      const i = st.pop()!, x = i % n, y = (i / n) | 0;
+      for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, y > 0 ? i - n : -1, y < n - 1 ? i + n : -1]) {
+        if (j >= 0 && inner[j] && !hole[j]) { hole[j] = 1; st.push(j); }
+      }
+    }
+  }
   const m = new Uint8Array(n * n);
-  for (let i = 0; i < n * n; i++) m[i] = core[i] && light[i] && !bg[i] ? 1 : 0;
+  for (let i = 0; i < n * n; i++) m[i] = core[i] && light[i] && !bg[i] && !hole[i] ? 1 : 0;
+  // 不設邊界時會長到的範圍，用來判斷被邊界擋下的地方是不是其實就是商品邊緣
+  const loose = boxMax(m.map((v) => (v ? 255 : 0)), n, G);
   // 斜紋通常不會貼齊商品邊緣，所以再往外長一小段；但遇到滾邊、陰影這類邊界就停下，
   // 才不會漫到旁邊同樣是淺色的東西（例如模特兒的白襯衫）
   {
-    const wall = new Uint8Array(n * n);
+    const rawWall = new Uint8ClampedArray(n * n);
     for (let y = 1; y < n - 1; y++) for (let x = 1; x < n - 1; x++) {
       const i = y * n + x;
       const g = Math.abs(blue[i + 1] - blue[i - 1]) + Math.abs(blue[i + n] - blue[i - n]);
-      if (blue[i] < 130 || g > 44) wall[i] = 1;
+      if (blue[i] < 130 || g > 44) rawWall[i] = 255;
     }
+    // 邊界常常斷斷續續，補起小缺口，不然會從缺口漏出去變成鋸齒邊
+    const wall = boxMax(rawWall, n, 2);
     // 補洞時可能跨過滾邊蓋到旁邊的淺色衣服：被邊界隔開、裡面又幾乎沒有斜紋的區塊不算印刷區
     {
       const seen = new Uint8Array(n * n);
@@ -135,21 +192,44 @@ export function analyze(img: CanvasImageSource): MockupModel {
             if (j >= 0 && m[j] && !wall[j] && !seen[j]) { seen[j] = 1; cells.push(j); }
           }
         }
-        if (cells.length > 30 && seeds / cells.length < 0.2) for (const i of cells) m[i] = 0;
+        // 反過來，整塊都偏藍、沒有白色間隔的小區塊是商品的陰影，也不是印刷區
+        const dens = seeds / cells.length;
+        if (cells.length > 30 && (dens < 0.2 || (dens > 0.92 && cells.length < n * n * 0.03))) for (const i of cells) m[i] = 0;
       }
     }
     let front: number[] = [];
     for (let i = 0; i < n * n; i++) if (m[i]) front.push(i);
-    for (let step = Math.round(R * 0.6); step > 0 && front.length; step--) {
+    for (let step = G; step > 0 && front.length; step--) {
       const next: number[] = [];
       for (const i of front) {
         const x = i % n, y = (i / n) | 0;
         for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, y > 0 ? i - n : -1, y < n - 1 ? i + n : -1]) {
-          if (j >= 0 && !m[j] && light[j] && !bg[j] && !wall[j]) { m[j] = 1; next.push(j); }
+          if (j >= 0 && !m[j] && light[j] && !bg[j] && !hole[j] && !wall[j]) { m[j] = 1; next.push(j); }
         }
       }
       front = next;
     }
+    // 被邊界擋下的區塊：外側緊鄰背景的，其實是商品自己的邊緣（陰影、反光），補回來才不會缺角或鋸齒；
+    // 外側還是別的淺色東西的（衣袖），維持不填
+    const seen = new Uint8Array(n * n);
+    const cand = (i: number) => loose[i] && !m[i] && light[i] && !bg[i] && !hole[i];
+    for (let s0 = 0; s0 < n * n; s0++) {
+      if (seen[s0] || !cand(s0)) continue;
+      const cells = [s0];
+      seen[s0] = 1;
+      let toBg = 0, toOther = 0;
+      for (let q = 0; q < cells.length; q++) {
+        const i = cells[q], x = i % n, y = (i / n) | 0;
+        for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, y > 0 ? i - n : -1, y < n - 1 ? i + n : -1]) {
+          if (j < 0 || m[j]) continue;
+          if (cand(j)) { if (!seen[j]) { seen[j] = 1; cells.push(j); } }
+          else if (bg[j] || hole[j] || !light[j]) toBg++;
+          else toOther++;
+        }
+      }
+      if (toBg > 0 && toOther <= toBg * 0.25) for (const i of cells) m[i] = 2;
+    }
+    for (let i = 0; i < n * n; i++) if (m[i] === 2) m[i] = 1;
   }
 
   // 補小洞（文字邊緣的雜點），保留拉鍊這類較大的缺口
@@ -175,7 +255,9 @@ export function analyze(img: CanvasImageSource): MockupModel {
   {
     const tmp = new Uint8ClampedArray(n * n);
     for (let i = 0; i < n * n; i++) tmp[i] = m[i] ? 255 : 0;
-    let sm = boxBlur(tmp, n, 4);
+    // 邊緣的波浪和斜紋同一個節奏，所以平滑的範圍跟著斜紋粗細走
+    const sr = smoothR;
+    let sm = boxBlur(tmp, n, sr);
     for (let i = 0; i < n * n; i++) tmp[i] = sm[i] >= 128 ? 255 : 0;
     sm = boxBlur(tmp, n, 3);
     for (let i = 0; i < n * n; i++) m[i] = sm[i] >= 128 ? 1 : 0;
@@ -203,7 +285,9 @@ export function analyze(img: CanvasImageSource): MockupModel {
     else comps.push({ id, area: 0 });
   }
   const minArea = n * n * 0.012;
-  const regions: Region[] = comps.filter((x) => x.area >= minArea).sort((a, b) => b.area - a.area).slice(0, 6).map(({ id, area }) => {
+  // 比主要印刷區小很多的零碎區塊多半是誤判（場景裡偏藍的沙發、牆面）
+  const biggest = comps.reduce((a, c) => Math.max(a, c.area), 0);
+  const regions: Region[] = comps.filter((x) => x.area >= minArea && x.area >= biggest * 0.12).sort((a, b) => b.area - a.area).slice(0, 6).map(({ id, area }) => {
     const hard = new Uint8ClampedArray(n * n);
     let sx = 0, sy = 0;
     for (let i = 0; i < n * n; i++) if (label[i] === id) { hard[i] = 255; sx += i % n; sy += (i / n) | 0; }
@@ -225,6 +309,32 @@ export function analyze(img: CanvasImageSource): MockupModel {
     while (angle < -Math.PI / 4) angle += Math.PI / 2;
     let b = bounds(0);
     if (Math.abs(angle) > 0.05) { const rb = bounds(angle); if (rb.fill > 0.86 && rb.fill > b.fill + 0.06) b = rb; else angle = 0; } else angle = 0;
+    // 直邊拉直：外框的某一邊如果幾乎是直的（海報、毛巾、胸前印刷框），把那一邊的小波浪和被磨圓的角補平。
+    // 本來就彎的邊（杯口、圓形）不會通過檢查，維持原狀
+    if (angle === 0) {
+      const x0 = Math.round(mx + b.u0), x1 = Math.round(mx + b.u1), y0 = Math.round(my + b.v0), y1 = Math.round(my + b.v1);
+      const tol = Math.max(2, Math.round(smoothR * 0.5));
+      const side = (horizontal: boolean, fromStart: boolean) => {
+        const len = horizontal ? x1 - x0 + 1 : y1 - y0 + 1, depthMax = horizontal ? y1 - y0 + 1 : x1 - x0 + 1;
+        const depth = new Int32Array(len);
+        let ok = 0, mid = 0;
+        for (let k = 0; k < len; k++) {
+          let dd = 0;
+          for (; dd < depthMax; dd++) {
+            const x = horizontal ? x0 + k : fromStart ? x0 + dd : x1 - dd, y = horizontal ? (fromStart ? y0 + dd : y1 - dd) : y0 + k;
+            if (hard[y * n + x]) break;
+          }
+          depth[k] = dd;
+          if (k >= len * 0.12 && k <= len * 0.88) { mid++; if (dd <= tol) ok++; }
+        }
+        if (mid < 8 || ok / mid < 0.9) return;
+        for (let k = 0; k < len; k++) if (depth[k] > 0 && depth[k] <= tol * 2.5) for (let dd = 0; dd < depth[k]; dd++) {
+          const x = horizontal ? x0 + k : fromStart ? x0 + dd : x1 - dd, y = horizontal ? (fromStart ? y0 + dd : y1 - dd) : y0 + k;
+          hard[y * n + x] = 255;
+        }
+      };
+      side(true, true); side(true, false); side(false, true); side(false, false);
+    }
     const uc = (b.u0 + b.u1) / 2, vc = (b.v0 + b.v1) / 2;
     // 取印刷區外圍一圈的顏色
     const grown = boxMax(hard, n, 5);
