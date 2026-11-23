@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #faf8f4;
-  --color-sand: #f1ece3;
-  --color-line: #e3dccf;
-  --color-ink: #1f1e1b;
-  --color-mute: #6f6a60;
-  --color-forest: #23423a;
-  --color-forest-dark: #182f29;
-  --color-gold: #a8833f;
-  --color-danger: #b3402e;
-  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-  --font-serif: "Noto Serif TC", "Songti TC", "PMingLiU", Georgia, serif;
+  /* 單色系：與 B2B 站一致（白、淺灰、近黑） */
+  --color-paper: #ffffff;
+  --color-sand: #ececec;
+  --color-line: #e2e2e2;
+  --color-ink: #0f0f0f;
+  --color-mute: #6b6b6b;
+  --color-forest: #111111;
+  --color-forest-dark: #000000;
+  --color-gold: #8a8a8a;
+  --color-danger: #b3261e;
+  --font-sans: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-serif: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
 }
 
 html { background: var(--color-paper); color: var(--color-ink); }
-body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
-h1, h2, h3, .serif { font-family: var(--font-serif); }
+body { font-family: var(--font-sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .serif { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.02em; }
 
 @layer components {
-  .container-x { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
-  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 bg-forest text-white hover:bg-forest-dark; }
-  .btn-outline { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-forest text-forest hover:bg-forest hover:text-white; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-line bg-white text-ink hover:border-ink; }
-  .card { @apply rounded-2xl border border-line bg-white; }
+  .container-x { @apply mx-auto w-full max-w-[1400px] px-4 sm:px-8; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 bg-forest text-white hover:bg-forest-dark; }
+  .btn-outline { @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-forest text-forest hover:bg-forest hover:text-white; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 border border-line bg-white text-ink hover:border-ink; }
+  .card { @apply rounded-[14px] border border-line bg-white; }
   .input { @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-forest; }
   .label { @apply mb-1 block text-xs font-medium text-mute; }
-  .chip { @apply rounded-full border border-line bg-white px-3 py-1.5 text-sm transition hover:border-ink; }
-  .chip-on { @apply rounded-full border border-forest bg-forest px-3 py-1.5 text-sm text-white; }
-  .eyebrow { @apply text-xs font-medium tracking-[0.2em] text-gold uppercase; }
+  .chip { @apply rounded-[12px] border border-line bg-white px-3 py-1.5 text-sm transition hover:border-ink; }
+  .chip-on { @apply rounded-[12px] border border-forest bg-forest px-3 py-1.5 text-sm text-white; }
+  .eyebrow { @apply text-[11px] font-medium tracking-[0.22em] text-gold uppercase; }
 }
 
 @media print {
@@ -38,3 +39,16 @@ h1, h2, h3, .serif { font-family: var(--font-serif); }
 
 /* 從 Shopify 商店進來的排版頁：隱藏本站的頁首頁尾，避免兩個品牌導覽混在一起 */
 html[data-embed] body > header, html[data-embed] body > footer { display: none; }
+
+/* 跑馬燈 */
+@keyframes km-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.km-marquee { display: flex; width: max-content; animation: km-marquee 38s linear infinite; }
+.km-marquee:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .km-marquee { animation: none; } }
+/* 橫向捲動列（印刷方式） */
+.km-scroll { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.km-scroll::-webkit-scrollbar { display: none; }
+.km-scroll > * { scroll-snap-align: start; flex: 0 0 auto; }
+details.km-faq > summary { list-style: none; cursor: pointer; }
+details.km-faq > summary::-webkit-details-marker { display: none; }
+details.km-faq[open] .km-plus { transform: rotate(45deg); }

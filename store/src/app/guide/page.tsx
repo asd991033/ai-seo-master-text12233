@@ -12,7 +12,7 @@ export default async function GuidePage() {
     <>
     <section className="relative overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/guide.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img src="/eg/banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-r from-ink/75 via-ink/45 to-transparent" />
       <div className="container-x relative py-20 text-white md:py-28">
         <div className="text-xs tracking-[0.2em] text-[#e9d9b5]">{t.nav.guide.toUpperCase()}</div>
@@ -31,7 +31,7 @@ export default async function GuidePage() {
         ))}
       </ol>
 
-      <h2 className="mt-14 text-xl font-bold">{t.guide.methodsTitle}</h2>
+      <h2 id="methods" className="mt-14 scroll-mt-28 text-xl font-bold">{t.guide.methodsTitle}</h2>
       <div className="card mt-4 divide-y divide-line">
         {methods.map((m) => (
           <div key={m.id} className="grid gap-1 p-4 text-sm sm:grid-cols-[180px_1fr]">

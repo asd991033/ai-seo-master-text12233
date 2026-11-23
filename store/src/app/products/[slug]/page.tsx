@@ -5,6 +5,7 @@ import { t } from "@/i18n";
 import { fmtNum } from "@/lib/format";
 import { getProductBySlug, listProducts, listZones } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
+import { Faq, MethodStrip } from "@/components/home/Sections";
 import { RichDescription } from "@/components/RichDescription";
 import { fmtMoney } from "@/lib/format";
 import { priceRange } from "@/lib/pricing";
@@ -42,7 +43,8 @@ export default async function ProductPage({ params }: Props) {
     [t.product.packing, p.cartonQty ? t.product.packingValue(p.cartonQty, p.cartonLengthCm, p.cartonWidthCm, p.cartonHeightCm, p.cartonWeightKg) : ""],
   ];
   return (
-    <div className="container-x py-8 pb-28 lg:pb-8">
+    <>
+    <div id="top" className="container-x pt-6 pb-14">
       <nav className="mb-6 text-xs text-mute">
         <Link href="/products" className="hover:text-ink">{t.nav.products}</Link>
         {p.categoryName && <> / <Link href={`/products?category=${encodeURIComponent(p.categorySlug ?? "")}`} className="hover:text-ink">{p.categoryName}</Link></>}
@@ -54,12 +56,13 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
         <div className="min-w-0">
-          {p.categoryName && <div className="eyebrow">{p.categoryName}</div>}
-          <h1 className="mt-2 text-3xl leading-snug font-bold md:text-[34px]">{p.name}</h1>
-          <p className="mt-3 leading-relaxed text-mute">{p.summary}</p>
-          {range && <div className="mt-4 flex items-baseline gap-2"><span className="serif text-3xl font-bold text-forest">{fmtMoney(range.min)}</span><span className="text-sm text-mute">{t.products.from}・{t.product.perPiece}</span></div>}
-          <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5 border-y border-line py-4 text-[13px] text-mute">
-            {points.map(([Icon, label]) => <li key={label} className="flex items-center gap-2"><Icon className="h-[18px] w-[18px] text-forest" />{label}</li>)}
+          <h1 className="text-[26px] leading-[1.2] md:text-[30px]">{p.name}</h1>
+          {range && <div className="mt-3 flex items-baseline gap-2"><span className="text-[19px] font-medium">{fmtMoney(range.min)}</span><span className="text-[13px] text-mute">{t.products.from}・{t.product.perPiece}</span></div>}
+          <ul className="mt-4 list-disc space-y-1 pl-5 text-[12.5px] text-mute">
+            {p.summary && <li>{p.summary}</li>}
+            {p.material && <li>{t.product.material}：{p.material}</li>}
+            {p.methods.length > 0 && <li>{t.product.method}：{p.methods.map((m) => m.name).join("、")}</li>}
+            <li>{t.product.leadDays}：{p.leadDays} {t.product.days}</li>
           </ul>
           <div className="mt-6">
             <Configurator
@@ -74,30 +77,104 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
       </div>
-      <section className="mt-16 grid gap-12 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div>
-          <h2 className="mb-6 text-2xl font-bold">{t.product.desc}</h2>
-          <RichDescription text={p.description} />
-        </div>
-        <div>
-          <h2 className="mb-6 text-2xl font-bold">{t.product.specs}</h2>
-          <dl className="divide-y divide-line rounded-2xl border border-line bg-white px-5 text-sm">
-            {specs.filter(([, v]) => v).map(([k, v]) => (
-              <div key={k} className="flex gap-5 py-3.5">
-                <dt className="w-20 shrink-0 text-mute">{k}</dt>
-                <dd className="min-w-0 break-words">{v}</dd>
+    </div>
+
+    {/* 保證條 */}
+    <section className="container-x">
+      <div className="grid overflow-hidden rounded-[14px] border border-line bg-white sm:grid-cols-2 lg:grid-cols-4">
+        {t.product.brief.map((x, i) => {
+          const Icon = points[i][0];
+          return (
+            <div key={x.t} className="flex gap-3 border-line p-5 max-lg:border-b lg:border-r lg:last:border-r-0">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line"><Icon className="h-[18px] w-[18px]" /></span>
+              <div>
+                <div className="text-[13px] font-bold tracking-tight">{x.t}</div>
+                <p className="mt-1 text-[12px] leading-relaxed text-mute">{x.d}</p>
               </div>
-            ))}
-          </dl>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+
+    {/* 商品說明與規格 */}
+    <section className="container-x grid gap-12 py-16 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div>
+        <div className="eyebrow">{t.product.desc}</div>
+        <h2 className="mt-3 mb-7 text-[26px] md:text-[30px]">{p.name}</h2>
+        <RichDescription text={p.description} />
+      </div>
+      <div>
+        <div className="eyebrow">{t.product.specs}</div>
+        <dl className="mt-5 divide-y divide-line rounded-[14px] border border-line bg-white px-5 text-[13px]">
+          {specs.filter(([, v]) => v).map(([k, v]) => (
+            <div key={k} className="flex gap-5 py-3.5">
+              <dt className="w-20 shrink-0 text-mute">{k}</dt>
+              <dd className="min-w-0 break-words">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+
+    <MethodStrip eyebrow={t.product.methodsEyebrow} title={t.product.methodsTitle} more={t.product.methodsAll} href="/guide#methods" items={t.home.methods} />
+
+    {/* 流程 */}
+    <section className="bg-sand">
+      <div className="container-x pb-16">
+        <div className="flex items-end justify-between gap-4 border-t border-ink/10 pt-14">
+          <div>
+            <div className="eyebrow">{t.product.orderEyebrow}</div>
+            <h2 className="mt-3 text-[26px] md:text-[32px]">{t.product.orderTitle}</h2>
+          </div>
+          <Link href="/guide" className="shrink-0 text-xs font-semibold underline underline-offset-4">{t.product.orderAll}</Link>
+        </div>
+        <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          {t.product.orderSteps.map((x, i) => (
+            <li key={x.t}>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-xs font-bold text-white">{i + 1}</span>
+              <div className="mt-4 text-[14px] font-bold tracking-tight">{x.t}</div>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-mute">{x.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    {/* 注意事項 */}
+    <section className="bg-sand">
+      <div className="container-x pb-16">
+        <div className="eyebrow">{t.product.notesEyebrow}</div>
+        <h2 className="mt-3 text-[26px] md:text-[32px]">{t.product.notesTitle}</h2>
+        <div className="mt-8 grid overflow-hidden rounded-[14px] bg-white md:grid-cols-3">
+          {t.product.notes.map((x) => (
+            <div key={x.t} className="border-line p-7 max-md:border-b md:border-r md:last:border-r-0">
+              <div className="text-[14px] font-bold tracking-tight">{x.t}</div>
+              <p className="mt-3 text-[12.5px] leading-relaxed text-mute">{x.d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {related.length > 0 && (
+      <section className="bg-sand">
+        <div className="container-x pb-20">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="eyebrow">{t.products.relatedEyebrow}</div>
+              <h2 className="mt-3 text-[26px] md:text-[32px]">{t.products.related}</h2>
+            </div>
+            {p.categorySlug && <Link href={`/products?category=${encodeURIComponent(p.categorySlug)}`} className="shrink-0 text-xs font-semibold underline underline-offset-4">{t.home.viewAll}</Link>}
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-2.5 md:grid-cols-4">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
         </div>
       </section>
-      {related.length > 0 && (
-        <section className="mt-16 border-t border-line pt-12">
-          <h2 className="mb-8 text-2xl font-bold">{t.products.related}</h2>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
-        </section>
-      )}
+    )}
+
+    <Faq eyebrow={t.product.faqEyebrow} title={t.product.faqTitle} cta={t.home.faqCta} href="#top" items={t.product.faq} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-    </div>
+      <div className="h-20 bg-[#111] lg:hidden" />
+    </>
   );
 }

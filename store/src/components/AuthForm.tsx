@@ -11,7 +11,7 @@ export function AuthForm({ mode, next, providers = [], oauthError }: { mode: "lo
     <div className="container-x grid items-stretch gap-0 py-10 md:grid-cols-2 md:py-16">
       <div className="relative hidden overflow-hidden rounded-l-3xl md:block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/login.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src="/eg/cat-all.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent p-8 pt-24 text-white">
           <div className="serif text-2xl font-bold">{t.auth.welcome}</div>
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/85">{mode === "login" ? t.auth.welcomeLead : t.auth.joinLead}</p>

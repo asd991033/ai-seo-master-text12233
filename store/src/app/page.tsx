@@ -1,170 +1,170 @@
 import Link from "next/link";
 import { t } from "@/i18n";
+import { site } from "@/config/site";
 import { categoryCounts, listProducts } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
-import { IconArrow, IconBrush, IconCheck, IconLayers, IconTag, IconTruck } from "@/components/Icons";
+import { Faq, MethodStrip } from "@/components/home/Sections";
+import { IconBrush, IconLayers, IconTag, IconTruck } from "@/components/Icons";
 
 export const dynamic = "force-dynamic";
 
-const PROMISE_ICONS = [IconLayers, IconTag, IconBrush, IconTruck];
+const USP_ICONS = [IconLayers, IconBrush, IconTruck, IconTag];
+const pill = "inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-sm font-medium transition";
 
 export default async function Home() {
   const [featured, cats] = await Promise.all([listProducts({ limit: 8 }), categoryCounts()]);
-  const catList = cats.filter((c) => c.count > 0);
-  const catSlug = (name: string) => catList.find((c) => c.name === name)?.slug;
+  const slugOf = (name: string) => cats.find((c) => c.name === name)?.slug;
+  const catHref = (name: string) => (slugOf(name) ? `/products?category=${encodeURIComponent(slugOf(name)!)}` : "/products");
   return (
-    <>
+    <div className="-mt-[70px]">
       {/* 主視覺 */}
-      <section className="overflow-hidden bg-sand">
-        <div className="container-x grid items-center gap-14 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
-          <div>
-            <div className="eyebrow">{t.home.eyebrow}</div>
-            <h1 className="mt-5 text-[40px] leading-[1.2] font-bold text-forest md:text-[54px]">{t.home.title}</h1>
-            <p className="mt-6 max-w-md text-[17px] leading-relaxed text-mute">{t.home.lead}</p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/products" className="btn-primary px-7 py-3.5 text-base">{t.home.ctaShop}<IconArrow className="h-4 w-4" /></Link>
-              <Link href="/guide" className="btn-outline px-7 py-3.5 text-base">{t.home.ctaGuide}</Link>
-            </div>
-          </div>
-          <div className="relative mx-auto w-full max-w-md md:max-w-none">
-            {/* eslint-disable @next/next/no-img-element */}
-            <img src="/brand/hero.jpg" alt="" className="aspect-[4/5] w-full rounded-[32px] object-cover shadow-2xl" />
-            <div className="absolute -bottom-6 -left-4 w-36 rounded-2xl bg-white p-2 shadow-xl sm:-left-10 sm:w-44">
-              <img src="/showcase/backpack.jpg" alt="" className="aspect-square w-full rounded-xl object-cover" />
-              <div className="px-1 pt-2 pb-1 text-[11px] text-mute">{t.home.sample}</div>
-            </div>
-            <div className="absolute -top-5 -right-3 w-28 rounded-2xl bg-white p-2 shadow-xl sm:-right-6 sm:w-36">
-              <img src="/showcase/mug.jpg" alt="" className="aspect-square w-full rounded-xl object-cover" />
-              <div className="px-1 pt-2 pb-1 text-[11px] text-mute">{t.home.sample}</div>
-            </div>
-            {/* eslint-enable @next/next/no-img-element */}
+      <section className="relative overflow-hidden rounded-b-[22px] bg-sand">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/eg/hero-2.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="container-x relative flex min-h-[560px] flex-col justify-end pt-32 pb-12 md:min-h-[640px] md:pb-16">
+          <h1 className="max-w-[560px] text-[38px] leading-[1.12] md:text-[52px]">{t.home.title}</h1>
+          <p className="mt-4 max-w-[400px] text-[15px] leading-relaxed">{t.home.lead}</p>
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            <Link href="/products" className={`${pill} bg-ink text-white hover:bg-black`}>{t.home.ctaShop} <span aria-hidden>→</span></Link>
+            <Link href="/guide" className={`${pill} bg-white text-ink hover:bg-white/80`}>{t.home.ctaGuide} <span aria-hidden>→</span></Link>
           </div>
         </div>
       </section>
 
-      {/* 四個承諾 */}
-      <section className="border-b border-line">
-        <div className="container-x grid grid-cols-2 gap-y-8 py-10 lg:grid-cols-4">
-          {t.home.promise.map((x, i) => {
-            const Icon = PROMISE_ICONS[i];
+      <MethodStrip eyebrow={t.home.methodsEyebrow} title={t.home.methodsTitle} more={t.home.methodsAll} href="/guide#methods" items={t.home.methods} />
+
+      {/* 優勢 */}
+      <section className="container-x py-16">
+        <div className="eyebrow">{t.home.uspEyebrow}</div>
+        <h2 className="mt-3 text-[26px] md:text-[32px]">{t.home.uspTitle(site.brand)}</h2>
+        <div className="mt-8 grid overflow-hidden rounded-[14px] border border-line sm:grid-cols-2 lg:grid-cols-4">
+          {t.home.usp.map((u, i) => {
+            const Icon = USP_ICONS[i];
             return (
-              <div key={x.t} className="flex gap-4 px-2">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest/8 text-forest"><Icon /></span>
-                <div>
-                  <div className="font-bold">{x.t}</div>
-                  <div className="mt-1 text-sm leading-relaxed text-mute">{x.d}</div>
-                </div>
+              <div key={u.t} className="relative border-line p-7 max-lg:border-b lg:border-r lg:last:border-r-0">
+                <span className="absolute top-6 right-6 text-[10px] tracking-widest text-gold">0{i + 1}</span>
+                <Icon className="h-7 w-7" />
+                <div className="mt-6 text-[17px] font-bold tracking-tight">{u.t}</div>
+                <p className="mt-2 text-[13px] leading-relaxed text-mute">{u.d}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* 分類 */}
-      <section className="container-x py-16">
-        <SectionHead title={t.home.categories} lead={t.home.categoriesLead} />
-        <div className="mt-9 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {catList.slice(0, 8).map((c) => (
-            <Link key={c.id} href={`/products?category=${encodeURIComponent(c.slug)}`} className="group relative overflow-hidden rounded-2xl bg-white ring-1 ring-line">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {c.image && <img src={c.image} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-105" />}
-              <div className="flex items-baseline justify-between px-4 py-3.5">
-                <span className="font-bold group-hover:text-forest">{c.name}</span>
-                <span className="text-xs text-mute">{c.count} {t.home.countUnit}</span>
+      {/* 跑馬燈 */}
+      <section className="overflow-hidden py-6" aria-hidden>
+        <div className="-mx-6 -rotate-[1.2deg] bg-[#111] py-4 text-white">
+          <div className="km-marquee">
+            {[0, 1].map((k) => (
+              <div key={k} className="flex shrink-0 items-center">
+                {[...t.home.ticker, ...t.home.ticker].map((x, i) => (
+                  <span key={i} className="flex items-center gap-10 pr-10 text-[11px] font-semibold tracking-[0.26em] whitespace-nowrap uppercase">{x}<i className="not-italic opacity-60">◇</i></span>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 熱門商品 */}
-      <section className="bg-sand/60 py-16">
-        <div className="container-x">
-          <SectionHead title={t.home.featured} lead={t.home.featuredLead} href="/products" cta={t.home.viewAll} />
-          <div className="mt-9 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-            {featured.map((p) => <ProductCard key={p.id} p={p} />)}
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 使用情境 */}
-      <section className="container-x py-16">
-        <SectionHead title={t.home.scenesTitle} />
-        <div className="mt-9 grid gap-5 md:grid-cols-3">
-          {t.home.scenes.map((s) => (
-            <Link key={s.t} href={catSlug(s.cat) ? `/products?category=${encodeURIComponent(catSlug(s.cat)!)}` : "/products"} className="group overflow-hidden rounded-3xl bg-white ring-1 ring-line">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={s.img} alt="" loading="lazy" className="aspect-[5/4] w-full object-cover transition duration-500 group-hover:scale-105" />
-              <div className="p-6">
-                <h3 className="text-xl font-bold">{s.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-mute">{s.d}</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-forest">{s.cta}<IconArrow className="h-4 w-4 transition group-hover:translate-x-1" /></span>
-              </div>
-            </Link>
-          ))}
+      {/* 品類拼貼 */}
+      <section className="container-x grid gap-8 py-16 lg:grid-cols-[320px_1fr]">
+        <div>
+          <div className="eyebrow">{t.home.catEyebrow}</div>
+          <h2 className="mt-3 text-[26px] leading-tight md:text-[32px]">{t.home.catTitle}</h2>
+          <p className="mt-4 text-[13px] leading-relaxed text-mute">{t.home.catLead}</p>
+          <Link href="/products" className={`${pill} mt-6 bg-ink text-white hover:bg-black`}>{t.home.catAll} <span aria-hidden>→</span></Link>
         </div>
-      </section>
-
-      {/* 排版工具 */}
-      <section className="bg-forest text-white">
-        <div className="container-x grid items-center gap-10 py-16 md:grid-cols-2">
-          <div>
-            <h2 className="text-3xl leading-snug font-bold md:text-4xl">{t.home.designerTitle}</h2>
-            <p className="mt-5 max-w-md leading-relaxed text-white/75">{t.home.designerLead}</p>
-            <ul className="mt-7 space-y-3 text-[15px]">
-              {t.home.designerPoints.map((x) => (
-                <li key={x} className="flex items-center gap-3"><span className="grid h-6 w-6 place-items-center rounded-full bg-gold text-white"><IconCheck className="h-3.5 w-3.5" /></span>{x}</li>
-              ))}
-            </ul>
-            <Link href="/products" className="mt-9 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-medium text-forest transition hover:bg-sand">{t.home.designerCta}<IconArrow className="h-4 w-4" /></Link>
-          </div>
-          <div className="relative">
-            {/* eslint-disable @next/next/no-img-element */}
-            <img src="/brand/designer.jpg" alt="" loading="lazy" className="aspect-[4/3] w-full rounded-3xl object-cover" />
-            <img src="/showcase/tee.jpg" alt="" loading="lazy" className="absolute -bottom-6 -left-4 hidden w-36 rounded-2xl border-4 border-forest bg-white object-cover shadow-xl sm:block" />
-            {/* eslint-enable @next/next/no-img-element */}
-          </div>
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:grid-rows-2">
+          <Tile href="/products" img="/eg/cat-all.jpg" title={t.home.catAllTitle} desc={t.home.catAllDesc} className="col-span-2 md:col-span-1 md:row-span-2" />
+          {t.home.catTiles.map((c) => <Tile key={c.cat} href={catHref(c.cat)} img={c.img} title={c.cat} desc={c.d} />)}
         </div>
       </section>
 
       {/* 流程 */}
-      <section className="container-x py-16">
-        <SectionHead title={t.home.stepsTitle} href="/guide" cta={t.home.ctaGuide} />
-        <ol className="mt-9 grid gap-5 md:grid-cols-4">
-          {t.home.steps.map((s, i) => (
-            <li key={s.t} className="relative rounded-2xl border border-line bg-white p-6">
-              <div className="serif text-4xl font-bold text-gold/80">0{i + 1}</div>
-              <div className="mt-4 font-bold">{s.t}</div>
-              <p className="mt-2 text-sm leading-relaxed text-mute">{s.d}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* 收尾 */}
-      <section className="container-x">
-        <div className="relative overflow-hidden rounded-3xl bg-sand px-6 py-20 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/cta.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="relative">
-            <h2 className="text-3xl font-bold text-forest md:text-4xl">{t.home.ctaTitle}</h2>
-            <p className="mx-auto mt-3 max-w-md text-ink/70">{t.home.ctaLead}</p>
-            <Link href="/products" className="btn-primary mt-7 px-8 py-3.5 text-base">{t.home.ctaShop}<IconArrow className="h-4 w-4" /></Link>
-          </div>
+      <section className="bg-sand">
+        <div className="container-x py-16">
+          <div className="eyebrow">{t.home.stepsEyebrow}</div>
+          <h2 className="mt-3 text-[26px] md:text-[32px]">{t.home.stepsTitle}</h2>
+          <ol className="mt-8 grid grid-cols-2 gap-2.5 md:grid-cols-5">
+            {t.home.steps.map((s, i) => (
+              <li key={s.t} className="rounded-[14px] bg-white p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/eg/step-${i + 1}.jpg`} alt="" loading="lazy" className="aspect-[4/3.1] w-full rounded-[10px] object-cover" />
+                <div className="px-2 pt-4 pb-3">
+                  <div className="flex items-center justify-between text-[11px] text-gold"><span>0{i + 1}</span><span aria-hidden>→</span></div>
+                  <div className="mt-3 text-[14px] font-bold tracking-tight">{s.t}</div>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-mute">{s.d}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
-    </>
+
+      {/* 黑色橫幅 */}
+      <section className="relative overflow-hidden bg-[#111] text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/eg/banner.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+        <div className="container-x relative py-24">
+          <div className="text-[11px] font-medium tracking-[0.22em] text-white/60 uppercase">{t.home.bannerEyebrow}</div>
+          <h2 className="mt-4 text-[30px] md:text-[38px]">{t.home.bannerTitle}</h2>
+          <p className="mt-4 max-w-md text-[14px] leading-relaxed text-white/75">{t.home.bannerLead}</p>
+          <Link href="/products" className={`${pill} mt-7 bg-white text-ink hover:bg-white/85`}>{t.home.bannerCta}</Link>
+        </div>
+      </section>
+
+      {/* 精選商品 */}
+      <section className="container-x grid gap-8 py-16 lg:grid-cols-[320px_1fr]">
+        <div className="lg:pt-24">
+          <div className="eyebrow">{t.home.featuredEyebrow}</div>
+          <h2 className="mt-3 text-[26px] leading-tight md:text-[32px]">{t.home.featured}</h2>
+          <p className="mt-4 text-[13px] leading-relaxed text-mute">{t.home.featuredLead}</p>
+          <Link href="/products" className="mt-5 inline-block text-xs font-semibold underline underline-offset-4">{t.home.featuredCta} →</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">{featured.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+      </section>
+
+      {/* 送禮場合 */}
+      <section className="grid border-y border-line md:grid-cols-[1fr_1.1fr]">
+        <div className="relative min-h-[320px] overflow-hidden bg-[#111] text-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/eg/hero-3.jpg" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-55 grayscale" />
+          <div className="relative flex h-full flex-col justify-end p-8 sm:p-12">
+            <div className="text-[11px] font-medium tracking-[0.22em] text-white/60 uppercase">{t.home.useEyebrow}</div>
+            <h2 className="mt-3 text-[28px] md:text-[34px]">{t.home.useTitle}</h2>
+            <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-white/75">{t.home.useLead}</p>
+            <div><Link href="/products" className={`${pill} mt-6 bg-white text-ink hover:bg-white/85`}>{t.home.useCta}</Link></div>
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2">
+          {t.home.uses.map((u) => (
+            <Link key={u.t} href="/products" className="group border-line p-8 transition hover:bg-sand/60 max-sm:border-b sm:odd:border-r sm:[&:nth-child(-n+2)]:border-b">
+              <div className="flex items-center justify-between text-[15px] font-bold tracking-tight">{u.t}<span aria-hidden className="text-gold transition group-hover:translate-x-1">→</span></div>
+              <p className="mt-3 text-[13px] leading-relaxed text-mute">{u.d}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <Faq eyebrow={t.home.faqEyebrow} title={t.home.faqTitle} cta={t.home.faqCta} href="/products" items={t.home.faq} />
+    </div>
   );
 }
 
-function SectionHead({ title, lead, href, cta }: { title: string; lead?: string; href?: string; cta?: string }) {
+function Tile({ href, img, title, desc, className = "" }: { href: string; img: string; title: string; desc: string; className?: string }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 className="text-[28px] font-bold md:text-[32px]">{title}</h2>
-        {lead && <p className="mt-2 text-mute">{lead}</p>}
+    <Link href={href} className={`group relative block min-h-[190px] overflow-hidden rounded-[14px] bg-[#111] text-white ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+        <div>
+          <div className="text-[16px] font-bold tracking-tight">{title}</div>
+          <div className="mt-1 text-[11px] leading-snug text-white/80">{desc}</div>
+        </div>
+        <span aria-hidden className="shrink-0 pb-0.5">→</span>
       </div>
-      {href && <Link href={href} className="inline-flex items-center gap-1.5 text-sm font-medium text-forest hover:underline">{cta}<IconArrow className="h-4 w-4" /></Link>}
-    </div>
+    </Link>
   );
 }
