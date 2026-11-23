@@ -41,8 +41,8 @@ const dict = {
     catAllTitle: "全部品類",
     catAllDesc: "居家、包袋、服飾、配件、3C 周邊，全部可以客製。",
     catTiles: [
-      { cat: "家居用品", d: "毛毯、抱枕、杯具與廚房用品。", img: "/eg/cat-drinkware.jpg" },
-      { cat: "運動娛樂", d: "運動頭巾、戶外用品與休閒小物。", img: "/eg/cat-bottles.jpg" },
+      { cat: "杯子", d: "馬克杯、保溫杯、吸管杯與水壺。", img: "/eg/cat-drinkware.jpg" },
+      { cat: "家居用品", d: "毛毯、抱枕、桌巾與廚房用品。", img: "/eg/cat-bottles.jpg" },
       { cat: "箱包皮具", d: "後背包、托特包、收納包與卡夾。", img: "/eg/cat-bags.jpg" },
       { cat: "消費電子", d: "滑鼠墊、鍵盤墊與 3C 保護套。", img: "/eg/cat-tech.jpg" },
     ],
