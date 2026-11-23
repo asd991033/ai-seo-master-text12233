@@ -3,7 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
-import { updateOrder } from "../../actions";
+import { deleteOrder, updateOrder } from "../../actions";
 import { sendToSupplier, syncSupplier } from "../../supplier-actions";
 import { HC_STATUS, hicustomEnabled } from "@/lib/hicustom";
 
@@ -78,6 +78,14 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
           );
         }}
       />
+      <details className="mt-10 text-xs text-mute">
+        <summary className="cursor-pointer">刪除這張訂單</summary>
+        <form action={deleteOrder} className="mt-3 flex flex-wrap items-end gap-3">
+          <input type="hidden" name="id" value={order.id} />
+          <label><span className="label">輸入訂單編號 {order.orderNo} 以確認（刪除後無法復原）</span><input name="confirm" className="input w-56" autoComplete="off" /></label>
+          <button className="rounded-[12px] border border-danger px-4 py-2 text-danger hover:bg-danger hover:text-white">永久刪除</button>
+        </form>
+      </details>
     </>
   );
 }

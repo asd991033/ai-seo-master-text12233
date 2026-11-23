@@ -134,3 +134,16 @@ export async function deletePost(fd: FormData) {
   revalidatePath("/blog");
   redirect("/admin/blog");
 }
+
+/** 刪除訂單（連同訂單品項）。用於清除測試訂單；刪除後無法復原 */
+export async function deleteOrder(fd: FormData) {
+  await requireAdmin();
+  const id = num(fd.get("id"));
+  // 需要輸入訂單編號確認，避免誤刪
+  const [order] = id ? await db.select().from(schema.orders).where(eq(schema.orders.id, id)) : [];
+  if (!order || String(fd.get("confirm") ?? "").trim() !== order.orderNo) return;
+  await db.delete(schema.orderItems).where(eq(schema.orderItems.orderId, id));
+  await db.delete(schema.orders).where(eq(schema.orders.id, id));
+  revalidatePath("/admin/orders");
+  redirect("/admin/orders");
+}
