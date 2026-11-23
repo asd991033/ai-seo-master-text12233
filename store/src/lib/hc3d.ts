@@ -91,15 +91,13 @@ async function faceCanvas(uv: any, baseWidth: number, faces: Record<number, Canv
   return c;
 }
 
-async function render3D(part: HcPart, baseWidth: number, faces: Record<number, CanvasImageSource>, scale: number, texSize: number) {
+/** 已建好的 3D 場景（模型、材質、燈光）。拖曳時只更新貼圖，不重建，才不會卡 */
+const scenes = new Map<any, any>();
+async function buildScene(part: HcPart) {
   const { THREE } = await three();
   const d = part.d3, rp = d.rp || {}, files = d.files || [];
-  const W = Math.max(2, Math.round(d.w * scale)), H = Math.max(2, Math.round(d.h * scale));
-  if (!renderer) { renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true }); renderer.outputEncoding = THREE.sRGBEncoding; }
-  renderer.setSize(W, H, false);
-  renderer.physicallyCorrectLights = !!rp.newLightModel;
   const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(45, W / H, 0.1, 1e4);
+  const cam = new THREE.PerspectiveCamera(45, d.w / d.h, 0.1, 1e4);
   scene.add(cam);
   cam.add(new THREE.AmbientLight(undefined, num(rp.ambientLightIntensity)));
   const mp = rp.mainPointPosition || {};
@@ -118,20 +116,21 @@ async function render3D(part: HcPart, baseWidth: number, faces: Record<number, C
   const [gltf, json] = await Promise.all([loadGLB(abs(glb.u)), jf ? loadJSON(abs(jf.u)) : Promise.resolve({})]);
   const info = matsInfo(json, files);
   const obj = gltf.scene.clone(true);
-  const maps: Record<string, HTMLCanvasElement> = {};
-  for (const uv of d.uv || []) maps[uv.name] = await faceCanvas(uv, baseWidth, faces, rp.allowAlpha, texSize);
-  const jobs: Promise<unknown>[] = [], made: any[] = [];
+  const uvNames = new Set((d.uv || []).map((u) => u.name));
+  const slots: Record<string, { mats: any[]; canvas: HTMLCanvasElement | null; tex: any; sig: string }> = {};
+  const jobs: Promise<unknown>[] = [], owned: any[] = [];
   obj.traverse((m: any) => {
     if (!m.isMesh) return;
     const mat = (m.material = m.material.clone()), name = mat.name, inf = info[name] || {};
-    made.push(mat);
+    owned.push(mat);
     const nr = inf.normalRepeat || [1, 1];
     patchShader(THREE, mat, { map: inf.repeat || [1, 1], normalMap: [nr[0], -nr[1]] });
-    const setMap = (t: any) => { t.encoding = THREE.sRGBEncoding; t.minFilter = THREE.LinearFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.flipY = ["custom", "base"].some((k) => name.includes(k)); t.needsUpdate = true; mat.map = t; mat.needsUpdate = true; made.push(t); };
-    if (inf.map) jobs.push(loadTex(inf.map).then((t: any) => setMap(t.clone())).catch(() => {}));
-    if (maps[name]) setMap(new THREE.CanvasTexture(maps[name]));
-    if (inf.normalMap) jobs.push(loadTex(inf.normalMap).then((t: any) => { t = t.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; if (inf.normalScale !== undefined && inf.normalScale !== null) mat.normalScale.set(inf.normalScale, -inf.normalScale); mat.normalMap = t; mat.needsUpdate = true; made.push(t); }).catch(() => {}));
-    if (inf.metalMap) jobs.push(loadTex(inf.metalMap).then((t: any) => { t = t.clone(); t.flipY = false; t.needsUpdate = true; mat.metalnessMap = t; mat.roughnessMap = t; mat.needsUpdate = true; made.push(t); }).catch(() => {}));
+    const flip = ["custom", "base"].some((k) => name.includes(k));
+    const setMap = (t: any) => { t.encoding = THREE.sRGBEncoding; t.minFilter = THREE.LinearFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.flipY = flip; t.needsUpdate = true; mat.map = t; mat.needsUpdate = true; owned.push(t); };
+    if (inf.map) jobs.push(loadTex(inf.map).then((t: any) => { if (!uvNames.has(name)) setMap(t.clone()); }).catch(() => {}));
+    if (uvNames.has(name)) (slots[name] ||= { mats: [], canvas: null, tex: null, sig: "" }).mats.push({ mat, flip });
+    if (inf.normalMap) jobs.push(loadTex(inf.normalMap).then((t: any) => { t = t.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; if (inf.normalScale !== undefined && inf.normalScale !== null) mat.normalScale.set(inf.normalScale, -inf.normalScale); mat.normalMap = t; mat.needsUpdate = true; owned.push(t); }).catch(() => {}));
+    if (inf.metalMap) jobs.push(loadTex(inf.metalMap).then((t: any) => { t = t.clone(); t.flipY = false; t.needsUpdate = true; mat.metalnessMap = t; mat.roughnessMap = t; mat.needsUpdate = true; owned.push(t); }).catch(() => {}));
     if (inf.metalness !== undefined && inf.metalness !== null) mat.metalness = inf.metalness;
     if (inf.roughness !== undefined && inf.roughness !== null) mat.roughness = inf.roughness;
   });
@@ -139,11 +138,46 @@ async function render3D(part: HcPart, baseWidth: number, faces: Record<number, C
   scene.add(obj);
   const r = rp.rotation;
   if (r) obj.setRotationFromEuler(new THREE.Euler(num(r.x), num(r.y), num(r.z)));
-  renderer.render(scene, cam);
+  return { scene, cam, slots, owned };
+}
+
+/** 每張印刷面畫布的版本號：內容變了就換一個新的畫布物件，貼圖才需要重畫 */
+const stamp = new WeakMap<object, number>();
+let stampN = 0;
+const stampOf = (c: any) => { if (!c) return 0; if (!stamp.has(c)) stamp.set(c, ++stampN); return stamp.get(c)!; };
+
+async function render3D(part: HcPart, baseWidth: number, faces: Record<number, CanvasImageSource>, scale: number, texSize: number) {
+  const { THREE } = await three();
+  const d = part.d3, rp = d.rp || {};
+  const W = Math.max(2, Math.round(d.w * scale)), H = Math.max(2, Math.round(d.h * scale));
+  if (!renderer) { renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true }); renderer.outputEncoding = THREE.sRGBEncoding; }
+  let sc = scenes.get(d);
+  if (!sc) {
+    sc = await buildScene(part);
+    scenes.set(d, sc);
+    // 只留最近用到的幾個場景，其餘釋放
+    while (scenes.size > 4) { const k = scenes.keys().next().value; const old = scenes.get(k); scenes.delete(k); for (const x of old.owned) x.dispose?.(); for (const n of Object.keys(old.slots)) old.slots[n].tex?.dispose?.(); }
+  } else { scenes.delete(d); scenes.set(d, sc); }
+  for (const uv of d.uv || []) {
+    const slot = sc.slots[uv.name];
+    if (!slot) continue;
+    const sig = texSize + ":" + uv.faces.map((f) => stampOf(faces[f.v])).join(",");
+    if (sig === slot.sig) continue;
+    slot.sig = sig;
+    const canvas = await faceCanvas(uv, baseWidth, faces, rp.allowAlpha, texSize);
+    slot.tex?.dispose?.();
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding; tex.minFilter = THREE.LinearFilter; tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    slot.tex = tex;
+    for (const { mat, flip } of slot.mats) { tex.flipY = flip; const had = !!mat.map; mat.map = tex; if (!had) mat.needsUpdate = true; }
+    tex.needsUpdate = true;
+  }
+  renderer.setSize(W, H, false);
+  renderer.physicallyCorrectLights = !!rp.newLightModel;
+  renderer.render(sc.scene, sc.cam);
   const out = document.createElement("canvas");
   out.width = W; out.height = H;
   out.getContext("2d")!.drawImage(renderer.domElement, 0, 0);
-  for (const x of made) x.dispose?.();
   return out;
 }
 

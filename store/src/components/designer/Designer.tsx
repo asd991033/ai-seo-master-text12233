@@ -113,6 +113,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const [hcBusy, setHcBusy] = useState(false);
   const hcRef = useRef<{ hc: HcDesign; color: HcDesign["colors"][number]; idx: number } | null>(null);
   const hcJob = useRef<{ running: boolean; want: number | null }>({ running: false, want: null });
+  const faceCache = useRef(new Map<string, { src: unknown; out: HTMLCanvasElement }>());
 
   const stageWrap = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -275,12 +276,19 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       const det = ref.color.details[idx ?? ref.idx] ?? ref.color.details[0];
       if (!det) return null;
       const faces: Record<number, CanvasImageSource> = {};
-      const tex = size >= 700 ? 1536 : 768;
+      const tex = size >= 700 ? 1536 : 640;
       for (const [pi, pos] of product.positions.entries()) {
         const view = ref.hc.views[pi] ?? ref.hc.views.find((v) => v.name === pos.name);
         if (!view) continue;
-        const flat = live && pos.code === currentCode.current ? (hasContent() ? cropCanvas(activeRef.current) : null) : flats.current[pos.code] ?? null;
-        if (flat) faces[view.id] = await faceSquare(ref.hc, view, flat, tex);
+        const isLive = live && pos.code === currentCode.current;
+        const flat = isLive ? (hasContent() ? cropCanvas(activeRef.current) : null) : flats.current[pos.code] ?? null;
+        if (!flat) continue;
+        // 沒在編輯的面內容不會變，沿用上次算好的，3D 貼圖也就不必重傳
+        const key = `${view.id}:${tex}`, hit = isLive ? undefined : faceCache.current.get(key);
+        if (hit && hit.src === flat) { faces[view.id] = hit.out; continue; }
+        const out = await faceSquare(ref.hc, view, flat, tex);
+        if (!isLive) faceCache.current.set(key, { src: flat, out });
+        faces[view.id] = out;
       }
       return renderDetail(det, ref.hc, faces, size, tex);
     },
@@ -290,18 +298,20 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const requestHc = useCallback(
     (size: number) => {
       const job = hcJob.current;
-      job.want = Math.max(job.want ?? 0, size);
+      job.want = size;
       if (job.running) return;
       job.running = true;
       (async () => {
         while (job.want !== null) {
-          const sz = job.want;
+          const sz = job.want, started = performance.now();
           job.want = null;
           try {
             const c = await renderHc(true, sz);
             const target = mockRef.current;
             if (c && target) { target.width = c.width; target.height = c.height; target.getContext("2d")!.drawImage(c, 0, 0); target.dataset.rendered = String(Date.now()); }
           } catch { /* 模型載入失敗時保留上一張 */ }
+          // 讓出主執行緒給拖曳與觸控：畫一張花多久，就至少休息多久，渲染最多只佔一半的時間
+          await new Promise((r) => setTimeout(r, Math.min(250, Math.max(30, performance.now() - started))));
         }
         job.running = false;
         setHcBusy(false);
