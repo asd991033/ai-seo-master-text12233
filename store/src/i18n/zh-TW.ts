@@ -223,7 +223,7 @@ const dict = {
   },
   checkout: {
     title: "結帳", contact: "收件資訊", name: "收件人", phone: "電話", email: "Email", company: "公司名稱（選填）", taxId: "統一編號（選填）",
-    address: "收件地址", note: "訂單備註（選填）", notePh: "例：T 恤各尺寸數量、希望到貨日、發票抬頭…", payment: "付款方式",
+    address: "收件地址（請含縣市與鄉鎮市區）", postcode: "郵遞區號", note: "訂單備註（選填）", notePh: "例：T 恤各尺寸數量、希望到貨日、發票抬頭…", payment: "付款方式",
     onlineOff: "線上付款暫時無法使用，請聯繫客服協助付款。", online: "線上付款（綠界 ECPay）", onlineHint: "送出訂單後前往綠界付款頁，可選信用卡、ATM 轉帳或超商付款；付款完成後進入審稿與生產。", submit: "送出訂單", returnsNotice: "本站商品皆為依你的稿件製作的客製化商品，不適用七天鑑賞期；商品有瑕疵或與訂單不符可免費重製或退款。送出訂單即表示你已閱讀並同意", submitting: "送出中…",
     agree: "送出訂單即表示同意審稿後依確認稿生產，客製商品恕不接受無瑕疵退換。", failed: "訂單送出失敗",
   },

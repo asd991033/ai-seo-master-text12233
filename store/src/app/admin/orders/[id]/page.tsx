@@ -4,6 +4,8 @@ import { db, schema } from "@/db";
 import { t } from "@/i18n";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
 import { updateOrder } from "../../actions";
+import { sendToSupplier, syncSupplier } from "../../supplier-actions";
+import { HC_STATUS, hicustomEnabled } from "@/lib/hicustom";
 
 export default async function AdminOrder({ params }: { params: Promise<{ id: string }> }) {
   const id = Number((await params).id);
@@ -30,6 +32,30 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
         <label className="flex items-center gap-2 pb-2"><input type="checkbox" name="paid" defaultChecked={order.paid} className="accent-[var(--color-forest)]" />已收款</label>
         <button className="btn-primary">更新訂單</button>
       </form>
+      {hicustomEnabled() && (
+        <div className="card mb-8 space-y-3 p-4 text-sm" data-testid="supplier-box">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="font-bold">供應商（HiCustom）</div>
+            {order.supplierOrderId ? <span className="rounded-full bg-forest/10 px-3 py-1 text-xs">{HC_STATUS[order.supplierStatus ?? 0] ?? "已送出"}</span> : <span className="rounded-full bg-gold/15 px-3 py-1 text-xs text-gold">尚未送單</span>}
+          </div>
+          {order.supplierOrderId && <div className="text-xs text-mute">HiCustom 訂單編號：<span className="font-medium text-ink">{order.supplierOrderId}</span>{order.supplierCost && `　成本：${order.supplierCost}`}</div>}
+          {order.supplierNote && <p className="rounded-lg bg-sand px-3 py-2 text-xs leading-relaxed">{order.supplierNote}</p>}
+          {order.supplierOrderId ? (
+            <form action={syncSupplier} className="flex flex-wrap items-center gap-3">
+              <input type="hidden" name="id" value={order.id} />
+              <button className="btn-primary">同步狀態與物流單號</button>
+              <a href="https://jit.hicustom.com/merchant" target="_blank" rel="noopener noreferrer" className="text-xs underline underline-offset-4">前往 HiCustom 後台付款</a>
+            </form>
+          ) : (
+            <form action={sendToSupplier} className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="id" value={order.id} />
+              <label><span className="label">郵遞區號</span><input name="postcode" defaultValue={order.postcode ?? ""} inputMode="numeric" className="input w-28" placeholder="例 110" /></label>
+              <button className="btn-primary">送到 HiCustom</button>
+              <span className="text-xs text-mute">會上傳印刷檔、合成商品並建立訂單；建立後需到 HiCustom 後台付款才會生產。{!order.paid && "（這張訂單客戶尚未付款）"}</span>
+            </form>
+          )}
+        </div>
+      )}
       <OrderDetail
         order={order}
         items={items}

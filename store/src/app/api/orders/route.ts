@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
   const contact = {
     contactName: clip(body.contactName, 80), contactPhone: clip(body.contactPhone, 40), contactEmail: clip(body.contactEmail, 120),
-    address: clip(body.address, 300), company: clip(body.company, 120) || null, taxId: clip(body.taxId, 20) || null, note: clip(body.note, 2000) || null,
+    address: clip(body.address, 300), postcode: clip(body.postcode, 10).replace(/\D/g, "") || null, company: clip(body.company, 120) || null, taxId: clip(body.taxId, 20) || null, note: clip(body.note, 2000) || null,
   };
   if (!contact.contactName || !contact.contactPhone || !contact.address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.contactEmail)) {
     return NextResponse.json({ error: "請完整填寫收件資訊" }, { status: 400 });

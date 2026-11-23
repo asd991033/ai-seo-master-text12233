@@ -247,6 +247,14 @@ export const orders = sqliteTable("orders", {
   totalWeightKg: real("total_weight_kg").notNull().default(0),
   totalCbm: real("total_cbm").notNull().default(0),
   trackingNo: text("tracking_no"),
+  /** 郵遞區號（送單給供應商時必填） */
+  postcode: text("postcode"),
+  /** 供應商（HiCustom）的訂單編號、狀態碼、訊息與最後同步時間 */
+  supplierOrderId: text("supplier_order_id"),
+  supplierStatus: integer("supplier_status"),
+  supplierNote: text("supplier_note"),
+  supplierCost: text("supplier_cost"),
+  supplierSyncedAt: integer("supplier_synced_at"),
   createdAt: integer("created_at").notNull().default(now),
 });
 
@@ -266,6 +274,9 @@ export const orderItems = sqliteTable("order_items", {
   designId: text("design_id"),
   artworkUrl: text("artwork_url"),
   previewUrl: text("preview_url"),
+  /** 供應商那邊合成好的定製產品編碼與款式 ID（重送時沿用，不重複建立） */
+  supplierProductCode: text("supplier_product_code"),
+  supplierStockId: integer("supplier_stock_id"),
 });
 
 /** 部落格文章 */

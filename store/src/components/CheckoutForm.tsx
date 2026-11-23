@@ -70,6 +70,7 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
             {field("company", t.checkout.company, { def: defaults.company, auto: "organization" })}
             {field("taxId", t.checkout.taxId, { def: defaults.taxId })}
           </div>
+          {field("postcode", t.checkout.postcode, { required: true, auto: "postal-code" })}
           {field("address", t.checkout.address, { required: true, auto: "street-address" })}
           <label className="block">
             <span className="label">{t.checkout.note}</span>
