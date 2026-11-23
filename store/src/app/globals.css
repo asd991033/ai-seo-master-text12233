@@ -35,3 +35,6 @@ h1, h2, h3, .serif { font-family: var(--font-serif); }
   .no-print { display: none !important; }
   html { background: #fff; }
 }
+
+/* 從 Shopify 商店進來的排版頁：隱藏本站的頁首頁尾，避免兩個品牌導覽混在一起 */
+html[data-embed] body > header, html[data-embed] body > footer { display: none; }

@@ -15,6 +15,9 @@ export type DesignerProduct = {
   image: string | null;
   colors: { name: string; hex: string; image?: string }[];
   methods: { code: string; name: string; perColor: boolean }[];
+  defaultPrints: { positionCode: string; areaCode: string; methodCode: string; colors: number }[];
+  /** 允許把設計帶回購物車的 Shopify 商店網域 */
+  shopifyDomains: string[];
   positions: {
     code: string; name: string; dielineUrl: string | null; widthMm: number; heightMm: number; pxW: number | null; pxH: number | null;
     mockupUrl: string | null; mockupX: number; mockupY: number; mockupW: number; mockupH: number;
@@ -94,6 +97,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const modelRef = useRef<MockupModel | null>(null);
   const planRef = useRef<Placement[]>([]);
   const editItem = useRef<string | null>(null);
+  const shopify = useRef<{ shop: string; variant: string; qty: number } | null>(null);
   const outputs = useRef<Record<string, Output>>({});
   const loading = useRef(false);
   const history = useRef<{ stack: string[]; index: number }>({ stack: [], index: -1 });
@@ -105,6 +109,14 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     setMaxW(Math.max(260, Math.min(MAX_W, (window.innerWidth >= 1024 ? inner - 560 : inner) - 36)));
     // 從購物車「重新編輯」進來：載回原本的設計
     const sp = new URLSearchParams(window.location.search);
+    // 從 Shopify 商品頁進來：排完後把設計帶回 Shopify 購物車
+    const shop = (sp.get("shop") ?? "").toLowerCase();
+    if (sp.get("shopify") && /^\d+$/.test(sp.get("variant") ?? "") && product.shopifyDomains.includes(shop)) {
+      shopify.current = { shop, variant: sp.get("variant")!, qty: Math.max(1, Math.floor(Number(sp.get("qty")) || 1)) };
+      document.documentElement.dataset.embed = "1";
+      const colorName = product.colors.find((c) => c.name === sp.get("color"))?.name ?? product.colors[0]?.name ?? null;
+      return setDraft({ slug: product.slug, qty: shopify.current.qty, colorName, sizeName: sp.get("size"), prints: product.defaultPrints });
+    }
     const edit = sp.get("edit"), itemId = sp.get("item");
     const item = edit && itemId ? useCart.getState().items.find((x) => x.id === itemId && x.designId === edit && x.slug === product.slug) : null;
     if (!item) return setDraft(loadDraft(product.slug));
@@ -660,6 +672,15 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       const res = await fetch("/api/designs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id, positions, preview: previewImg }) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.designer.saveFailed);
+      if (shopify.current) {
+        // 帶著設計編號回到 Shopify 購物車；店家在訂單上會看到設計編號與檔案連結
+        const { shop, variant, qty } = shopify.current;
+        const q = new URLSearchParams({ id: variant, quantity: String(qty), return_to: "/cart" });
+        q.set(`properties[${t.designer.propDesign}]`, json.id);
+        q.set(`properties[${t.designer.propFiles}]`, `${window.location.origin}/d/${json.id}`);
+        window.location.href = `https://${shop}/cart/add?${q.toString()}`;
+        return;
+      }
       if (editItem.current) useCart.getState().replace(editItem.current, { designId: json.id, previewUrl: json.previewUrl });
       else addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, sizeName: draft.sizeName ?? null, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
       router.push("/cart");
@@ -696,7 +717,11 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   return (
     <div className="container-x py-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={`/products/${product.slug}`} className="text-sm text-mute hover:text-ink">← {t.designer.back}</Link>
+        {shopify.current ? (
+          <a href={`https://${shopify.current.shop}/products/${product.slug}`} className="text-sm text-mute hover:text-ink">← {t.designer.back}</a>
+        ) : (
+          <Link href={`/products/${product.slug}`} className="text-sm text-mute hover:text-ink">← {t.designer.back}</Link>
+        )}
         <h1 className="text-xl font-bold">{t.designer.title}｜{product.name}</h1>
         <button type="button" onClick={save} disabled={!!busy || !ready} className="btn-primary ml-auto" data-testid="save-design">{busy ?? (editItem.current ? t.designer.saveEdit : t.designer.save)}</button>
       </div>
