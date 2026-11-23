@@ -2,7 +2,7 @@ import "server-only";
 import { getProductsByIds, listZones, type ProductFull } from "./catalog";
 import { quoteLine, QuoteError, variantKey, type LineQuote, type PrintSelection } from "./pricing";
 import { flatShipping, packItems, quoteAllModes, type Pack, type ShipQuote } from "./shipping";
-import { site } from "@/config/site";
+import { currentMarket } from "@/market/server";
 import { t } from "@/i18n";
 
 export type CartLineInput = { id: string; productId: number; qty: number; prints: PrintSelection[]; colorName?: string | null; sizeName?: string | null };
@@ -50,7 +50,10 @@ export function printLabel(p: ProductFull, s: PrintSelection): string {
 
 /** 伺服器端重新計價：商品、印刷、版費，以及整張訂單的空運 / 海運運費 */
 export async function priceCart(inputs: CartLineInput[], zoneCode: string | null): Promise<PricedCart> {
-  const [products, zones] = await Promise.all([getProductsByIds([...new Set(inputs.map((i) => i.productId))]), listZones()]);
+  const m = currentMarket();
+  // 海外站只送到該國，不用運送地區表
+  const [products, zones] = await Promise.all([getProductsByIds([...new Set(inputs.map((i) => i.productId))], m), m.code === "tw" ? listZones() : [{ code: m.country, name: m.countryName, rates: [] }]]);
+  if (m.code !== "tw") zoneCode = m.country;
   const byId = new Map(products.map((p) => [p.id, p]));
   const lines: PricedLine[] = inputs.map((i) => {
     const product = byId.get(i.productId);
@@ -59,7 +62,7 @@ export async function priceCart(inputs: CartLineInput[], zoneCode: string | null
       const quote = quoteLine(product.pricing, i.qty, i.prints, variantKey(i.colorName, i.sizeName));
       return { id: i.id, ok: true, quote, labels: quote.prints.map((s) => printLabel(product, s)), product };
     } catch (e) {
-      return { id: i.id, ok: false, error: e instanceof QuoteError ? e.message : t.cart.lineError };
+      return { id: i.id, ok: false, error: e instanceof QuoteError ? t.errors.quote[e.code] ?? e.message : t.cart.lineError };
     }
   });
   const pack = packItems(lines.flatMap((l) => (l.ok ? [{ ...l.product, qty: l.quote.qty }] : [])));
@@ -70,7 +73,7 @@ export async function priceCart(inputs: CartLineInput[], zoneCode: string | null
     zones: zones.map((z) => ({ code: z.code, name: z.name })),
     zoneCode: zone?.code ?? null,
     shipping: zone && lines.some((l) => l.ok)
-      ? flatShipping(site.flatShipping, lines.reduce((a, l) => a + (l.ok ? l.quote.goodsTotal + l.quote.printTotal + l.quote.setupTotal : 0), 0)) ?? quoteAllModes(zone.rates, pack)
+      ? flatShipping(m.shipping, lines.reduce((a, l) => a + (l.ok ? l.quote.goodsTotal + l.quote.printTotal + l.quote.setupTotal : 0), 0)) ?? quoteAllModes(zone.rates, pack)
       : [],
   };
 }

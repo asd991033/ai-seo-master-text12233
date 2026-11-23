@@ -20,6 +20,9 @@ export type CartItem = {
   artworkName?: string;
 };
 
+/** 各國站的購物車分開存（品名、顏色名稱與幣別都不同） */
+const marketSuffix = () => { const m = typeof window === "undefined" ? null : /^\/(sg|my|au|ae|uk)(\/|$)/.exec(window.location.pathname); return m ? `-${m[1]}` : ""; };
+
 type CartState = {
   items: CartItem[];
   zoneCode: string | null;
@@ -45,17 +48,17 @@ export const useCart = create<CartState>()(
       setShipping: (zoneCode, mode) => set({ zoneCode, mode }),
       clear: () => set({ items: [] }),
     }),
-    { name: "cart-v1" },
+    { name: `cart-v1${marketSuffix()}` },
   ),
 );
 
 /** 商品頁 → 線上排版 之間暫存的設定 */
 export type Draft = { slug: string; qty: number; colorName: string | null; sizeName?: string | null; prints: PrintSelection[] };
-const DRAFT_KEY = "design-draft";
-export const saveDraft = (d: Draft) => sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+const draftKey = () => `design-draft${marketSuffix()}`;
+export const saveDraft = (d: Draft) => sessionStorage.setItem(draftKey(), JSON.stringify(d));
 export const loadDraft = (slug: string): Draft | null => {
   try {
-    const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null") as Draft | null;
+    const d = JSON.parse(sessionStorage.getItem(draftKey()) ?? "null") as Draft | null;
     return d && d.slug === slug ? d : null;
   } catch {
     return null;

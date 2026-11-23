@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { t } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { priceRange } from "@/lib/pricing";
@@ -19,7 +19,7 @@ export function ProductCard({ p }: { p: Card }) {
         )}
         {hover && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={hover} alt={`${p.name}｜${p.sampleImage ? "可印刷範圍" : "另一個角度"}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
+          <img src={hover} alt={`${p.name}｜${p.sampleImage ? t.meta.printable : t.meta.otherAngle}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />
         )}
       </div>
       <div className="flex flex-1 flex-col px-1.5 pt-3 pb-1">

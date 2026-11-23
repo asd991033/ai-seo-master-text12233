@@ -1,10 +1,24 @@
 import { site } from "@/config/site";
+import { localize, marketList, markets, type Market } from "@/config/markets";
+import { currentMarket } from "@/market/server";
 
 /** 網站對外的網址（結尾不含斜線） */
 export function baseUrl() {
   return (process.env.SITE_URL ?? (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
 }
-export const abs = (path: string) => (/^https?:/.test(path) ? path : `${baseUrl()}${path.startsWith("/") ? "" : "/"}${path}`);
+/** 絕對網址。頁面路徑會加上目前市場的前綴（/sg…），圖片等檔案不加 */
+export const abs = (path: string, m: Market = currentMarket()) => {
+  if (/^https?:/.test(path)) return path;
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl()}${/\.[a-z0-9]{2,5}$/i.test(p.split("?")[0]) ? p : localize(p, m)}`;
+};
+/** 頁面的 canonical 與各國版本（hreflang）。onlyTw：只有中文版的頁面（部落格） */
+export function alts(path: string, onlyTw = false) {
+  const m = currentMarket();
+  if (onlyTw) return { canonical: abs(path, markets.tw) };
+  return { canonical: abs(path, m), languages: { ...Object.fromEntries(marketList.map((x) => [x.lang, abs(path, x)])), "x-default": abs(path, markets.tw) } };
+}
+const lang = () => currentMarket().lang;
 
 const ctx = "https://schema.org";
 /** 台灣市話／手機轉成國際格式（02-8789-9996 → +886-2-8789-9996） */
@@ -14,12 +28,12 @@ export const organizationLd = () => ({
   "@context": ctx, "@type": "Organization", "@id": `${baseUrl()}/#org`, name: site.brand, url: baseUrl(), logo: abs("/icon.svg"),
   email: site.contactEmail, telephone: telE164(site.contactPhone),
   address: { "@type": "PostalAddress", streetAddress: site.address.street, addressLocality: site.address.locality, addressRegion: site.address.region, postalCode: site.address.postalCode, addressCountry: site.address.country },
-  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, telephone: telE164(site.contactPhone), areaServed: "TW", availableLanguage: ["zh-TW"] },
+  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, telephone: telE164(site.contactPhone), areaServed: marketList.map((x) => x.country), availableLanguage: ["zh-TW", "en"] },
 });
 
 export const websiteLd = () => ({
-  "@context": ctx, "@type": "WebSite", "@id": `${baseUrl()}/#website`, name: site.brand, url: baseUrl(), inLanguage: "zh-TW", publisher: { "@id": `${baseUrl()}/#org` },
-  potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${baseUrl()}/products?q={search_term_string}` }, "query-input": "required name=search_term_string" },
+  "@context": ctx, "@type": "WebSite", "@id": `${abs("/")}#website`, name: site.brand, url: abs("/"), inLanguage: lang(), publisher: { "@id": `${baseUrl()}/#org` },
+  potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${abs("/products")}?q={search_term_string}` }, "query-input": "required name=search_term_string" },
 });
 
 /** 麵包屑：[名稱, 路徑]，最後一項是目前頁面 */
@@ -48,7 +62,7 @@ export const articleLd = (p: { slug: string; title: string; excerpt: string; cov
 /** 運送與退貨資訊（商品結構化資料用） */
 export const shippingLd = () => ({
   "@type": "OfferShippingDetails",
-  shippingRate: { "@type": "MonetaryAmount", value: Math.max(0, site.flatShipping.fee), currency: site.currency },
-  shippingDestination: { "@type": "DefinedRegion", addressCountry: "TW" },
-  deliveryTime: { "@type": "ShippingDeliveryTime", transitTime: { "@type": "QuantitativeValue", minValue: 3, maxValue: 5, unitCode: "DAY" } },
+  shippingRate: { "@type": "MonetaryAmount", value: Math.max(0, currentMarket().shipping.fee), currency: currentMarket().currency },
+  shippingDestination: { "@type": "DefinedRegion", addressCountry: currentMarket().country },
+  deliveryTime: { "@type": "ShippingDeliveryTime", transitTime: { "@type": "QuantitativeValue", minValue: Number(currentMarket().shipping.days.split(/[–-]/)[0]) || 3, maxValue: Number(currentMarket().shipping.days.split(/[–-]/)[1]) || 5, unitCode: "DAY" } },
 });

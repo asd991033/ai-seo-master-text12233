@@ -1,8 +1,9 @@
-import { site } from "@/config/site";
+import "server-only";
+import { moneyFmt, moneyFmtOf } from "@/config/markets";
+import { currentMarket } from "@/market/server";
 
-const nf = new Intl.NumberFormat(site.locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-
-export const fmtMoney = (n: number) => `${site.currencySymbol}${nf.format(n)}`;
-export const fmtNum = (n: number) => nf.format(n);
+/** 伺服器端用；瀏覽器端元件請用 @/market/client 的 useMoney() */
+export const fmtMoney = (n: number, currency?: string | null) => (currency ? moneyFmtOf(currency) : moneyFmt(currentMarket()))(n);
+export const fmtNum = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(n);
 export const fmtDate = (unix: number) =>
-  new Intl.DateTimeFormat(site.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(unix * 1000));
+  new Intl.DateTimeFormat(currentMarket().locale === "en" ? currentMarket().lang : "zh-TW", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Taipei" }).format(new Date(unix * 1000));

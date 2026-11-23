@@ -1,12 +1,13 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useActionState } from "react";
-import { t } from "@/i18n";
+import { useHref, useT } from "@/market/client";
 import { loginAction, registerAction } from "@/app/actions";
 
 export function AuthForm({ mode, next, providers = [], oauthError }: { mode: "login" | "register"; next?: string; providers?: ("google" | "line")[]; oauthError?: boolean }) {
+  const t = useT(), href = useHref();
   const [state, action, pending] = useActionState(mode === "login" ? loginAction : registerAction, undefined);
-  const qs = next ? `?next=${encodeURIComponent(next)}` : "";
+  const qs = `?next=${encodeURIComponent(next ?? href("/account"))}`;
   return (
     <div className="container-x grid items-stretch gap-0 py-10 md:grid-cols-2 md:py-16">
       <div className="relative hidden overflow-hidden rounded-l-3xl md:block">

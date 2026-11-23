@@ -1,6 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/Link";
+import { currentMarket, initMarket } from "@/market/server";
 import { JsonLd } from "@/components/JsonLd";
-import { abs, baseUrl, breadcrumbLd, faqLd, shippingLd } from "@/lib/seo";
+import { alts, abs, baseUrl, breadcrumbLd, faqLd, shippingLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
@@ -21,16 +22,19 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await initMarket();
   const p = await getProductBySlug((await params).slug);
   if (!p) return {};
   const range = priceRange(p.pricing.tiers);
   // 說明帶入價格、起訂量與運送資訊，搜尋結果與 AI 摘要才有具體內容可引用
-  const description = [p.summary || p.name, range ? `${site.currencySymbol}${range.min} 起，${p.pricing.moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${site.flatShipping.days} 個工作天`].filter(Boolean).join("；").slice(0, 155);
-  return { title: `${p.name}｜印 Logo 圖案・${p.pricing.moq} 件起訂`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: [p.sampleImage ?? p.images[0]].filter(Boolean) as string[] } };
+  const description = t.meta.productDesc(p.summary || p.name, range ? fmtMoney(range.min) : null, p.pricing.moq).slice(0, 155);
+  return { title: t.meta.productTitle(p.name, p.pricing.moq), description, alternates: alts(`/products/${p.slug}`), openGraph: { title: p.name, description, type: "website", images: [p.sampleImage ?? p.images[0]].filter(Boolean) as string[] } };
 }
 
 export default async function ProductPage({ params }: Props) {
-  const [p, zones] = await Promise.all([getProductBySlug((await params).slug), listZones()]);
+  await initMarket();
+  const mkt = currentMarket();
+  const [p, zones] = await Promise.all([getProductBySlug((await params).slug), mkt.code === "tw" ? listZones() : [{ code: mkt.country, name: mkt.countryName, rates: [] }]]);
   if (!p) notFound();
   // 圖片順序：印上圖案的成品範例放第一張，接著才是標示可印範圍的商品照
   const gallery = p.sampleImage ? [p.sampleImage, ...p.images] : p.images;
@@ -39,7 +43,7 @@ export default async function ProductPage({ params }: Props) {
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4).map((u) => abs(u)),
     ...(p.categoryName ? { category: p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
-    ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: site.currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
+    ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: currentMarket().currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
     url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
   };
   const points = [[IconLayers, t.home.promise[0].t], [IconTag, t.home.promise[1].t], [IconBrush, t.home.promise[2].t], [IconTruck, t.home.promise[3].t]] as const;

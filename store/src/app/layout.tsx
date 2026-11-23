@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
-import { baseUrl, organizationLd, websiteLd } from "@/lib/seo";
+import { alts, baseUrl, organizationLd, websiteLd } from "@/lib/seo";
+import { currentPath, initMarket } from "@/market/server";
+import { MarketProvider } from "@/market/client";
 import "./globals.css";
 import { site } from "@/config/site";
 import { t } from "@/i18n";
@@ -8,21 +10,25 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@/components/Analytics";
 
-export const metadata: Metadata = {
-  title: { default: `${site.brand}｜${t.home.eyebrow}`, template: `%s｜${site.brand}` },
-  description: t.home.lead,
-  metadataBase: new URL(baseUrl()),
-  alternates: { canonical: "./" },
-  openGraph: { siteName: site.brand, locale: "zh_TW", type: "website", images: ["/eg/hero-2.jpg"] },
-  twitter: { card: "summary_large_image" },
-  robots: { index: true, follow: true, googleBot: { "max-image-preview": "large", "max-snippet": -1 } },
-  // Google Search Console 的網站驗證碼
-  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const m = await initMarket();
+  return {
+    title: { default: `${site.brand}｜${t.home.eyebrow}`, template: `%s｜${site.brand}` },
+    description: t.home.lead,
+    metadataBase: new URL(baseUrl()),
+    alternates: alts(currentPath()),
+    openGraph: { siteName: site.brand, locale: m.lang.replace("-", "_"), type: "website", images: ["/eg/hero-2.jpg"] },
+    twitter: { card: "summary_large_image" },
+    robots: { index: true, follow: true, googleBot: { "max-image-preview": "large", "max-snippet": -1 } },
+    // Google Search Console 的網站驗證碼
+    ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const m = await initMarket();
   return (
-    <html lang={site.locale}>
+    <html lang={m.lang}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -32,9 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <MarketProvider code={m.code}>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </MarketProvider>
         <Analytics />
         <JsonLd data={organizationLd()} />
         <JsonLd data={websiteLd()} />

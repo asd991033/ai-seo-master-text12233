@@ -1,9 +1,8 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useRef, useState } from "react";
-import { t } from "@/i18n";
-import { site } from "@/config/site";
-import { fmtMoney, fmtNum } from "@/lib/format";
+import { useMarket, useMoney, useT } from "@/market/client";
+import { fmtNum } from "@/config/markets";
 import { useCart, type CartItem } from "@/lib/cart";
 import { computeTotals, type LineQuote, type Totals } from "@/lib/pricing";
 import type { Pack, ShipQuote } from "@/lib/shipping";
@@ -13,8 +12,9 @@ export type QuoteRes = { lines: QuoteLineRes[]; pack: Pack; zones: { code: strin
 
 /** 向伺服器取得整車報價（含空運 / 海運運費） */
 export function useCartQuote() {
+  const market = useMarket();
   const items = useCart((s) => s.items);
-  const zoneCode = useCart((s) => s.zoneCode) ?? site.defaultZone;
+  const zoneCode = useCart((s) => s.zoneCode) ?? market.country;
   const mode = useCart((s) => s.mode);
   const [hydrated, setHydrated] = useState(false);
   const [data, setData] = useState<QuoteRes | null>(null);
@@ -30,7 +30,7 @@ export function useCartQuote() {
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items, zoneCode }) });
+        const res = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items, zoneCode, market: market.code }) });
         const json = await res.json();
         if (mine === seq.current && res.ok) setData(json);
       } finally {
@@ -44,7 +44,7 @@ export function useCartQuote() {
   const okLines = data?.lines.flatMap((l) => (l.ok ? [l.quote] : [])) ?? [];
   const allOk = !!data && data.lines.length === items.length && data.lines.every((l) => l.ok);
   const ship = data?.shipping.find((s) => s.mode === mode) ?? data?.shipping.find((s) => s.flat) ?? null;
-  const totals: Totals | null = data && ship ? computeTotals(okLines, ship.fee, site.taxRate) : null;
+  const totals: Totals | null = data && ship ? computeTotals(okLines, ship.fee, 0) : null;
   return { items, hydrated, data, loading, zoneCode, mode, ship, totals, allOk };
 }
 
@@ -59,6 +59,8 @@ export function ItemThumb({ item }: { item: Pick<CartItem, "previewUrl" | "image
 }
 
 export function ShippingPicker({ q }: { q: ReturnType<typeof useCartQuote> }) {
+  const t = useT();
+  const fmtMoney = useMoney();
   const setShipping = useCart((s) => s.setShipping);
   if (!q.data) return null;
   return (
@@ -102,8 +104,11 @@ export function ShippingPicker({ q }: { q: ReturnType<typeof useCartQuote> }) {
 }
 
 export function TotalsBox({ totals, loading }: { totals: Totals | null; loading: boolean }) {
+  const t = useT();
+  const fmtMoney = useMoney();
+  const market = useMarket();
   const rows: [string, number][] = totals
-    ? [[t.cart.goods, totals.goodsTotal], [t.cart.print, totals.printTotal], [t.cart.setup, totals.setupTotal], [t.cart.shipping, totals.shippingFee], ...(site.taxRate > 0 ? [[t.cart.tax, totals.tax] as [string, number]] : [])]
+    ? [[t.cart.goods, totals.goodsTotal], [t.cart.print, totals.printTotal], [t.cart.setup, totals.setupTotal], [t.cart.shipping, totals.shippingFee], ...(0 > 0 ? [[t.cart.tax, totals.tax] as [string, number]] : [])]
     : [];
   return (
     <dl className={`space-y-2 text-sm transition ${loading ? "opacity-50" : ""}`}>
@@ -119,6 +124,8 @@ export function TotalsBox({ totals, loading }: { totals: Totals | null; loading:
 }
 
 export function CartView() {
+  const t = useT();
+  const fmtMoney = useMoney();
   const q = useCartQuote();
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);

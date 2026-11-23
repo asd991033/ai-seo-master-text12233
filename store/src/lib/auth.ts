@@ -1,4 +1,6 @@
 import "server-only";
+import { localize } from "@/config/markets";
+import { currentMarket } from "@/market/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from "node:crypto";
@@ -73,7 +75,11 @@ export function safeNext(next: unknown, fallback = "/account"): string {
 
 export async function requireUser(next = "/account"): Promise<SessionUser> {
   const u = await getUser();
-  if (!u) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!u) {
+    // 帶著市場前綴轉到登入頁，登入後回到同一個國家站
+    const m = currentMarket();
+    redirect(`${localize("/login", m)}?next=${encodeURIComponent(localize(next, m))}`);
+  }
   return u;
 }
 

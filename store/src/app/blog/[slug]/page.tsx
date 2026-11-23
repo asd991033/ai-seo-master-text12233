@@ -1,9 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/Link";
+import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { t } from "@/i18n";
 import { fmtPostDate, getPost, otherPosts } from "@/lib/blog";
-import { articleLd, breadcrumbLd } from "@/lib/seo";
+import { alts, articleLd, breadcrumbLd } from "@/lib/seo";
 import { Markdown, headings } from "@/lib/markdown";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
@@ -12,16 +13,20 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await initMarket();
   const p = await getPost(decodeURIComponent((await params).slug));
   if (!p) return {};
   const title = p.seoTitle || p.title, description = p.seoDescription || p.excerpt;
   return {
-    title, description, alternates: { canonical: `/blog/${p.slug}` },
+    title, description, alternates: alts(`/blog/${p.slug}`, true),
     openGraph: { title, description, type: "article", publishedTime: new Date(p.publishedAt * 1000).toISOString(), modifiedTime: new Date(p.updatedAt * 1000).toISOString(), images: p.coverUrl ? [p.coverUrl] : undefined },
   };
 }
 
 export default async function PostPage({ params }: Props) {
+  const mkt = await initMarket();
+  // 部落格目前只有中文版，海外站導回該國首頁
+  if (mkt.locale === "en") redirect(mkt.prefix);
   const p = await getPost(decodeURIComponent((await params).slug));
   if (!p) notFound();
   const [more, toc] = [await otherPosts(p.id), headings(p.content)];

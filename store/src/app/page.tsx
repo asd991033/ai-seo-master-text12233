@@ -1,6 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/Link";
+import { term } from "@/i18n/terms";
+import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
-import { faqLd } from "@/lib/seo";
+import { alts, faqLd } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
 import { listPosts } from "@/lib/blog";
@@ -16,9 +18,13 @@ export const dynamic = "force-dynamic";
 const USP_ICONS = [IconLayers, IconBrush, IconTruck, IconTag];
 const pill = "inline-flex items-center gap-2 rounded-[14px] px-5 py-3 text-sm font-medium transition";
 
-export const metadata: Metadata = { description: t.home.lead, alternates: { canonical: "/" }, openGraph: { title: `${site.brand}｜${t.home.eyebrow}`, description: t.home.lead, type: "website", images: ["/eg/hero-2.jpg"] } };
+export async function generateMetadata(): Promise<Metadata> {
+  await initMarket();
+  return { description: t.home.lead, alternates: alts("/"), openGraph: { title: `${site.brand}｜${t.home.eyebrow}`, description: t.home.lead, type: "website", images: ["/eg/hero-2.jpg"] } };
+}
 
 export default async function Home() {
+  const m = await initMarket();
   const [featured, cats, posts] = await Promise.all([listProducts({ limit: 8 }), categoryCounts(), listPosts(3)]);
   const slugOf = (name: string) => cats.find((c) => c.name === name)?.slug;
   const catHref = (name: string) => (slugOf(name) ? `/products?category=${encodeURIComponent(slugOf(name)!)}` : "/products");
@@ -84,7 +90,7 @@ export default async function Home() {
         </div>
         <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:grid-rows-2">
           <Tile href="/products" img="/eg/cat-all.jpg" title={t.home.catAllTitle} desc={t.home.catAllDesc} className="col-span-2 md:col-span-1 md:row-span-2" />
-          {t.home.catTiles.map((c) => <Tile key={c.cat} href={catHref(c.cat)} img={c.img} title={c.cat} desc={c.d} />)}
+          {t.home.catTiles.map((c) => <Tile key={c.cat} href={catHref(c.cat)} img={c.img} title={term(c.cat, m.locale)} desc={c.d} />)}
         </div>
       </section>
 
@@ -154,7 +160,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {posts.length > 0 && (
+      {m.locale === "zh-TW" && posts.length > 0 && (
         <section className="container-x py-16">
           <div className="flex items-end justify-between gap-4">
             <div><div className="eyebrow">{t.blog.eyebrow}</div><h2 className="mt-3 text-[26px] md:text-[32px]">{t.blog.latest}</h2></div>

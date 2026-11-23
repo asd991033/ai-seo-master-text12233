@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { asc, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { fmtMoney } from "@/lib/format";

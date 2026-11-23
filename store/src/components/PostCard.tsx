@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { fmtPostDate, type Post } from "@/lib/blog";
 
 export function PostCard({ p }: { p: Post }) {

@@ -1,6 +1,7 @@
-import { site } from "@/config/site";
-/** 統一運費說明（金額來自站點設定） */
-const FLAT_SHIP = `每張訂單運費 ${site.currencySymbol}${site.flatShipping.fee}，商品金額滿 ${site.currencySymbol}${site.flatShipping.freeOver.toLocaleString("en-US")} 免運。出貨後運送約 ${site.flatShipping.days} 個工作天。`;
+import type { Market } from "@/config/markets";
+export default function zhTW(m: Market) {
+/** 統一運費說明（金額來自市場設定） */
+const FLAT_SHIP = `每張訂單運費 ${m.symbol}${m.shipping.fee}，商品金額滿 ${m.symbol}${m.shipping.freeOver.toLocaleString("en-US")} 免運。出貨後運送約 ${m.shipping.days} 個工作天。`;
 
 /** 繁體中文字典。新增語系時複製本檔翻譯，並在 i18n/index.ts 註冊。 */
 const dict = {
@@ -217,8 +218,8 @@ const dict = {
   },
   cart: {
     title: "購物車", empty: "購物車是空的。", goShop: "去逛逛", remove: "移除", qty: "數量", blank: "素面（不印刷）", design: "線上排版稿", editDesign: "重新編輯", artwork: "已上傳稿件",
-    artworkLater: "稿件稍後提供", summary: "訂單摘要", goods: "商品金額", print: "印刷費", setup: "版費", shipping: "運費", tax: `營業稅 ${Math.round(site.taxRate * 100)}%`,
-    total: site.taxRate > 0 ? "應付總額" : "應付總額（含稅）", checkout: "前往結帳", shipTo: "運送地區", shipMode: "運送方式", freeShip: "免運", flatShipNote: FLAT_SHIP, weight: "預估毛重", volume: "體積", updating: "計算中…",
+    artworkLater: "稿件稍後提供", summary: "訂單摘要", goods: "商品金額", print: "印刷費", setup: "版費", shipping: "運費", tax: `營業稅 ${Math.round(0)}%`,
+    total: false ? "應付總額" : "應付總額（含稅）", checkout: "前往結帳", shipTo: "運送地區", shipMode: "運送方式", freeShip: "免運", flatShipNote: FLAT_SHIP, weight: "預估毛重", volume: "體積", updating: "計算中…",
     lineError: "此品項無法報價，請調整數量或移除", perUnit: "每件",
   },
   checkout: {
@@ -260,13 +261,27 @@ const dict = {
     faq: [
       { q: "可以先打樣嗎？", a: "可以。下單時於備註註明需要打樣，客服會提供打樣費用與時程。" },
       { q: "最低訂購量是多少？", a: "每項商品的最低訂購量標示在商品頁，數量越多單價越低。" },
-      { q: "下單後多久可以收到？", a: `生產天數標示於商品頁，審稿確認後起算，出貨後運送約再加 ${site.flatShipping.days} 個工作天。` },
+      { q: "下單後多久可以收到？", a: `生產天數標示於商品頁，審稿確認後起算，出貨後運送約再加 ${m.shipping.days} 個工作天。` },
       { q: "可以開立發票嗎？", a: "可以。結帳時填寫公司名稱與統一編號即可。" },
     ],
   },
   footer: { shop: "商品目錄", learn: "了解更多", help: "幫助", account: "帳戶", email: "信箱", phone: "電話", address: "地址", contactCta: "寫信給我們", about: "客製禮品與品牌周邊，依品項挑選最合適的印刷方式，線上設計、直接下單。", service: "客服信箱", links: "快速連結", rights: "版權所有" },
+  errors: { login: "請先登入", emptyCart: "購物車是空的", incomplete: "請完整填寫收件資訊", noShip: "此地區暫無該運送方式的報價", badFormat: "格式錯誤", payOff: "線上付款尚未開放", quote: {} as Record<string, string> },
+  intl: { city: "城市", region: "州／省", country: "國家", duties: "", switchTitle: "國家／地區", payRedirect: "正在前往付款頁面…" },
+  meta: {
+    productTitle: (name: string, moq: number) => `${name}｜印 Logo 圖案・${moq} 件起訂`,
+    productDesc: (lead: string, price: string | null, moq: number) => [lead, price ? `${price} 起，${moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${m.shipping.days} 個工作天`].filter(Boolean).join("；"),
+    catTitle: (cat: string) => `${cat}客製化印刷`,
+    catDesc: (cat: string, n: number) => `${cat}共 ${n} 款可客製化商品，一件起訂、數量越多單價越低，線上排版即時看效果圖。`,
+    allDesc: "居家、包袋、服飾、配件、3C 周邊，全部可以客製。一件起訂，線上排版即時看效果圖。",
+    imageN: (alt: string, n: number) => `${alt}｜圖片 ${n}`, printable: "可印刷範圍", otherAngle: "另一個角度",
+    feedTitle: (name: string, material: string) => `${name}${material && !name.includes(material) ? `｜${material}` : ""}｜可印 Logo 與圖案`,
+    feedDesc: (name: string) => `${name}，可線上排版印上你的 Logo、圖案或文字，一件起訂。`,
+    feedChannel: "商品",
+  },
   common: { loading: "載入中…", save: "儲存", cancel: "取消", close: "關閉", required: "必填", notFound: "找不到頁面", backHome: "回首頁" },
 };
 
-export default dict;
-export type Dict = typeof dict;
+return dict;
+}
+export type Dict = ReturnType<typeof zhTW>;

@@ -6,7 +6,10 @@ import { db, schema } from "@/db";
 import { getUser } from "@/lib/auth";
 import { priceCart, sanitizeLines } from "@/lib/checkout";
 import { computeTotals } from "@/lib/pricing";
-import { site } from "@/config/site";
+import { dictFor } from "@/i18n";
+import { withMarket } from "@/market/server";
+import { stripeEnabled } from "@/lib/stripe";
+import { localize, type Market } from "@/config/markets";
 
 const clip = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 /** 只接受本站 /files/ 下的檔案路徑 */
@@ -19,18 +22,24 @@ function orderNo() {
 }
 
 export async function POST(req: Request) {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
   const body = await req.json().catch(() => null);
+  return withMarket(typeof body?.market === "string" ? body.market : null, (m) => placeOrder(body, m));
+}
+
+async function placeOrder(body: Record<string, unknown> | null, m: Market) {
+  const E = dictFor(m).errors;
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: E.login }, { status: 401 });
   const lines = sanitizeLines(body?.items);
-  if (!lines?.length) return NextResponse.json({ error: "購物車是空的" }, { status: 400 });
+  if (!body || !lines?.length) return NextResponse.json({ error: E.emptyCart }, { status: 400 });
 
   const contact = {
     contactName: clip(body.contactName, 80), contactPhone: clip(body.contactPhone, 40), contactEmail: clip(body.contactEmail, 120),
-    address: clip(body.address, 300), postcode: clip(body.postcode, 10).replace(/\D/g, "") || null, company: clip(body.company, 120) || null, taxId: clip(body.taxId, 20) || null, note: clip(body.note, 2000) || null,
+    address: clip(body.address, 300), postcode: (m.code === "tw" ? clip(body.postcode, 10).replace(/\D/g, "") : clip(body.postcode, 12).toUpperCase()) || null,
+    city: clip(body.city, 80) || null, region: clip(body.region, 80) || null, country: m.country, company: clip(body.company, 120) || null, taxId: clip(body.taxId, 20) || null, note: clip(body.note, 2000) || null,
   };
-  if (!contact.contactName || !contact.contactPhone || !contact.address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.contactEmail)) {
-    return NextResponse.json({ error: "請完整填寫收件資訊" }, { status: 400 });
+  if (!contact.contactName || !contact.contactPhone || !contact.address || (m.code !== "tw" && (!contact.city || !contact.postcode)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.contactEmail)) {
+    return NextResponse.json({ error: E.incomplete }, { status: 400 });
   }
   const mode = body.mode === "sea" ? "sea" : "air";
 
@@ -40,9 +49,9 @@ export async function POST(req: Request) {
   if (bad && !bad.ok) return NextResponse.json({ error: bad.error }, { status: 400 });
   const ship = priced.shipping.find((s) => s.mode === mode) ?? priced.shipping.find((s) => s.flat);
   const zone = priced.zones.find((z) => z.code === priced.zoneCode);
-  if (!ship || !zone) return NextResponse.json({ error: "此地區暫無該運送方式的報價" }, { status: 400 });
+  if (!ship || !zone) return NextResponse.json({ error: E.noShip }, { status: 400 });
   const ok = priced.lines.flatMap((l) => (l.ok ? [l] : []));
-  const totals = computeTotals(ok.map((l) => l.quote), ship.fee, site.taxRate);
+  const totals = computeTotals(ok.map((l) => l.quote), ship.fee, 0);
 
   const raw = body.items as Record<string, unknown>[];
   const designIds = raw.map((r) => (typeof r.designId === "string" ? r.designId : null));
@@ -54,7 +63,7 @@ export async function POST(req: Request) {
     const [order] = await tx
       .insert(schema.orders)
       .values({
-        orderNo: no, userId: user.id, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: "ecpay", ...totals,
+        orderNo: no, userId: user.id, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: m.payment, market: m.code, currency: m.currency, ...totals,
         totalWeightKg: priced.pack.weightKg, totalCbm: priced.pack.cbm,
       })
       .returning();
@@ -70,5 +79,6 @@ export async function POST(req: Request) {
     );
   });
   // 有設定線上金流就直接帶去付款
-  return NextResponse.json({ orderNo: no, payUrl: ecpayEnabled() ? `/api/ecpay/pay?orderNo=${no}` : null });
+  const payUrl = m.payment === "stripe" ? (stripeEnabled() ? `/api/stripe/pay?orderNo=${no}` : null) : ecpayEnabled() ? `/api/ecpay/pay?orderNo=${no}` : null;
+  return NextResponse.json({ orderNo: no, payUrl, orderUrl: localize(`/orders/${no}?new=1`, m) });
 }

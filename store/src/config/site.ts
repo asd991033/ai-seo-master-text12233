@@ -19,6 +19,7 @@ export const site = {
   /** 公司地址（顯示用）與拆開的欄位（結構化資料用） */
   address: {
     full: process.env.NEXT_PUBLIC_ADDRESS ?? "新北市汐止區新台五路一段99號A棟10樓之9",
+    fullEn: "10F-9, Building A, No. 99, Sec. 1, Xintai 5th Rd., Xizhi Dist., New Taipei City 221, Taiwan",
     region: "新北市", locality: "汐止區", street: "新台五路一段99號A棟10樓之9", postalCode: "221", country: "TW",
   },
 } as const;

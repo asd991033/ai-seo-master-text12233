@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

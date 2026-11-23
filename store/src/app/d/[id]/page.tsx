@@ -1,14 +1,19 @@
 import { notFound } from "next/navigation";
+import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "設計檔案", robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  await initMarket();
+  return { title: "設計檔案", robots: { index: false, follow: false } };
+}
 
 /** 設計稿檔案頁：供店家從訂單上的連結下載印刷檔（網址含隨機編號，不公開列出） */
 export default async function DesignFiles({ params }: { params: Promise<{ id: string }> }) {
+  await initMarket();
   const { id } = await params;
   if (!/^[0-9a-f]{24}$/.test(id)) notFound();
   const [d] = await db.select().from(schema.designs).where(eq(schema.designs.id, id));

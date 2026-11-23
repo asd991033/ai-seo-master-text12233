@@ -1,6 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/Link";
+import { initMarket } from "@/market/server";
 import { JsonLd } from "@/components/JsonLd";
-import { breadcrumbLd, itemListLd } from "@/lib/seo";
+import { alts, breadcrumbLd, itemListLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
 import { categoryCounts, countProducts, listProducts, PAGE_SIZE } from "@/lib/catalog";
@@ -11,15 +12,17 @@ export const dynamic = "force-dynamic";
 type SP = { category?: string; q?: string; sort?: string; page?: string };
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
+  await initMarket();
   const sp = await searchParams;
   const cat = sp.category ? (await categoryCounts()).find((c) => c.slug === sp.category) : null;
-  const title = cat ? `${cat.name}客製化印刷` : sp.q ? t.products.resultFor(sp.q) : t.products.title;
-  const description = cat ? `${cat.name}共 ${cat.count} 款可客製化商品，一件起訂、數量越多單價越低，線上排版即時看效果圖。` : t.home.catAllDesc + "一件起訂，線上排版即時看效果圖。";
+  const title = cat ? t.meta.catTitle(cat.name) : sp.q ? t.products.resultFor(sp.q) : t.products.title;
+  const description = cat ? t.meta.catDesc(cat.name, cat.count) : t.meta.allDesc;
   // 搜尋結果與排序頁不收錄，避免重複內容
-  return { title, description, alternates: { canonical: cat ? `/products?category=${encodeURIComponent(cat.slug)}` : "/products" }, ...(sp.q || sp.sort ? { robots: { index: false, follow: true } } : {}) };
+  return { title, description, alternates: alts(cat ? `/products?category=${encodeURIComponent(cat.slug)}` : "/products"), ...(sp.q || sp.sort ? { robots: { index: false, follow: true } } : {}) };
 }
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await initMarket();
   const sp = await searchParams;
   const page = Math.max(1, Math.floor(Number(sp.page) || 1));
   const [cats, items, total] = await Promise.all([categoryCounts(), listProducts({ ...sp, page }), countProducts(sp)]);

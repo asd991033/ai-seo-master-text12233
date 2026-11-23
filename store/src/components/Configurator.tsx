@@ -1,13 +1,11 @@
 "use client";
 import { track } from "@/lib/track";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { t } from "@/i18n";
-import { fmtMoney, fmtNum } from "@/lib/format";
+import { useMarket, useMoney, useNav, useT } from "@/market/client";
+import { fmtNum } from "@/config/markets";
 import { pickTier, quoteLine, QuoteError, tiersFor, variantKey, type LineQuote, type PrintSelection, type ProductPricing } from "@/lib/pricing";
 import { flatShipping, packItems, quoteAllModes, type RateRow, type ShipItem } from "@/lib/shipping";
 import { saveDraft, useCart } from "@/lib/cart";
-import { site } from "@/config/site";
 
 export type ConfigProduct = {
   id: number;
@@ -26,17 +24,20 @@ export type ConfigProduct = {
 };
 
 /** 供應商有時把款式放在顏色欄位，用名稱判斷是不是真的顏色 */
-const isColorName = (name: string) => /[色白黑紅藍綠黃灰粉紫橙棕金銀青]|卡其|透明|米|咖啡|彩|迷彩/.test(name);
+const isColorName = (name: string) => /[色白黑紅藍綠黃灰粉紫橙棕金銀青]|卡其|透明|米|咖啡|彩|迷彩|white|black|red|blue|green|yellow|gr[ae]y|pink|purple|orange|brown|gold|silver|cyan|khaki|transparent|clear|beige|coffee|colou?r|camo|navy|ivory|cream|wine|rose|apricot|teal|mint/i.test(name);
 
 type PosState = { on: boolean; areaCode: string; methodCode: string; colors: number };
 
 export function Configurator({ p }: { p: ConfigProduct }) {
-  const router = useRouter();
+  const t = useT();
+  const fmtMoney = useMoney();
+  const market = useMarket();
+  const nav = useNav();
   const add = useCart((s) => s.add);
   const [color, setColor] = useState((p.colors.find((c) => (c.display ?? c.image) === p.image) ?? p.colors[0])?.name ?? null);
   const [size, setSize] = useState(p.sizes[0] ?? null);
   const [qtyText, setQtyText] = useState(String(p.pricing.moq));
-  const [zoneCode, setZoneCode] = useState(p.zones.find((z) => z.code === site.defaultZone)?.code ?? p.zones[0]?.code ?? "");
+  const [zoneCode, setZoneCode] = useState(p.zones.find((z) => z.code === market.country)?.code ?? p.zones[0]?.code ?? "");
   const [artwork, setArtwork] = useState<{ url: string; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
     try {
       return { quote: quoteLine(p.pricing, qty, prints, variant), error: null };
     } catch (e) {
-      return { quote: null, error: e instanceof QuoteError ? e.message : String(e) };
+      return { quote: null, error: e instanceof QuoteError ? t.errors.quote[e.code] ?? e.message : String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qty, JSON.stringify(prints), variant]);
@@ -92,7 +93,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   const nextTier = tiers.find((x) => x.minQty > qty);
   const zone = p.zones.find((z) => z.code === zoneCode);
   const pack = quote ? packItems([{ ...p.ship, qty }]) : null;
-  const shipQuotes = zone && pack && quote ? flatShipping(site.flatShipping, quote.goodsTotal + quote.printTotal + quote.setupTotal) ?? quoteAllModes(zone.rates, pack) : [];
+  const shipQuotes = zone && pack && quote ? flatShipping(market.shipping, quote.goodsTotal + quote.printTotal + quote.setupTotal) ?? quoteAllModes(zone.rates, pack) : [];
 
   const label = (s: PrintSelection) => {
     const pos = p.positions.find((x) => x.code === s.positionCode);
@@ -122,8 +123,8 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   function addToCart(next: "/cart" | "/checkout") {
     if (!quote) return;
     add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, sizeName: size, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
-    track("add_to_cart", { currency: site.currency, value: quote.total, items: [{ item_id: p.sku, item_name: p.name, quantity: qty, price: quote.unitAllIn }] });
-    router.push(next);
+    track("add_to_cart", { currency: market.currency, value: quote.total, items: [{ item_id: p.sku, item_name: p.name, quantity: qty, price: quote.unitAllIn }] });
+    nav.push(next);
   }
 
   function goDesign() {
@@ -136,7 +137,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
       chosen = [{ positionCode: first.code, areaCode: st.areaCode, methodCode: st.methodCode, colors: st.colors }];
     }
     saveDraft({ slug: p.slug, qty, colorName: color, sizeName: size, prints: chosen });
-    router.push(`/design/${p.slug}`);
+    nav.push(`/design/${p.slug}`);
   }
 
   return (

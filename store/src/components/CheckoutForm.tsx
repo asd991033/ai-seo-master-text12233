@@ -1,18 +1,17 @@
 "use client";
-import { site } from "@/config/site";
 import { track } from "@/lib/track";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { t } from "@/i18n";
-import { fmtMoney } from "@/lib/format";
+import { useMarket, useMoney, useT } from "@/market/client";
 import { useCart } from "@/lib/cart";
 import { ItemThumb, ShippingPicker, TotalsBox, useCartQuote } from "./CartView";
 
 type Defaults = { name: string; phone: string; email: string; company: string; taxId: string };
 
 export function CheckoutForm({ defaults, online = false }: { defaults: Defaults; online?: boolean }) {
-  const router = useRouter();
+  const t = useT();
+  const fmtMoney = useMoney();
+  const market = useMarket();
   const q = useCartQuote();
   const clear = useCart((s) => s.clear);
   const [submitting, setSubmitting] = useState(false);
@@ -33,18 +32,18 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
     setSubmitting(true);
     setError(null);
     const fd = Object.fromEntries(new FormData(e.currentTarget));
-    track("begin_checkout", { currency: site.currency, value: q.totals?.total ?? 0, items: q.items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty })) });
+    track("begin_checkout", { currency: market.currency, value: q.totals?.total ?? 0, items: q.items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty })) });
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fd, items: q.items, zoneCode: q.data?.zoneCode, mode: q.mode }),
+        body: JSON.stringify({ ...fd, items: q.items, zoneCode: q.data?.zoneCode, mode: q.mode, market: market.code }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.checkout.failed);
       clear();
       if (json.payUrl) window.location.assign(json.payUrl);
-      else router.push(`/orders/${json.orderNo}?new=1`);
+      else window.location.assign(json.orderUrl ?? `/orders/${json.orderNo}?new=1`);
     } catch (err) {
       setError((err as Error).message);
       setSubmitting(false);
@@ -68,10 +67,27 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
             {field("contactPhone", t.checkout.phone, { required: true, def: defaults.phone, type: "tel", auto: "tel" })}
             {field("contactEmail", t.checkout.email, { required: true, def: defaults.email, type: "email", auto: "email" })}
             {field("company", t.checkout.company, { def: defaults.company, auto: "organization" })}
-            {field("taxId", t.checkout.taxId, { def: defaults.taxId })}
+            {market.code === "tw" && field("taxId", t.checkout.taxId, { def: defaults.taxId })}
           </div>
-          {field("postcode", t.checkout.postcode, { required: true, auto: "postal-code" })}
-          {field("address", t.checkout.address, { required: true, auto: "street-address" })}
+          {market.code === "tw" ? (
+            <>
+              {field("postcode", t.checkout.postcode, { required: true, auto: "postal-code" })}
+              {field("address", t.checkout.address, { required: true, auto: "street-address" })}
+            </>
+          ) : (
+            <>
+              {field("address", t.checkout.address, { required: true, auto: "street-address" })}
+              <div className="grid gap-4 sm:grid-cols-3">
+                {field("city", t.intl.city, { required: true, auto: "address-level2" })}
+                {field("region", t.intl.region, { auto: "address-level1" })}
+                {field("postcode", t.checkout.postcode, { required: true, auto: "postal-code" })}
+              </div>
+              <label className="block">
+                <span className="label">{t.intl.country}</span>
+                <input value={market.countryName} readOnly className="input bg-sand" data-testid="country" />
+              </label>
+            </>
+          )}
           <label className="block">
             <span className="label">{t.checkout.note}</span>
             <textarea name="note" rows={3} placeholder={t.checkout.notePh} className="input" />
@@ -107,7 +123,7 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
         </ul>
         <TotalsBox totals={q.totals} loading={q.loading} />
         {error && <p className="text-sm text-danger" role="alert">{error}</p>}
-        <p className="text-xs leading-relaxed text-mute" data-testid="returns-notice">{t.checkout.returnsNotice}<Link href="/returns" target="_blank" className="underline underline-offset-2">{t.returns.title}</Link>。</p>
+        <p className="text-xs leading-relaxed text-mute" data-testid="returns-notice">{t.checkout.returnsNotice}<Link href="/returns" target="_blank" className="underline underline-offset-2">{t.returns.title}</Link>{market.locale === "en" ? "." : "。"}</p>
         <button type="submit" disabled={submitting || !q.allOk || !q.totals} className="btn-primary w-full py-3">{submitting ? t.checkout.submitting : t.checkout.submit}</button>
         <p className="text-xs leading-relaxed text-mute">{t.checkout.agree}</p>
       </aside>

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import Link from "@/components/Link";
+import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
@@ -10,9 +11,13 @@ import { logoutAction } from "@/app/actions";
 import { StatusBadge } from "@/components/OrderDetail";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: t.nav.account };
+export async function generateMetadata(): Promise<Metadata> {
+  await initMarket();
+  return { title: t.nav.account };
+}
 
 export default async function AccountPage() {
+  await initMarket();
   const user = await requireUser();
   const orders = await db.select().from(schema.orders).where(eq(schema.orders.userId, user.id)).orderBy(desc(schema.orders.id));
   return (
@@ -30,7 +35,7 @@ export default async function AccountPage() {
               <span className="font-medium">{o.orderNo}</span>
               <span className="text-mute">{fmtDate(o.createdAt)}</span>
               <StatusBadge status={o.status} />
-              <span className="ml-auto font-bold tabular-nums">{fmtMoney(o.total)}</span>
+              <span className="ml-auto font-bold tabular-nums">{fmtMoney(o.total, o.currency)}</span>
               <span className="text-forest">{t.order.view} →</span>
             </Link>
           ))}

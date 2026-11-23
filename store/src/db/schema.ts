@@ -251,6 +251,12 @@ export const orders = sqliteTable("orders", {
   trackingNo: text("tracking_no"),
   /** 郵遞區號（送單給供應商時必填） */
   postcode: text("postcode"),
+  /** 下單的市場（tw / sg / my / au / ae / uk）與幣別；金額欄位都是這個幣別 */
+  market: text("market").notNull().default("tw"),
+  currency: text("currency").notNull().default("TWD"),
+  city: text("city"),
+  region: text("region"),
+  country: text("country").notNull().default("TW"),
   /** 供應商（HiCustom）的訂單編號、狀態碼、訊息與最後同步時間 */
   supplierOrderId: text("supplier_order_id"),
   supplierStatus: integer("supplier_status"),

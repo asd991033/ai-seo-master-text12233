@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
+import { term } from "@/i18n/terms";
+import { initMarket } from "@/market/server";
 import { JsonLd } from "@/components/JsonLd";
-import { breadcrumbLd, faqLd } from "@/lib/seo";
+import { alts, breadcrumbLd, faqLd } from "@/lib/seo";
 import { asc } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: t.guide.title, description: t.guide.metaDesc, alternates: { canonical: "/guide" } };
+export async function generateMetadata(): Promise<Metadata> {
+  await initMarket();
+  return { title: t.guide.title, description: t.guide.metaDesc, alternates: alts("/guide") };
+}
 
 export default async function GuidePage() {
-  const methods = await db.select().from(schema.printMethods).orderBy(asc(schema.printMethods.sort));
+  const mkt = await initMarket();
+  const methods = (await db.select().from(schema.printMethods).orderBy(asc(schema.printMethods.sort))).map((x) => ({ ...x, name: term(x.name, mkt.locale), description: term(x.description, mkt.locale) }));
   return (
     <>
     <section className="relative overflow-hidden">

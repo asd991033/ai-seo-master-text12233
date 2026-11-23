@@ -1,6 +1,5 @@
 import { t } from "@/i18n";
-import { site } from "@/config/site";
-import { fmtDate, fmtMoney, fmtNum } from "@/lib/format";
+import { fmtDate, fmtMoney as money, fmtNum } from "@/lib/format";
 import type { schema } from "@/db";
 import type { LineQuote } from "@/lib/pricing";
 
@@ -13,6 +12,8 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 export function OrderDetail({ order, items, extra }: { order: Order; items: Item[]; extra?: (item: Item) => React.ReactNode }) {
+  // 金額一律用下單當時的幣別顯示
+  const fmtMoney = (n: number) => money(n, order.currency);
   const rows: [string, number][] = [
     [t.cart.goods, order.goodsTotal], [t.cart.print, order.printTotal], [t.cart.setup, order.setupTotal], [t.cart.shipping, order.shippingFee],
     ...(order.tax > 0 ? [[t.cart.tax, order.tax] as [string, number]] : []),
@@ -61,18 +62,18 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
         </div>
         <div className="card space-y-1.5 p-5 text-sm">
           <div className="mb-2 font-bold">{t.order.ship}</div>
-          <div>{order.zoneName}{site.flatShipping.fee >= 0 ? "" : `・${order.shippingMode === "air" ? t.product.air : t.product.sea}`}</div>
+          <div>{order.zoneName}</div>
           <div className="text-xs text-mute">{t.cart.weight} {fmtNum(order.totalWeightKg)} kg・{t.cart.volume} {fmtNum(order.totalCbm)} CBM</div>
           {order.trackingNo && <div>{t.order.tracking}：{order.trackingNo}</div>}
           <div className="border-t border-line pt-3 text-mute">
             <div className="text-ink">{order.contactName}　{order.contactPhone}</div>
             <div>{order.contactEmail}</div>
             {order.company && <div>{order.company}{order.taxId && `（${order.taxId}）`}</div>}
-            <div>{order.address}</div>
+            <div>{[order.address, order.city, order.region, order.postcode].filter(Boolean).join(order.country === "TW" ? " " : ", ")}</div>
             {order.note && <div className="mt-2 whitespace-pre-line">「{order.note}」</div>}
           </div>
         </div>
-        <div className="text-xs text-mute">{t.order.date}：{fmtDate(order.createdAt)}　{site.currency}</div>
+        <div className="text-xs text-mute">{t.order.date}：{fmtDate(order.createdAt)}　{order.currency}</div>
       </aside>
     </div>
   );

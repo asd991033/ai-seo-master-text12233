@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 
 /** 黑底常見問題區（首頁與商品頁共用） */
 export function Faq({ eyebrow, title, cta, href, items }: { eyebrow: string; title: string; cta: string; href: string; items: { q: string; a: string }[] }) {

@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
+import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
 import { getProductBySlug } from "@/lib/catalog";
 import { DesignerLoader } from "@/components/designer/DesignerLoader";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: t.designer.title };
+export async function generateMetadata(): Promise<Metadata> {
+  await initMarket();
+  return { title: t.designer.title };
+}
 
 export default async function DesignPage({ params }: { params: Promise<{ slug: string }> }) {
+  await initMarket();
   const p = await getProductBySlug((await params).slug);
   if (!p) notFound();
   return (

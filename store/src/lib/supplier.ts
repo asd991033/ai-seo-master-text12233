@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { originalOption } from "@/lib/localize";
 import { HC_STATUS, HicustomError, createOrder, getOrder, hcDesignOf, hicustomConfig, parseTwAddress, productTypeInfo, readSiteFile, synthesizeProduct, uploadGallery, type SynthCfg } from "@/lib/hicustom";
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -21,8 +22,9 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
   const cfg = hicustomConfig();
   if (!cfg?.storeId) { await note(id, "尚未設定 HiCustom 憑證或店鋪編號"); return done(); }
   if (order.supplierOrderId) { await note(id, "這張訂單已經送過了，請用「同步狀態」更新"); return done(); }
-  const postcode = (opts.postcode ?? "").replace(/\D/g, "").slice(0, 6);
-  const addr = parseTwAddress(order.address);
+  const postcode = order.country !== "TW" ? (opts.postcode ?? "").trim().slice(0, 12) : (opts.postcode ?? "").replace(/\D/g, "").slice(0, 6);
+  const overseas = order.country !== "TW";
+  const addr = overseas ? { region: order.region || order.city || "", city: order.city || "", street: order.address, postcode: order.postcode ?? "" } : parseTwAddress(order.address);
   if (!addr) { await note(id, "無法從收件地址判斷縣市與鄉鎮市區，請確認地址格式（例：台北市信義區市府路1號）"); return done(); }
   const zip = postcode || order.postcode || addr.postcode;
   if (!zip) { await note(id, "請填寫郵遞區號再送出"); return done(); }
@@ -46,9 +48,9 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
         if (!hc) throw new HicustomError(`「${it.name}」缺少供應商的排版資料`);
         // 顏色：先比色碼，再比順序；尺寸：比順序
         const colors = (product.colors ?? []) as { name: string; hex: string }[], sizes = (product.sizes ?? []) as string[];
-        const ci = colors.findIndex((c) => c.name === it.colorName), hex = (colors[ci]?.hex ?? "").replace("#", "").toLowerCase();
+        const ci = originalOption(colors.map((c) => c.name), it.colorName), hex = (colors[ci]?.hex ?? "").replace("#", "").toLowerCase();
         const colorId = (hc.colors.find((c) => c.hex && c.hex.toLowerCase() === hex) ?? hc.colors[ci] ?? hc.colors[0])?.id ?? info.colors[0]?.id;
-        const si = sizes.indexOf(it.sizeName ?? ""), sizeId = (info.sizes[si] ?? info.sizes[0])?.id;
+        const si = originalOption(sizes, it.sizeName), sizeId = (info.sizes[si] ?? info.sizes[0])?.id;
         const stock = info.stock_info.find((s) => s.color_id === colorId && s.size_id === sizeId) ?? (info.stock_info.length === 1 ? info.stock_info[0] : undefined);
         if (!stock) throw new HicustomError(`「${it.name}」找不到對應的款式（${it.colorName ?? ""} ${it.sizeName ?? ""}）`);
         const cfgs: SynthCfg[] = [];
@@ -67,16 +69,17 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
         stockId = stock.id;
         await db.update(schema.orderItems).set({ supplierProductCode: code, supplierStockId: stockId }).where(eq(schema.orderItems.id, it.id));
       }
-      lines.push({ product_code: code, stock_item_id: stockId, qty: it.qty, out_item_id: `${order.orderNo}-${it.id}`, price: it.unitPrice, total: it.lineTotal, product_name: it.name });
+      lines.push({ product_code: code, stock_item_id: stockId, qty: it.qty, out_item_id: `${order.orderNo}-${it.id}`, ...(overseas ? {} : { price: it.unitPrice, total: it.lineTotal }), product_name: it.name });
     }
     const fmt = (ts: number) => new Date((ts + 8 * 3600) * 1000).toISOString().slice(0, 19).replace("T", " ");
     // 物流方式：有指定就用指定的名稱，否則由 HiCustom 依帳號的預設規則配對
-    const logistics = (opts.logistics ?? "").trim().slice(0, 60) || process.env.HICUSTOM_LOGISTICS?.trim() || "";
+    // 海外訂單不套用台灣的預設物流（E特快），可用 HICUSTOM_LOGISTICS_SG 這類變數指定各國的物流名稱
+    const logistics = (opts.logistics ?? "").trim().slice(0, 60) || (overseas ? process.env[`HICUSTOM_LOGISTICS_${order.country}`]?.trim() : process.env.HICUSTOM_LOGISTICS?.trim()) || "";
     const res = await createOrder({
       ...(logistics ? { logistics_company_name: logistics } : {}),
-      order_items: lines, out_order_id: order.orderNo, store_id: cfg.storeId, currency_code: 11, remark: (order.note ?? "").slice(0, 200),
-      order_time: fmt(order.createdAt), payment_time: fmt(order.createdAt), subtotal: order.goodsTotal + order.printTotal, shipping_amount: order.shippingFee, grand_total: order.total,
-      address: { country: "TW", region: addr.region, city: addr.city, area: "", street: addr.street, postcode: zip, mobile_phone: order.contactPhone, firstname: order.contactName, lastname: "", email: order.contactEmail },
+      order_items: lines, out_order_id: order.orderNo, store_id: cfg.storeId, ...(overseas ? {} : { currency_code: 11 }), remark: (order.note ?? "").slice(0, 200),
+      order_time: fmt(order.createdAt), payment_time: fmt(order.createdAt), ...(overseas ? {} : { subtotal: order.goodsTotal + order.printTotal, shipping_amount: order.shippingFee, grand_total: order.total }),
+      address: { country: order.country, region: addr.region, city: addr.city, area: "", street: addr.street, postcode: zip, mobile_phone: order.contactPhone, firstname: order.contactName, lastname: "", email: order.contactEmail },
     });
     await db.update(schema.orders).set({
       supplierOrderId: res.order_id, supplierStatus: res.status, supplierSyncedAt: now(),

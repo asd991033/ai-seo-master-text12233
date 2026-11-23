@@ -1,9 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/Link";
 import type { Canvas, FabricObject, FabricImage, Textbox } from "fabric";
-import { t } from "@/i18n";
+import { useNav, useT } from "@/market/client";
 import { loadDraft, useCart, type Draft } from "@/lib/cart";
 import { analyze, planMockup, renderMockup, type MockupModel, type Placement } from "@/lib/mockup";
 import type { HcDesign } from "@/lib/hc3d";
@@ -86,7 +85,8 @@ function clipFor(fabric: Fabric, q: { ax: number; ay: number; aw: number; ah: nu
 }
 
 export default function Designer({ product }: { product: DesignerProduct }) {
-  const router = useRouter();
+  const t = useT();
+  const nav = useNav();
   const addToCart = useCart((s) => s.add);
   const [draft, setDraft] = useState<Draft | null | undefined>(undefined);
   const [active, setActive] = useState(0);
@@ -856,7 +856,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       }
       if (editItem.current) useCart.getState().replace(editItem.current, { designId: json.id, previewUrl: json.previewUrl });
       else addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, sizeName: draft.sizeName ?? null, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
-      router.push("/cart");
+      nav.push("/cart");
     } catch (e) {
       setError((e as Error).message || t.designer.saveFailed);
       setBusy(null);
@@ -953,7 +953,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
               <div className="space-y-2">
                 <label className="block"><span className="label">{t.designer.font}</span>
                   <select className="input" value={sel.fontFamily} onChange={(e) => setText({ fontFamily: e.target.value })}>
-                    {FONTS.map((f) => <option key={f.v} value={f.v}>{f.n}</option>)}
+                    {FONTS.map((f) => <option key={f.v} value={f.v}>{/[\u3400-\u9fff]/.test(f.n) && t.common.save === "Save" ? f.v : f.n}</option>)}
                   </select>
                 </label>
                 <div className="flex gap-2">
