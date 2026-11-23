@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { sendOrderToSupplier } from "@/lib/supplier";
 import { ecpayConfig, orderNoOf, verifyMac } from "@/lib/ecpay";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function POST(req: Request) {
       await db.update(schema.orders)
         .set({ paid: true, paymentMethod: `ecpay:${p.PaymentType ?? ""}`.slice(0, 60), paymentRef: (p.TradeNo ?? "").slice(0, 40), status: order.status === "pending_payment" ? "reviewing" : order.status })
         .where(eq(schema.orders.id, order.id));
+      // 付款成功就自動把訂單送給供應商；不等它做完，先回應綠界（失敗原因會記在訂單上）
+      void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
     }
   }
   return text("1|OK");
