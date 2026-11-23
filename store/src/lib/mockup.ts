@@ -20,11 +20,15 @@ export type MockupModel = {
   shade: Uint8ClampedArray;
   /** 佔位文字的位置（低解析度），高解析度合成時這些位置改用補過的明暗 */
   textMask: Uint8ClampedArray;
+  /** 斜紋與它的描邊在藍色通道比白底略暗；依「藍 − 紅」的差距查表補回來的倍率（每 4 階一格） */
+  stripeLut: Float32Array;
   /** 依輸出尺寸快取的明暗圖與遮罩，避免每次重算 */
   cache: Map<string, HTMLCanvasElement>;
 };
 
 const N = 440;
+const LUT_N = 22;
+const lutIndex = (diff: number) => (diff <= 3 ? 0 : Math.min(LUT_N - 1, (diff >> 2) + 1));
 
 function boxMax(src: Uint8Array | Uint8ClampedArray, n: number, r: number, min = false): Uint8ClampedArray {
   // 可分離的方形最大（或最小）濾波
@@ -91,7 +95,7 @@ export function analyze(img: CanvasImageSource): MockupModel {
   }
   // 斜紋之間的白色用閉運算補起來，得到印刷區的大致範圍
   const R = Math.round(n * 0.055);
-  const closed = boxMax(boxMax(boxMax(seed, n, R), n, R, true), n, Math.round(R * 0.6));
+  const core = boxMax(boxMax(seed, n, R), n, R, true);
 
   // 從四邊往內填滿純白背景（商品邊緣的陰影會擋住，不會灌進商品內部）
   const bg = new Uint8Array(n * n);
@@ -106,7 +110,47 @@ export function analyze(img: CanvasImageSource): MockupModel {
     if (y < n - 1) push(i + n);
   }
   const m = new Uint8Array(n * n);
-  for (let i = 0; i < n * n; i++) m[i] = closed[i] && light[i] && !bg[i] ? 1 : 0;
+  for (let i = 0; i < n * n; i++) m[i] = core[i] && light[i] && !bg[i] ? 1 : 0;
+  // 斜紋通常不會貼齊商品邊緣，所以再往外長一小段；但遇到滾邊、陰影這類邊界就停下，
+  // 才不會漫到旁邊同樣是淺色的東西（例如模特兒的白襯衫）
+  {
+    const wall = new Uint8Array(n * n);
+    for (let y = 1; y < n - 1; y++) for (let x = 1; x < n - 1; x++) {
+      const i = y * n + x;
+      const g = Math.abs(blue[i + 1] - blue[i - 1]) + Math.abs(blue[i + n] - blue[i - n]);
+      if (blue[i] < 130 || g > 44) wall[i] = 1;
+    }
+    // 補洞時可能跨過滾邊蓋到旁邊的淺色衣服：被邊界隔開、裡面又幾乎沒有斜紋的區塊不算印刷區
+    {
+      const seen = new Uint8Array(n * n);
+      for (let s0 = 0; s0 < n * n; s0++) {
+        if (!m[s0] || wall[s0] || seen[s0]) continue;
+        const cells = [s0];
+        seen[s0] = 1;
+        let seeds = 0;
+        for (let q = 0; q < cells.length; q++) {
+          const i = cells[q], x = i % n, y = (i / n) | 0;
+          if (seed[i]) seeds++;
+          for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, y > 0 ? i - n : -1, y < n - 1 ? i + n : -1]) {
+            if (j >= 0 && m[j] && !wall[j] && !seen[j]) { seen[j] = 1; cells.push(j); }
+          }
+        }
+        if (cells.length > 30 && seeds / cells.length < 0.2) for (const i of cells) m[i] = 0;
+      }
+    }
+    let front: number[] = [];
+    for (let i = 0; i < n * n; i++) if (m[i]) front.push(i);
+    for (let step = Math.round(R * 0.6); step > 0 && front.length; step--) {
+      const next: number[] = [];
+      for (const i of front) {
+        const x = i % n, y = (i / n) | 0;
+        for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, y > 0 ? i - n : -1, y < n - 1 ? i + n : -1]) {
+          if (j >= 0 && !m[j] && light[j] && !bg[j] && !wall[j]) { m[j] = 1; next.push(j); }
+        }
+      }
+      front = next;
+    }
+  }
 
   // 補小洞（文字邊緣的雜點），保留拉鍊這類較大的缺口
   {
@@ -196,17 +240,44 @@ export function analyze(img: CanvasImageSource): MockupModel {
 
   // 陰影：佔位圖的淡藍斜紋在「藍色通道」幾乎和白底一樣亮，所以藍色通道就是去掉斜紋後的布料明暗，
   // 縫線、皺褶、陰影都還在。藍字的部分用周圍的亮度補上。
-  const textNear = boxMax(isText.map((v) => (v ? 255 : 0)) as unknown as Uint8Array, n, 3);
-  // 以周圍「非文字」像素的平均亮度補上文字的位置，才不會留下字的殘影
-  const rr = Math.round(n * 0.03);
-  // 只取「非文字、且夠亮」的布料像素來補，帽繩、拉鍊這類深色配件不算進去，否則會留下一塊暗影
-  const usable = (i: number) => !textNear[i] && blue[i] >= 150;
-  const num = boxBlur(blue.map((v, i) => (usable(i) ? v : 0)), n, rr);
-  const den = boxBlur(blue.map((_, i) => (usable(i) ? 255 : 0)), n, rr);
+  const textBits = isText.map((v) => (v ? 255 : 0)) as unknown as Uint8Array;
+  const textNear = boxMax(textBits, n, 4);
+  // 取樣時離文字再遠一點，避開字邊的壓縮雜訊
+  const textFar = boxMax(textBits, n, 7);
+  // 估計斜紋比白底暗多少：分別取印刷區內「白」與「斜紋」像素的藍色中位數
+  const inRegion = new Uint8Array(n * n);
+  for (const r of regions) for (let i = 0; i < n * n; i++) if (r.mask[i] > 200) inRegion[i] = 1;
+  // 附近白底的亮度（只取幾乎無色偏的像素）
+  const wr = Math.round(n * 0.04);
+  const isWhite = (i: number) => inRegion[i] && !textFar[i] && blue[i] >= 150 && Math.abs(d[i * 4 + 2] - d[i * 4]) <= 3;
+  const wNum = boxBlur(blue.map((v, i) => (isWhite(i) ? v : 0)), n, wr);
+  const wDen = boxBlur(blue.map((_, i) => (isWhite(i) ? 255 : 0)), n, wr);
+  const buckets: number[][] = Array.from({ length: LUT_N }, () => []);
+  for (let i = 0; i < n * n; i++) if (inRegion[i] && !textFar[i] && blue[i] >= 150 && wDen[i] > 25) {
+    const k = lutIndex(d[i * 4 + 2] - d[i * 4]);
+    if (k > 0) buckets[k].push(((wNum[i] * 255) / wDen[i]) / blue[i]);
+  }
+  const stripeLut = new Float32Array(LUT_N).fill(1);
+  let last = 1;
+  for (let k = 1; k < LUT_N; k++) {
+    const a = buckets[k];
+    if (a.length >= 40) { a.sort((x, y) => x - y); last = Math.min(1.3, Math.max(1, a[a.length >> 1])); }
+    stripeLut[k] = last;
+  }
+  const fixed = new Uint8ClampedArray(n * n);
+  for (let i = 0; i < n * n; i++) fixed[i] = blue[i] * stripeLut[lutIndex(d[i * 4 + 2] - d[i * 4])];
+  // 以周圍「非文字、且夠亮」的布料像素平均亮度補上文字的位置；帽繩、拉鍊這類深色配件不算進去
+  const rr = Math.round(n * 0.045);
+  const usable = (i: number) => !textFar[i] && blue[i] >= 150;
+  const num = boxBlur(fixed.map((v, i) => (usable(i) ? v : 0)), n, rr);
+  const den = boxBlur(fixed.map((_, i) => (usable(i) ? 255 : 0)), n, rr);
   const src = new Uint8ClampedArray(n * n);
-  for (let i = 0; i < n * n; i++) src[i] = textNear[i] ? (den[i] > 6 ? (num[i] * 255) / den[i] : 245) : blue[i];
-  const shade = boxBlur(src, n, 1);
-  return { n, regions, shade, textMask: textNear, cache: new Map() };
+  for (let i = 0; i < n * n; i++) src[i] = textNear[i] ? (den[i] > 6 ? (num[i] * 255) / den[i] : 245) : fixed[i];
+  // 補過的地方再柔化一次，蓋掉取樣不均造成的色塊
+  const soft = boxBlur(boxBlur(src, n, 4), n, 4);
+  const shade = new Uint8ClampedArray(n * n);
+  for (let i = 0; i < n * n; i++) shade[i] = textNear[i] ? soft[i] : src[i];
+  return { n, regions, shade, textMask: textNear, stripeLut, cache: new Map() };
 }
 
 export type Placement = { regions: number[]; pos: number };
@@ -239,6 +310,8 @@ export function planMockup(names: string[], regions: Region[]): Placement[] {
 
 /** 陰影加強係數：原圖多半是白色商品，皺褶很淡，換上深色後要加強才有布料的立體感 */
 const SHADE_GAMMA = 2.3;
+/** 低於這個幅度的明暗細節視為斜紋殘影，不保留 */
+const DETAIL_FLOOR = 12;
 
 /** 輸出尺寸的布料明暗圖（灰階）。細節取自原圖解析度，佔位文字的位置用低解析度補過的值 */
 function shadeCanvas(model: MockupModel, base: CanvasImageSource, size: number): HTMLCanvasElement {
@@ -255,16 +328,40 @@ function shadeCanvas(model: MockupModel, base: CanvasImageSource, size: number):
   ctx.drawImage(base, 0, 0, size, size);
   const img = ctx.getImageData(0, 0, size, size);
   const d = img.data;
-  const k = n / size;
-  for (let y = 0; y < size; y++) {
-    const ly = Math.min(n - 1, (y * k) | 0) * n;
-    for (let x = 0; x < size; x++) {
-      const j = (y * size + x) * 4, li = ly + Math.min(n - 1, (x * k) | 0);
-      const v = model.textMask[li] ? model.shade[li] : d[j + 2];
-      const g = 255 * Math.pow(Math.min(1, v / 250), SHADE_GAMMA);
-      d[j] = d[j + 1] = d[j + 2] = g;
-      d[j + 3] = 255;
-    }
+  const tone = (v: number) => 255 * Math.pow(Math.min(1, v / 250), SHADE_GAMMA);
+  for (let j = 0; j < d.length; j += 4) {
+    const b = d[j + 2];
+    d[j] = d[j + 1] = d[j + 2] = b * model.stripeLut[lutIndex(b - d[j])];
+    d[j + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  // 佔位文字的位置改蓋上低解析度補過的明暗，邊緣羽化才不會看到接縫
+  const patch = document.createElement("canvas");
+  patch.width = patch.height = n;
+  const pctx = patch.getContext("2d")!;
+  const pim = pctx.createImageData(n, n);
+  const feather = boxBlur(model.textMask, n, 2);
+  for (let i = 0; i < n * n; i++) {
+    const g = model.shade[i];
+    pim.data[i * 4] = pim.data[i * 4 + 1] = pim.data[i * 4 + 2] = g;
+    pim.data[i * 4 + 3] = Math.min(255, feather[i] * 2);
+  }
+  pctx.putImageData(pim, 0, 0);
+  ctx.drawImage(patch, 0, 0, size, size);
+  const withPatch = ctx.getImageData(0, 0, size, size);
+  d.set(withPatch.data);
+  // 斜紋和它的描邊還是會留下很淡的紋路，換上深色後特別明顯。
+  // 做法：把明暗拆成「大範圍的起伏」和「細節」，細節太弱的（斜紋殘影）丟掉，夠強的（縫線、皺褶）留著
+  const low = document.createElement("canvas");
+  low.width = low.height = size;
+  const wctx = low.getContext("2d", { willReadFrequently: true })!;
+  wctx.filter = `blur(${(size * 0.011).toFixed(1)}px)`;
+  wctx.drawImage(c, 0, 0);
+  const lo = wctx.getImageData(0, 0, size, size).data;
+  for (let j = 0; j < d.length; j += 4) {
+    const diff = d[j] - lo[j];
+    const keep = Math.abs(diff) <= DETAIL_FLOOR ? 0 : diff - Math.sign(diff) * DETAIL_FLOOR;
+    d[j] = d[j + 1] = d[j + 2] = tone(lo[j] + keep);
   }
   ctx.putImageData(img, 0, 0);
   // 輕微柔化，壓掉 JPEG 壓縮造成的方塊雜訊，保留皺褶與縫線
