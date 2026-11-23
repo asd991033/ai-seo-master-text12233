@@ -59,6 +59,8 @@ export const products = sqliteTable("products", {
   sizes: text("sizes", { mode: "json" }).$type<string[]>().notNull().default([]),
   /** 供應商商品頁（僅後台參考） */
   sourceUrl: text("source_url"),
+  /** 印上範例圖案的成品圖（商品卡片滑過時顯示、Google 購物主圖） */
+  sampleImage: text("sample_image"),
   moq: integer("moq").notNull().default(1),
   leadDays: integer("lead_days").notNull().default(14),
   /** 單件重量（克） */

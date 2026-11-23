@@ -22,7 +22,7 @@ export async function listCategories() {
   return db.select().from(categories).orderBy(asc(categories.sort), asc(categories.id));
 }
 
-export type ProductCard = Pick<Product, "id" | "slug" | "sku" | "name" | "summary" | "images" | "moq" | "colors"> & {
+export type ProductCard = Pick<Product, "id" | "slug" | "sku" | "name" | "summary" | "images" | "moq" | "colors" | "sampleImage"> & {
   tiers: Tier[];
   categoryName: string | null;
 };
@@ -51,7 +51,7 @@ export async function listProducts(opts: { category?: string; q?: string; sort?:
   const rows = await db
     .select({
       id: products.id, slug: products.slug, sku: products.sku, name: products.name, summary: products.summary,
-      images: products.images, moq: products.moq, colors: products.colors, categoryName: categories.name,
+      images: products.images, moq: products.moq, colors: products.colors, categoryName: categories.name, sampleImage: products.sampleImage,
       minPrice: sql<number | null>`(select min(unit_price) from price_tiers where product_id = ${products.id})`,
     })
     .from(products)

@@ -28,6 +28,8 @@ export type ProductRow = {
   /** variantCosts / extraFaceCost 的幣別（如 CNY） */
   costCurrency?: string;
   sourceUrl?: string;
+  /** 印上範例圖案的成品圖網址 */
+  sampleImage?: string;
   moq?: number; leadDays?: number; unitWeightG?: number;
   cartonQty?: number; cartonLengthCm?: number; cartonWidthCm?: number; cartonHeightCm?: number; cartonWeightKg?: number;
   featured?: boolean; active?: boolean;
@@ -144,7 +146,7 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
           popularity: r.popularity ?? 0,
           ...derivePrices(r.variantCosts ?? null, r.extraFaceCost ?? null, r.costCurrency ?? null, margin, fx),
           sizes: (r.sizes ?? "").split("|").map((x) => x.trim()).filter(Boolean),
-          sourceUrl: r.sourceUrl ?? null,
+          sourceUrl: r.sourceUrl ?? null, sampleImage: r.sampleImage ?? null,
           moq: r.moq || 1, leadDays: r.leadDays || 14, unitWeightG: r.unitWeightG || 0,
           cartonQty: r.cartonQty || 0, cartonLengthCm: r.cartonLengthCm || 0, cartonWidthCm: r.cartonWidthCm || 0,
           cartonHeightCm: r.cartonHeightCm || 0, cartonWeightKg: r.cartonWeightKg || 0,

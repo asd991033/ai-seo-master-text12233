@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const rows = await db
     .select({
       sku: schema.products.sku, slug: schema.products.slug, name: schema.products.name, material: schema.products.material, summary: schema.products.summary, description: schema.products.description,
-      images: schema.products.images, category: schema.categories.name,
+      images: schema.products.images, category: schema.categories.name, sample: schema.products.sampleImage,
       price: sql<number | null>`(select unit_price from price_tiers where product_id = ${schema.products.id} order by min_qty asc limit 1)`,
     })
     .from(schema.products)
@@ -26,7 +26,8 @@ export async function GET(req: Request) {
     .where(eq(schema.products.active, true));
   const ship = site.flatShipping.fee >= 0 ? `<g:shipping><g:country>TW</g:country><g:price>${site.flatShipping.fee} ${site.currency}</g:price></g:shipping>` : "";
   const items = rows.flatMap((p) => {
-    const imgs = ((p.images ?? []) as string[]).map((u) => (u.startsWith("/") ? base + u : u));
+    // 主圖優先用印上範例圖案的成品圖：畫面乾淨，沒有「YOUR DESIGN HERE」這類疊加文字
+    const imgs = [...(p.sample ? [p.sample] : []), ...((p.images ?? []) as string[])].map((u) => (u.startsWith("/") ? base + u : u));
     if (!p.price || !imgs[0]) return [];
     const desc = `${p.name}，可線上排版印上你的 Logo、圖案或文字，一件起訂。${plain(p.description || p.summary || "")}`.slice(0, 4800);
     return [`<item><g:id>${esc(p.sku)}</g:id><g:title>${esc(feedTitle(p.name, p.material))}</g:title><g:description>${esc(desc)}</g:description><g:link>${base}/products/${esc(p.slug)}</g:link><g:image_link>${esc(imgs[0])}</g:image_link>${imgs.slice(1, 6).map((u) => `<g:additional_image_link>${esc(u)}</g:additional_image_link>`).join("")}<g:availability>in_stock</g:availability><g:price>${Math.round(p.price)} ${site.currency}</g:price><g:brand>${esc(site.brand)}</g:brand><g:condition>new</g:condition><g:identifier_exists>no</g:identifier_exists><g:is_bundle>no</g:is_bundle>${p.category ? `<g:product_type>${esc(p.category)}</g:product_type>` : ""}${ship}</item>`];
