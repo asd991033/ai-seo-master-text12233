@@ -5,7 +5,7 @@ import { db, schema } from "@/db";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const base = (process.env.SITE_URL ?? (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const [products, cats] = await Promise.all([
     db.select({ slug: schema.products.slug }).from(schema.products).where(eq(schema.products.active, true)),
     db.select({ slug: schema.categories.slug }).from(schema.categories),

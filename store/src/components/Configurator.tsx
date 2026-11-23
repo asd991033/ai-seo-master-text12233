@@ -1,4 +1,5 @@
 "use client";
+import { track } from "@/lib/track";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "@/i18n";
@@ -121,6 +122,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
   function addToCart(next: "/cart" | "/checkout") {
     if (!quote) return;
     add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, sizeName: size, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
+    track("add_to_cart", { currency: site.currency, value: quote.total, items: [{ item_id: p.sku, item_name: p.name, quantity: qty, price: quote.unitAllIn }] });
     router.push(next);
   }
 

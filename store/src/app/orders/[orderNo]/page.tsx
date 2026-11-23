@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
+import { site } from "@/config/site";
 import { requireUser } from "@/lib/auth";
 import { ecpayEnabled } from "@/lib/ecpay";
+import { PurchaseEvent } from "@/components/PurchaseEvent";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +36,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
       )}
       {!order.paid && order.status === "pending_payment" && !ecpayEnabled() && (
         <p className="card mb-8 border-gold bg-gold/5 p-5 text-sm">{t.checkout.onlineOff}</p>
+      )}
+      {order.paid && (
+        <PurchaseEvent orderNo={order.orderNo} value={order.total} shipping={order.shippingFee} currency={site.currency}
+          adsSendTo={process.env.GADS_ID && process.env.GADS_PURCHASE_LABEL ? `${process.env.GADS_ID}/${process.env.GADS_PURCHASE_LABEL}` : null}
+          items={items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty, price: i.unitPrice }))} />
       )}
       <OrderDetail order={order} items={items} />
     </div>

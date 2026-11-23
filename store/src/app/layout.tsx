@@ -4,10 +4,14 @@ import { site } from "@/config/site";
 import { t } from "@/i18n";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Analytics } from "@/components/Analytics";
 
 export const metadata: Metadata = {
   title: { default: `${site.brand}｜${t.home.eyebrow}`, template: `%s｜${site.brand}` },
   description: t.home.lead,
+  ...(process.env.SITE_URL ? { metadataBase: new URL(process.env.SITE_URL), alternates: { canonical: "./" } } : {}),
+  // Google Search Console 的網站驗證碼
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );

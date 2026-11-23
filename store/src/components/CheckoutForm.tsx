@@ -1,4 +1,6 @@
 "use client";
+import { site } from "@/config/site";
+import { track } from "@/lib/track";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +33,7 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
     setSubmitting(true);
     setError(null);
     const fd = Object.fromEntries(new FormData(e.currentTarget));
+    track("begin_checkout", { currency: site.currency, value: q.totals?.total ?? 0, items: q.items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty })) });
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
