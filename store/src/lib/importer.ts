@@ -48,6 +48,9 @@ export type ImportData = { products: ProductRow[]; tiers: TierRow[]; areas: Area
 export type ImportResult = { ok: boolean; errors: string[]; counts: { products: number; tiers: number; areas: number; printPrices: number } };
 
 /** 由成本換算各款式售價與加印面售價（匯入與調整毛利率時共用） */
+/** 舊分類名稱 → 新名稱 */
+const CATEGORY_RENAMES: Record<string, string> = { "杯子": "環保杯/馬克杯/水壺" };
+
 export function derivePrices(variantCosts: Record<string, [number, number][]> | null, extraFaceCost: number | null, costCurrency: string | null, margin: number, fx: (c: string | null | undefined) => number) {
   const rate = fx(costCurrency);
   return {
@@ -119,6 +122,8 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
   try {
     await db.transaction(async (tx) => {
       // ---- 分類 ----
+      // 分類改名：沿用原本的分類（網址不變），不另外新增一個
+      for (const [from, to] of Object.entries(CATEGORY_RENAMES)) await tx.update(categories).set({ name: to }).where(eq(categories.name, from));
       const catByName = new Map((await tx.select().from(categories)).map((c) => [c.name, c.id]));
       for (const name of new Set(data.products.map((p) => p.category?.trim()).filter((x): x is string => !!x))) {
         if (catByName.has(name)) continue;
