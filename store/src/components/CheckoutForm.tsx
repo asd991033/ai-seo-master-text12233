@@ -9,7 +9,7 @@ import { ItemThumb, ShippingPicker, TotalsBox, useCartQuote } from "./CartView";
 
 type Defaults = { name: string; phone: string; email: string; company: string; taxId: string };
 
-export function CheckoutForm({ defaults }: { defaults: Defaults }) {
+export function CheckoutForm({ defaults, online = false }: { defaults: Defaults; online?: boolean }) {
   const router = useRouter();
   const q = useCartQuote();
   const clear = useCart((s) => s.clear);
@@ -39,8 +39,9 @@ export function CheckoutForm({ defaults }: { defaults: Defaults }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.checkout.failed);
-      router.push(`/orders/${json.orderNo}?new=1`);
       clear();
+      if (json.payUrl) window.location.assign(json.payUrl);
+      else router.push(`/orders/${json.orderNo}?new=1`);
     } catch (err) {
       setError((err as Error).message);
       setSubmitting(false);
@@ -78,13 +79,16 @@ export function CheckoutForm({ defaults }: { defaults: Defaults }) {
         </section>
         <section className="card space-y-3 p-5">
           <h2 className="text-lg font-bold">{t.checkout.payment}</h2>
-          <label className="flex items-start gap-3 rounded-xl border border-forest bg-forest/5 p-3">
-            <input type="radio" name="paymentMethod" value="bank_transfer" defaultChecked className="mt-1 accent-[var(--color-forest)]" />
-            <span><span className="font-medium">{t.checkout.bank}</span><span className="block text-xs text-mute">{t.checkout.bankHint}</span></span>
-          </label>
-          <label className="flex items-center gap-3 rounded-xl border border-line p-3 text-mute">
-            <input type="radio" disabled /> {t.checkout.card}
-          </label>
+          {online ? (
+            <div className="rounded-xl border border-forest bg-forest/5 p-3" data-testid="pay-online">
+              <span className="font-medium">{t.checkout.online}</span><span className="block text-xs text-mute">{t.checkout.onlineHint}</span>
+            </div>
+          ) : (
+            <label className="flex items-start gap-3 rounded-xl border border-forest bg-forest/5 p-3">
+              <input type="radio" name="paymentMethod" value="bank_transfer" defaultChecked className="mt-1 accent-[var(--color-forest)]" />
+              <span><span className="font-medium">{t.checkout.bank}</span><span className="block text-xs text-mute">{t.checkout.bankHint}</span></span>
+            </label>
+          )}
         </section>
       </div>
       <aside className="card h-fit space-y-5 p-5 lg:sticky lg:top-24">

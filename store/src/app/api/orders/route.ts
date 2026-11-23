@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ecpayEnabled } from "@/lib/ecpay";
 import { randomInt } from "node:crypto";
 import { inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
@@ -68,5 +69,6 @@ export async function POST(req: Request) {
       }),
     );
   });
-  return NextResponse.json({ orderNo: no });
+  // 有設定線上金流就直接帶去付款
+  return NextResponse.json({ orderNo: no, payUrl: ecpayEnabled() ? `/api/ecpay/pay?orderNo=${no}` : null });
 }

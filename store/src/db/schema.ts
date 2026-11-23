@@ -226,6 +226,8 @@ export const orders = sqliteTable("orders", {
   }).notNull().default("pending_payment"),
   paymentMethod: text("payment_method").notNull().default("bank_transfer"),
   paid: integer("paid", { mode: "boolean" }).notNull().default(false),
+  /** 金流的交易編號（例如綠界 TradeNo），對帳用 */
+  paymentRef: text("payment_ref"),
   contactName: text("contact_name").notNull(),
   contactPhone: text("contact_phone").notNull(),
   contactEmail: text("contact_email").notNull(),
