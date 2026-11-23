@@ -67,7 +67,10 @@ export async function sendToSupplier(fd: FormData) {
       lines.push({ product_code: code, stock_item_id: stockId, qty: it.qty, out_item_id: `${order.orderNo}-${it.id}`, price: it.unitPrice, total: it.lineTotal, product_name: it.name });
     }
     const fmt = (ts: number) => new Date((ts + 8 * 3600) * 1000).toISOString().slice(0, 19).replace("T", " ");
+    // 物流方式：有指定就用指定的名稱，否則由 HiCustom 依帳號的預設規則配對
+    const logistics = String(fd.get("logistics") ?? "").trim().slice(0, 60) || process.env.HICUSTOM_LOGISTICS?.trim() || "";
     const res = await createOrder({
+      ...(logistics ? { logistics_company_name: logistics } : {}),
       order_items: lines, out_order_id: order.orderNo, store_id: cfg.storeId, currency_code: 11, remark: (order.note ?? "").slice(0, 200),
       order_time: fmt(order.createdAt), payment_time: fmt(order.createdAt), subtotal: order.goodsTotal + order.printTotal, shipping_amount: order.shippingFee, grand_total: order.total,
       address: { country: "TW", region: addr.region, city: addr.city, area: "", street: addr.street, postcode: zip, mobile_phone: order.contactPhone, firstname: order.contactName, lastname: "", email: order.contactEmail },

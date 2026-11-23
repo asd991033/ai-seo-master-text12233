@@ -50,6 +50,7 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
             <form action={sendToSupplier} className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="id" value={order.id} />
               <label><span className="label">郵遞區號</span><input name="postcode" defaultValue={order.postcode ?? ""} inputMode="numeric" className="input w-28" placeholder="例 110" /></label>
+              <label><span className="label">物流方式名稱（選填）</span><input name="logistics" defaultValue={process.env.HICUSTOM_LOGISTICS ?? ""} className="input w-44" placeholder="留空用 HiCustom 預設" /></label>
               <button className="btn-primary">送到 HiCustom</button>
               <span className="text-xs text-mute">會上傳印刷檔、合成商品並建立訂單；建立後需到 HiCustom 後台付款才會生產。{!order.paid && "（這張訂單客戶尚未付款）"}</span>
             </form>
