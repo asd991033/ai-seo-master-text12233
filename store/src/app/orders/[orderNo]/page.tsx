@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
-import { site } from "@/config/site";
 import { requireUser } from "@/lib/auth";
 import { ecpayEnabled } from "@/lib/ecpay";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
@@ -34,11 +33,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         </div>
       )}
       {!order.paid && order.status === "pending_payment" && !ecpayEnabled() && (
-        <div className="card mb-8 border-gold bg-gold/5 p-5">
-          <div className="font-bold">{t.order.payInfo}</div>
-          <pre className="mt-2 font-sans text-sm leading-relaxed whitespace-pre-wrap">{site.bankInfo}</pre>
-          <p className="mt-2 text-xs text-mute">{t.order.payNote}</p>
-        </div>
+        <p className="card mb-8 border-gold bg-gold/5 p-5 text-sm">{t.checkout.onlineOff}</p>
       )}
       <OrderDetail order={order} items={items} />
     </div>

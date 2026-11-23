@@ -79,16 +79,9 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
         </section>
         <section className="card space-y-3 p-5">
           <h2 className="text-lg font-bold">{t.checkout.payment}</h2>
-          {online ? (
-            <div className="rounded-xl border border-forest bg-forest/5 p-3" data-testid="pay-online">
-              <span className="font-medium">{t.checkout.online}</span><span className="block text-xs text-mute">{t.checkout.onlineHint}</span>
-            </div>
-          ) : (
-            <label className="flex items-start gap-3 rounded-xl border border-forest bg-forest/5 p-3">
-              <input type="radio" name="paymentMethod" value="bank_transfer" defaultChecked className="mt-1 accent-[var(--color-forest)]" />
-              <span><span className="font-medium">{t.checkout.bank}</span><span className="block text-xs text-mute">{t.checkout.bankHint}</span></span>
-            </label>
-          )}
+          <div className="rounded-xl border border-forest bg-forest/5 p-3" data-testid="pay-online">
+            <span className="font-medium">{t.checkout.online}</span><span className="block text-xs text-mute">{online ? t.checkout.onlineHint : t.checkout.onlineOff}</span>
+          </div>
         </section>
       </div>
       <aside className="card h-fit space-y-5 p-5 lg:sticky lg:top-24">

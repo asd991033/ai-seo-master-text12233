@@ -224,7 +224,7 @@ export const orders = sqliteTable("orders", {
   status: text("status", {
     enum: ["pending_payment", "reviewing", "in_production", "shipped", "completed", "cancelled"],
   }).notNull().default("pending_payment"),
-  paymentMethod: text("payment_method").notNull().default("bank_transfer"),
+  paymentMethod: text("payment_method").notNull().default("ecpay"),
   paid: integer("paid", { mode: "boolean" }).notNull().default(false),
   /** 金流的交易編號（例如綠界 TradeNo），對帳用 */
   paymentRef: text("payment_ref"),

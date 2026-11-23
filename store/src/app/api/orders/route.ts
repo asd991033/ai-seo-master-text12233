@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const [order] = await tx
       .insert(schema.orders)
       .values({
-        orderNo: no, userId: user.id, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, ...totals,
+        orderNo: no, userId: user.id, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: "ecpay", ...totals,
         totalWeightKg: priced.pack.weightKg, totalCbm: priced.pack.cbm,
       })
       .returning();

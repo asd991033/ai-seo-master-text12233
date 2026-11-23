@@ -172,12 +172,12 @@ const dict = {
   },
   checkout: {
     title: "結帳", contact: "收件資訊", name: "收件人", phone: "電話", email: "Email", company: "公司名稱（選填）", taxId: "統一編號（選填）",
-    address: "收件地址", note: "訂單備註（選填）", notePh: "例：T 恤各尺寸數量、希望到貨日、發票抬頭…", payment: "付款方式", bank: "銀行轉帳 / ATM",
-    bankHint: "送出訂單後會顯示匯款資訊；款項確認後進入審稿與生產。", card: "線上刷卡（即將開放）", online: "線上付款（綠界 ECPay）", onlineHint: "送出訂單後前往綠界付款頁，可選信用卡、ATM 轉帳或超商付款；付款完成後進入審稿與生產。", submit: "送出訂單", submitting: "送出中…",
+    address: "收件地址", note: "訂單備註（選填）", notePh: "例：T 恤各尺寸數量、希望到貨日、發票抬頭…", payment: "付款方式",
+    onlineOff: "線上付款暫時無法使用，請聯繫客服協助付款。", online: "線上付款（綠界 ECPay）", onlineHint: "送出訂單後前往綠界付款頁，可選信用卡、ATM 轉帳或超商付款；付款完成後進入審稿與生產。", submit: "送出訂單", submitting: "送出中…",
     agree: "送出訂單即表示同意審稿後依確認稿生產，客製商品恕不接受無瑕疵退換。", failed: "訂單送出失敗",
   },
   order: {
-    title: "訂單", thanks: "訂單已成立，謝謝你！", no: "訂單編號", date: "下單時間", status: "狀態", payInfo: "匯款資訊", payOnline: "這張訂單尚未付款", payNow: "前往付款", paidOk: "付款成功，謝謝你！訂單已進入審稿。", paidPending: "已返回本站。若你選擇 ATM 或超商付款，完成繳費後訂單會自動更新為已付款。", payNote: "匯款後請保留收據，我們確認款項後會以 Email 通知並開始審稿。",
+    title: "訂單", thanks: "訂單已成立，謝謝你！", no: "訂單編號", date: "下單時間", status: "狀態", payOnline: "這張訂單尚未付款", payNow: "前往付款", paidOk: "付款成功，謝謝你！訂單已進入審稿。", paidPending: "已返回本站。若你選擇 ATM 或超商付款，完成繳費後訂單會自動更新為已付款。",
     items: "訂購明細", ship: "運送", tracking: "物流單號", paid: "已付款", unpaid: "未付款", myOrders: "我的訂單", none: "還沒有訂單。", view: "查看",
     statuses: {
       pending_payment: "待付款", reviewing: "稿件審核中", in_production: "生產中", shipped: "已出貨", completed: "已完成", cancelled: "已取消",
