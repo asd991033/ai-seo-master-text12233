@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const range = priceRange(p.pricing.tiers);
   // 說明帶入價格、起訂量與運送資訊，搜尋結果與 AI 摘要才有具體內容可引用
   const description = [p.summary || p.name, range ? `${site.currencySymbol}${range.min} 起，${p.pricing.moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${site.flatShipping.days} 個工作天`].filter(Boolean).join("；").slice(0, 155);
-  return { title: `${p.name}｜客製化印刷`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: p.images.slice(0, 1) } };
+  return { title: `${p.name}｜印 Logo 圖案・${p.pricing.moq} 件起訂`, description, alternates: { canonical: `/products/${p.slug}` }, openGraph: { title: p.name, description, type: "website", images: p.images.slice(0, 1) } };
 }
 
 export default async function ProductPage({ params }: Props) {
