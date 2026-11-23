@@ -12,8 +12,11 @@ export async function Footer() {
         <div>
           <div className="text-[22px] leading-none font-extrabold tracking-[-0.03em] uppercase">{site.brand}</div>
           <p className="mt-4 max-w-[260px] leading-relaxed text-mute">{t.footer.about}</p>
-          <div className={`mt-6 ${head} !mb-1.5`}>{t.footer.email}</div>
-          <a href={`mailto:${site.contactEmail}`} className="hover:underline">{site.contactEmail}</a>
+          <address className="mt-6 space-y-1.5 not-italic">
+            <div><span className="text-mute">{t.footer.phone}　</span><a href={`tel:${site.contactPhone.replace(/[^0-9+]/g, "")}`} className="hover:underline">{site.contactPhone}</a></div>
+            <div><span className="text-mute">{t.footer.email}　</span><a href={`mailto:${site.contactEmail}`} className="hover:underline">{site.contactEmail}</a></div>
+            <div><span className="text-mute">{t.footer.address}　</span><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{site.address.full}</a></div>
+          </address>
           <div>
             <a href={`mailto:${site.contactEmail}`} className="mt-6 inline-flex rounded-[12px] border border-ink/15 bg-white px-4 py-2 text-xs font-medium hover:border-ink">{t.footer.contactCta}</a>
           </div>
@@ -39,6 +42,7 @@ export async function Footer() {
           <div className={head}>{t.footer.help}</div>
           <ul className="space-y-3">
             <li><Link href="/guide#faq" className="text-mute hover:text-ink">{t.nav.faq}</Link></li>
+            <li><Link href="/returns" className="text-mute hover:text-ink">{t.returns.title}</Link></li>
             <li><Link href="/account" className="text-mute hover:text-ink">{t.nav.account}</Link></li>
             <li><Link href="/cart" className="text-mute hover:text-ink">{t.nav.cart}</Link></li>
             <li><a href={`mailto:${site.contactEmail}`} className="text-mute hover:text-ink">{t.nav.contact}</a></li>

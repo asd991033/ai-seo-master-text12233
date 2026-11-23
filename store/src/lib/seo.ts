@@ -7,10 +7,14 @@ export function baseUrl() {
 export const abs = (path: string) => (/^https?:/.test(path) ? path : `${baseUrl()}${path.startsWith("/") ? "" : "/"}${path}`);
 
 const ctx = "https://schema.org";
+/** 台灣市話／手機轉成國際格式（02-8789-9996 → +886-2-8789-9996） */
+export const telE164 = (tel: string) => (/^0\d/.test(tel) ? `+886-${tel.slice(1)}` : tel);
 
 export const organizationLd = () => ({
   "@context": ctx, "@type": "Organization", "@id": `${baseUrl()}/#org`, name: site.brand, url: baseUrl(), logo: abs("/icon.svg"),
-  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, availableLanguage: ["zh-TW"] },
+  email: site.contactEmail, telephone: telE164(site.contactPhone),
+  address: { "@type": "PostalAddress", streetAddress: site.address.street, addressLocality: site.address.locality, addressRegion: site.address.region, postalCode: site.address.postalCode, addressCountry: site.address.country },
+  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, telephone: telE164(site.contactPhone), areaServed: "TW", availableLanguage: ["zh-TW"] },
 });
 
 export const websiteLd = () => ({

@@ -14,5 +14,11 @@ export const site = {
   defaultZone: process.env.NEXT_PUBLIC_DEFAULT_ZONE ?? "TW",
   /** 統一運費：每張訂單固定收 fee，商品金額（不含運費）滿 freeOver 免運。fee 設為負數則改用重量／材積計價 */
   flatShipping: { fee: Number(process.env.NEXT_PUBLIC_SHIP_FEE ?? "160"), freeOver: Number(process.env.NEXT_PUBLIC_SHIP_FREE_OVER ?? "2000"), days: process.env.NEXT_PUBLIC_SHIP_DAYS ?? "3–5" },
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "service@example.com",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@leogift99.com",
+  contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE ?? "02-8789-9996",
+  /** 公司地址（顯示用）與拆開的欄位（結構化資料用） */
+  address: {
+    full: process.env.NEXT_PUBLIC_ADDRESS ?? "新北市汐止區新台五路一段99號A棟10樓之9",
+    region: "新北市", locality: "汐止區", street: "新台五路一段99號A棟10樓之9", postalCode: "221", country: "TW",
+  },
 } as const;

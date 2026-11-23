@@ -30,12 +30,15 @@ export async function GET() {
 - 到貨時間：生產天數標示於各商品頁；出貨後運送約 ${fs.days} 個工作天。
 - 付款方式：線上付款（綠界 ECPay），可使用信用卡、ATM 轉帳或超商付款。
 - 檔案建議：300 dpi；Logo 請使用去背 PNG 或向量檔。
+- 退換貨：商品皆為客製化製作，不適用七天鑑賞期；有製造瑕疵、印製與確認稿不符、品項錯誤或運送損壞時，收到後 7 天內聯絡可免費重製或退款。尚未進入生產前可取消並全額退款。
+- 聯絡方式：電話 ${site.contactPhone}，信箱 ${site.contactEmail}，地址 ${site.address.full}。
 - 語言與地區：繁體中文，服務台灣。
 
 ## 主要頁面
 - [全部商品](${base}/products)：依分類瀏覽與搜尋
 - [訂購流程與印刷說明](${base}/guide)：訂購步驟、印刷方式、檔案準備、運送與常見問題
 - [部落格](${base}/blog)：選品與檔案準備的教學文章
+- [退換貨政策](${base}/returns)：客製化商品的退換貨、瑕疵處理與退款說明
 
 ## 商品分類
 ${cats.filter((c) => c.n > 0).sort((a, b) => b.n - a.n).map((c) => `- [${c.name}](${base}/products?category=${encodeURIComponent(c.slug)})：${c.n} 款`).join("\n")}

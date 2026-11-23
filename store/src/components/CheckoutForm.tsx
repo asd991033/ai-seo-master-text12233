@@ -106,6 +106,7 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
         </ul>
         <TotalsBox totals={q.totals} loading={q.loading} />
         {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+        <p className="text-xs leading-relaxed text-mute" data-testid="returns-notice">{t.checkout.returnsNotice}<Link href="/returns" target="_blank" className="underline underline-offset-2">{t.returns.title}</Link>。</p>
         <button type="submit" disabled={submitting || !q.allOk || !q.totals} className="btn-primary w-full py-3">{submitting ? t.checkout.submitting : t.checkout.submit}</button>
         <p className="text-xs leading-relaxed text-mute">{t.checkout.agree}</p>
       </aside>
