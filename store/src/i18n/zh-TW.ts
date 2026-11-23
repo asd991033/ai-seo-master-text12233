@@ -167,7 +167,7 @@ const dict = {
   cart: {
     title: "購物車", empty: "購物車是空的。", goShop: "去逛逛", remove: "移除", qty: "數量", blank: "素面（不印刷）", design: "線上排版稿", editDesign: "重新編輯", artwork: "已上傳稿件",
     artworkLater: "稿件稍後提供", summary: "訂單摘要", goods: "商品金額", print: "印刷費", setup: "版費", shipping: "運費", tax: `營業稅 ${Math.round(site.taxRate * 100)}%`,
-    total: "應付總額", checkout: "前往結帳", shipTo: "運送地區", shipMode: "運送方式", freeShip: "免運", flatShipNote: FLAT_SHIP, weight: "預估毛重", volume: "體積", updating: "計算中…",
+    total: site.taxRate > 0 ? "應付總額" : "應付總額（含稅）", checkout: "前往結帳", shipTo: "運送地區", shipMode: "運送方式", freeShip: "免運", flatShipNote: FLAT_SHIP, weight: "預估毛重", volume: "體積", updating: "計算中…",
     lineError: "此品項無法報價，請調整數量或移除", perUnit: "每件",
   },
   checkout: {
@@ -202,7 +202,7 @@ const dict = {
     shipTitle: "運送與運費",
     shipRules: [
       FLAT_SHIP,
-      "門檻以商品與印刷金額計算（未稅、不含運費）。",
+      "門檻以商品與印刷金額計算（不含運費）。所有價格與運費皆已含稅。",
     ],
     faqTitle: "常見問題",
     faq: [
