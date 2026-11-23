@@ -1,6 +1,6 @@
 import { site } from "@/config/site";
 /** 統一運費說明（金額來自站點設定） */
-const FLAT_SHIP = `每張訂單運費 ${site.currencySymbol}${site.flatShipping.fee}，商品金額滿 ${site.currencySymbol}${site.flatShipping.freeOver.toLocaleString("en-US")} 免運。`;
+const FLAT_SHIP = `每張訂單運費 ${site.currencySymbol}${site.flatShipping.fee}，商品金額滿 ${site.currencySymbol}${site.flatShipping.freeOver.toLocaleString("en-US")} 免運。出貨後運送約 ${site.flatShipping.days} 個工作天。`;
 
 /** 繁體中文字典。新增語系時複製本檔翻譯，並在 i18n/index.ts 註冊。 */
 const dict = {
