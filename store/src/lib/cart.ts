@@ -21,7 +21,7 @@ export type CartItem = {
 };
 
 /** 各國站的購物車分開存（品名、顏色名稱與幣別都不同） */
-const marketSuffix = () => { const m = typeof window === "undefined" ? null : /^\/(sg|my|au|ae|uk)(\/|$)/.exec(window.location.pathname); return m ? `-${m[1]}` : ""; };
+const marketSuffix = () => { const m = typeof window === "undefined" ? null : /^\/(us|sg|my|au|ae|uk)(\/|$)/.exec(window.location.pathname); return m ? `-${m[1]}` : ""; };
 
 type CartState = {
   items: CartItem[];

@@ -3,7 +3,7 @@
  * 商品成本與定價以新台幣維護，海外站依匯率換算成當地幣別；匯率與運費可用環境變數覆寫：
  *   FX_SGD=0.0407（1 新台幣換多少當地幣）、SHIP_SG=15,150（運費,免運門檻）
  */
-export type MarketCode = "tw" | "sg" | "my" | "au" | "ae" | "uk";
+export type MarketCode = "tw" | "us" | "sg" | "my" | "au" | "ae" | "uk";
 export type Locale = "zh-TW" | "en";
 export type Market = {
   code: MarketCode;
@@ -26,7 +26,7 @@ export type Market = {
 const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : d);
 function ship(cc: string, fee: number, freeOver: number, days: string) {
   // NEXT_PUBLIC_ 開頭的變數才會進到瀏覽器端，這裡兩種都讀
-  const raw = { SG: process.env.NEXT_PUBLIC_SHIP_SG, MY: process.env.NEXT_PUBLIC_SHIP_MY, AU: process.env.NEXT_PUBLIC_SHIP_AU, AE: process.env.NEXT_PUBLIC_SHIP_AE, GB: process.env.NEXT_PUBLIC_SHIP_GB }[cc];
+  const raw = { SG: process.env.NEXT_PUBLIC_SHIP_SG, MY: process.env.NEXT_PUBLIC_SHIP_MY, AU: process.env.NEXT_PUBLIC_SHIP_AU, AE: process.env.NEXT_PUBLIC_SHIP_AE, GB: process.env.NEXT_PUBLIC_SHIP_GB, US: process.env.NEXT_PUBLIC_SHIP_US }[cc];
   const [f, o] = (raw ?? "").split(",").map(Number);
   return { fee: Number.isFinite(f) && raw ? f : fee, freeOver: Number.isFinite(o) ? o : freeOver, days };
 }
@@ -36,6 +36,7 @@ export const markets: Record<MarketCode, Market> = {
     code: "tw", prefix: "", locale: "zh-TW", lang: "zh-TW", country: "TW", countryName: "台灣", currency: "TWD", symbol: "NT$", rate: 1, payment: "ecpay",
     shipping: { fee: Number(process.env.NEXT_PUBLIC_SHIP_FEE ?? "160"), freeOver: Number(process.env.NEXT_PUBLIC_SHIP_FREE_OVER ?? "2000"), days: process.env.NEXT_PUBLIC_SHIP_DAYS ?? "3–5" },
   },
+  us: { code: "us", prefix: "/us", locale: "en", lang: "en-US", country: "US", countryName: "United States", currency: "USD", symbol: "$", rate: num(process.env.NEXT_PUBLIC_FX_USD, 0.0313), payment: "stripe", shipping: ship("US", 15, 150, "8–14") },
   sg: { code: "sg", prefix: "/sg", locale: "en", lang: "en-SG", country: "SG", countryName: "Singapore", currency: "SGD", symbol: "S$", rate: num(process.env.NEXT_PUBLIC_FX_SGD, 0.041), payment: "stripe", shipping: ship("SG", 15, 150, "7–12") },
   my: { code: "my", prefix: "/my", locale: "en", lang: "en-MY", country: "MY", countryName: "Malaysia", currency: "MYR", symbol: "RM", rate: num(process.env.NEXT_PUBLIC_FX_MYR, 0.133), payment: "stripe", shipping: ship("MY", 39, 400, "7–12") },
   au: { code: "au", prefix: "/au", locale: "en", lang: "en-AU", country: "AU", countryName: "Australia", currency: "AUD", symbol: "A$", rate: num(process.env.NEXT_PUBLIC_FX_AUD, 0.048), payment: "stripe", shipping: ship("AU", 20, 200, "8–14") },
