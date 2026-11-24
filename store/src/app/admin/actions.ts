@@ -148,3 +148,25 @@ export async function deleteOrder(fd: FormData) {
   revalidatePath("/admin/orders");
   redirect("/admin/orders");
 }
+
+/**
+ * 把排版好的設計掛到訂單品項上（客戶自行上傳稿件、或稍後才提供稿件的訂單，由我們代為排版後使用）。
+ * 設計必須屬於同一件商品；掛上後清掉先前的送單失敗紀錄，就能送到供應商。
+ */
+export async function attachDesign(fd: FormData) {
+  await requireAdmin();
+  const itemId = Number(fd.get("itemId")) || 0;
+  // 可以貼設計編號，或貼「設計檔案」頁（/d/編號）的網址
+  const designId = (/([0-9a-f]{24})/.exec(String(fd.get("designId") ?? "").trim().toLowerCase())?.[1]) ?? "";
+  const [item] = await db.select().from(schema.orderItems).where(eq(schema.orderItems.id, itemId));
+  if (!item) return;
+  const back = `/admin/orders/${item.orderId}`;
+  const [design] = designId ? await db.select().from(schema.designs).where(eq(schema.designs.id, designId)) : [];
+  if (!design || design.productId !== item.productId) redirect(`${back}?design=bad`);
+  await db.update(schema.orderItems).set({ designId: design.id, previewUrl: design.previewUrl ?? item.previewUrl, supplierProductCode: null, supplierStockId: null }).where(eq(schema.orderItems.id, item.id));
+  // 還沒送出供應商的訂單：清掉失敗紀錄，讓它可以重新送單
+  const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, item.orderId));
+  if (order && !order.supplierOrderId) await db.update(schema.orders).set({ supplierNote: null }).where(eq(schema.orders.id, order.id));
+  revalidatePath(back);
+  redirect(`${back}?design=ok`);
+}

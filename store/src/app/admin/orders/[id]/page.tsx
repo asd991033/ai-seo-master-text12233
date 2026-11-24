@@ -4,7 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
-import { deleteOrder, updateOrder } from "../../actions";
+import { attachDesign, deleteOrder, updateOrder } from "../../actions";
 import { sendToSupplier, syncSupplier } from "../../supplier-actions";
 import { HC_STATUS, hicustomEnabled } from "@/lib/hicustom";
 
@@ -70,6 +70,15 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
           return (
             <div className="mt-4 space-y-2 border-t border-line pt-3 text-xs">
               {it.artworkUrl && <a href={it.artworkUrl} download className={link}>下載客戶上傳稿件</a>}
+              {/* 客戶沒有用線上排版：我們代為排版後，把設計編號貼在這裡，就能自動送單 */}
+              {!order.supplierOrderId && (
+                <form action={attachDesign} className="flex flex-wrap items-center gap-2" data-testid="attach-design">
+                  <input type="hidden" name="itemId" value={it.id} />
+                  <input name="designId" placeholder="貼上排版後的設計編號" className="input w-64 py-1.5 text-xs" required />
+                  <button className="chip">{design ? "換成這個設計" : "套用這個設計"}</button>
+                  <a href={`/products/${it.sku.toLowerCase()}`} target="_blank" className="text-mute underline underline-offset-4">開啟商品頁排版</a>
+                </form>
+              )}
               {design && Object.entries(design.data).map(([code, d]) => (
                 <div key={code} className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{code}／{d.areaCode}</span>
