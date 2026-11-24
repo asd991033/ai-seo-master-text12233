@@ -253,6 +253,10 @@ export const orders = sqliteTable("orders", {
   postcode: text("postcode"),
   /** 訂單專屬連結的鑰匙：沒登入的訪客用「訂單網址 + key」查看與付款 */
   accessKey: text("access_key"),
+  /** 未付款提醒信：已寄出幾封、上一封的時間。客戶按「不要再提醒」後 remindStopped 為 true */
+  remindCount: integer("remind_count").notNull().default(0),
+  remindAt: integer("remind_at"),
+  remindStopped: integer("remind_stopped", { mode: "boolean" }).notNull().default(false),
   /** 付款成功的時間 */
   paidAt: integer("paid_at"),
   /** 下單時瀏覽器的 GA 用戶代碼、工作階段與廣告點擊代碼（伺服器補送轉換時用） */

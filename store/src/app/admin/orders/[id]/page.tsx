@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { fmtDate } from "@/lib/format";
 import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { t } from "@/i18n";
@@ -32,6 +33,9 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
         <label className="flex items-center gap-2 pb-2"><input type="checkbox" name="paid" defaultChecked={order.paid} className="accent-[var(--color-forest)]" />已收款</label>
         <button className="btn-primary">更新訂單</button>
       </form>
+      {!order.paid && (order.remindCount > 0 || order.remindStopped) && (
+        <p className="mb-6 rounded-lg bg-sand px-3 py-2 text-xs text-mute" data-testid="remind-info">未付款提醒信：已寄 {order.remindCount} 封{order.remindAt ? `（上一封 ${fmtDate(order.remindAt)}）` : ""}{order.remindStopped && "・客戶已要求停止提醒"}</p>
+      )}
       {hicustomEnabled() && (
         <div className="card mb-8 space-y-3 p-4 text-sm" data-testid="supplier-box">
           <div className="flex flex-wrap items-center gap-3">

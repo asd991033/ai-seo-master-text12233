@@ -12,6 +12,10 @@ export function start() {
       const { sendMissedPurchases } = await import("@/lib/ga-server");
       const tracked = await sendMissedPurchases();
       if (tracked) console.log(`[ga] sent ${tracked} server-side purchase event(s)`);
+      // 未付款訂單的提醒信（要放在補查付款之後，剛付款的人才不會收到提醒）
+      const { sendPaymentReminders } = await import("@/lib/recover");
+      const reminded = await sendPaymentReminders();
+      if (reminded) console.log(`[recover] sent ${reminded} payment reminder(s)`);
       const { sendPendingToSupplier, syncAllFromSupplier } = await import("@/lib/supplier");
       const sent = await sendPendingToSupplier(), synced = await syncAllFromSupplier();
       if (sent || synced) console.log(`[supplier] sent ${sent}, synced ${synced}`);
