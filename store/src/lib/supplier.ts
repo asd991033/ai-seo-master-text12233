@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { originalOption } from "@/lib/localize";
 import { localPhone } from "@/config/markets";
-import { HC_STATUS, HicustomError, createOrder, getOrder, hcDesignOf, hicustomConfig, parseTwAddress, productTypeInfo, readSiteFile, synthesizeProduct, uploadGallery, type SynthCfg } from "@/lib/hicustom";
+import { HC_STATUS, HicustomError, createOrder, getOrder, hcDesignOf, hicustomConfig, parseTwAddress, productTypeInfo, readSiteFile, shrinkPrintFile, synthesizeProduct, uploadGallery, type SynthCfg } from "@/lib/hicustom";
 
 const now = () => Math.floor(Date.now() / 1000);
 const note = (id: number, text: string) => db.update(schema.orders).set({ supplierNote: text.slice(0, 1000), supplierSyncedAt: now() }).where(eq(schema.orders.id, id));
@@ -20,6 +20,9 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
   const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, id));
   if (!order) return;
   const done = () => undefined;
+  if (opts.manual && order.supplierNote === CLAIM && now() - (order.supplierSyncedAt ?? 0) < 10 * 60) return;
+  // 手動送單也先標記處理中，畫面上看得到進度，也避免和定時工作同時送
+  if (opts.manual && !order.supplierOrderId) await note(id, CLAIM);
   const cfg = hicustomConfig();
   if (!cfg?.storeId) { await note(id, "尚未設定 HiCustom 憑證或店鋪編號"); return done(); }
   if (order.supplierOrderId) { await note(id, "這張訂單已經送過了，請用「同步狀態」更新"); return done(); }
@@ -61,7 +64,8 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
           const file = await readSiteFile(d.printUrl);
           if (!file) throw new HicustomError(`「${it.name}」的印刷檔讀取失敗（${posCode}）`);
           const area = info.product_description?.print_areas?.find((a) => a.id === view.id);
-          const gallery = await uploadGallery(file, `${order.orderNo}-${it.id}-${posCode}.png`, `${order.orderNo}-${it.id}-${posCode}`);
+          const small = await shrinkPrintFile(file);
+          const gallery = await uploadGallery(small.data, `${order.orderNo}-${it.id}-${posCode}.${small.ext}`, `${order.orderNo}-${it.id}-${posCode}`, small.type);
           // 印刷檔與供應商的印刷區同比例：放在原點、寬高等於印刷區，就會剛好填滿
           cfgs.push({ view_id: view.id, gallery_code: gallery, width: area?.width ?? Math.ceil(view.pa.pxW), height: area?.height ?? Math.ceil(view.pa.pxH), top_x: 0, top_y: 0 });
         }

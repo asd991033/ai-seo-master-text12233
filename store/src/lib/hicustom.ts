@@ -39,7 +39,14 @@ async function call<T>(method: "GET" | "POST", pathname: string, opts: { query?:
   const init: RequestInit = { method, cache: "no-store" };
   if (opts.multipart) init.body = opts.multipart;
   else if (opts.form) { init.body = new URLSearchParams(opts.form); init.headers = { "Content-Type": "application/x-www-form-urlencoded" }; }
-  const r = await fetch(`${BASE}${pathname}?${q}`, init);
+  let r: Response | null = null, lastErr: unknown;
+  // 只有「讀取」和「上傳圖片」重試；建立商品、建立訂單不重試，避免對方其實已經收到而重複建立
+  const retryable = method === "GET" || pathname === "/api/v1/gallery";
+  for (let attempt = 0; attempt < (retryable ? 2 : 1) && !r; attempt++) {
+    try { r = await fetch(`${BASE}${pathname}?${q}`, { ...init, signal: AbortSignal.timeout(240_000) }); }
+    catch (e) { lastErr = e; }
+  }
+  if (!r) throw new HicustomError(`連不上 HiCustom（${pathname.split("/").pop()}）：${(lastErr as Error)?.message ?? "逾時"}`);
   const text = await r.text();
   let j: { code?: number; msg?: string; data?: T } | null = null;
   try { j = JSON.parse(text); } catch { /* 非 JSON 代表路徑或服務異常 */ }
@@ -58,9 +65,30 @@ export type ProductTypeInfo = {
 export const productTypeInfo = (id: number) => call<ProductTypeInfo>("GET", `/api/v1/product-type/${id}`);
 
 /** 上傳一張印刷圖到圖庫，回傳圖片編碼 */
-export async function uploadGallery(data: Buffer, filename: string, externalId: string) {
+/**
+ * 上傳前把印刷檔縮小：整面不透明的圖（滿版設計）轉成高品質 JPEG，檔案通常只剩原本的一兩成。
+ * 大尺寸商品的 PNG 動輒十幾 MB，從主機傳到 HiCustom 太慢會逾時。有透明區域的圖維持 PNG（透明處不能變成白色）。
+ */
+export async function shrinkPrintFile(data: Buffer): Promise<{ data: Buffer; ext: "png" | "jpg"; type: string }> {
+  const keep = { data, ext: "png" as const, type: "image/png" };
+  if (data.length < 3 * 1024 * 1024) return keep;
+  try {
+    const sharp = (await import("sharp")).default;
+    const stats = await sharp(data, { limitInputPixels: false }).stats();
+    const alpha = stats.channels.length === 4 ? stats.channels[3] : null;
+    // 平均不透明度接近 100% 才算整面不透明（邊緣少量反鋸齒的半透明像素不算）
+    if (alpha && alpha.mean < 254) return keep;
+    const jpg = await sharp(data, { limitInputPixels: false }).flatten({ background: "#ffffff" }).jpeg({ quality: 93, chromaSubsampling: "4:4:4" }).toBuffer();
+    return jpg.length < data.length ? { data: jpg, ext: "jpg", type: "image/jpeg" } : keep;
+  } catch (e) {
+    console.error("[hicustom] shrink failed, uploading original", e);
+    return keep;
+  }
+}
+
+export async function uploadGallery(data: Buffer, filename: string, externalId: string, type = "image/png") {
   const fd = new FormData();
-  fd.set("image", new Blob([new Uint8Array(data)], { type: "image/png" }), filename);
+  fd.set("image", new Blob([new Uint8Array(data)], { type }), filename);
   fd.set("external_id", externalId.slice(0, 60));
   fd.set("cn_name", externalId.slice(0, 60));
   return (await call<{ code: string }>("POST", "/api/v1/gallery", { multipart: fd })).code;
