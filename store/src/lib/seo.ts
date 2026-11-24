@@ -26,9 +26,9 @@ export const telE164 = (tel: string) => (/^0\d/.test(tel) ? `+886-${tel.slice(1)
 
 export const organizationLd = () => ({
   "@context": ctx, "@type": "Organization", "@id": `${baseUrl()}/#org`, name: site.brand, url: baseUrl(), logo: abs("/icon.svg"),
-  email: site.contactEmail, telephone: telE164(site.contactPhone),
+  email: site.contactEmail, ...(currentMarket().locale === "en" ? {} : { telephone: telE164(site.contactPhone) }),
   address: { "@type": "PostalAddress", streetAddress: site.address.street, addressLocality: site.address.locality, addressRegion: site.address.region, postalCode: site.address.postalCode, addressCountry: site.address.country },
-  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, telephone: telE164(site.contactPhone), areaServed: marketList.map((x) => x.country), availableLanguage: ["zh-TW", "en"] },
+  contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: site.contactEmail, areaServed: marketList.map((x) => x.country), availableLanguage: ["zh-TW", "en"] },
 });
 
 export const websiteLd = () => ({

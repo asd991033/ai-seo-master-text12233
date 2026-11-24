@@ -17,7 +17,7 @@ export async function Footer() {
           <div className="text-[22px] leading-none font-extrabold tracking-[-0.03em] uppercase">{site.brand}</div>
           <p className="mt-4 max-w-[260px] leading-relaxed text-mute">{t.footer.about}</p>
           <address className="mt-6 space-y-1.5 not-italic">
-            <div><span className="text-mute">{t.footer.phone}　</span><a href={`tel:${telE164(site.contactPhone).replace(/[^0-9+]/g, "")}`} className="hover:underline">{en ? telE164(site.contactPhone) : site.contactPhone}</a></div>
+            {!en && <div><span className="text-mute">{t.footer.phone}　</span><a href={`tel:${telE164(site.contactPhone).replace(/[^0-9+]/g, "")}`} className="hover:underline">{en ? telE164(site.contactPhone) : site.contactPhone}</a></div>}
             <div><span className="text-mute">{t.footer.email}　</span><a href={`mailto:${site.contactEmail}`} className="hover:underline">{site.contactEmail}</a></div>
             <div><span className="text-mute">{t.footer.address}　</span><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{en ? site.address.fullEn : site.address.full}</a></div>
           </address>
