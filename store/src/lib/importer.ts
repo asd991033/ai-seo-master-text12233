@@ -2,7 +2,7 @@
  * 產品批量匯入（後台上傳 Excel 與 seed 共用）。
  * 以 SKU 為主鍵 upsert；某 SKU 只要出現在某張工作表，該 SKU 在那張表的資料就整批以新資料取代。
  */
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db, schema } from "@/db";
 import { priceFromCost } from "./pricing";
@@ -51,7 +51,7 @@ export type ImportResult = { ok: boolean; errors: string[]; counts: { products: 
 
 /** 由成本換算各款式售價與加印面售價（匯入與調整毛利率時共用） */
 /** 舊分類名稱 → 新名稱 */
-const CATEGORY_RENAMES: Record<string, string> = { "杯子": "環保杯/馬克杯/水壺" };
+const CATEGORY_RENAMES: Record<string, string> = { "杯子": "環保杯/馬克杯/水壺", "箱包皮具": "包包・皮件", "消費電子": "3C 周邊", "鞋帽配飾": "帽子・配飾", "運動娛樂": "運動・休閒", "節日用品": "節慶・派對" };
 
 export function derivePrices(variantCosts: Record<string, [number, number][]> | null, extraFaceCost: number | null, costCurrency: string | null, margin: number, fx: (c: string | null | undefined) => number) {
   const rate = fx(costCurrency);
@@ -125,7 +125,10 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
     await db.transaction(async (tx) => {
       // ---- 分類 ----
       // 分類改名：沿用原本的分類（網址不變），不另外新增一個
-      for (const [from, to] of Object.entries(CATEGORY_RENAMES)) await tx.update(categories).set({ name: to }).where(eq(categories.name, from));
+      for (const [from, to] of Object.entries(CATEGORY_RENAMES)) {
+        const exists = await tx.select({ id: categories.id }).from(categories).where(and(eq(categories.name, to), isNull(categories.parentId)));
+        if (!exists.length) await tx.update(categories).set({ name: to }).where(and(eq(categories.name, from), isNull(categories.parentId)));
+      }
       const allCats = await tx.select().from(categories);
       const catByName = new Map(allCats.filter((c) => c.parentId == null).map((c) => [c.name, c.id]));
       for (const name of new Set(data.products.map((p) => p.category?.trim()).filter((x): x is string => !!x))) {
@@ -259,5 +262,8 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
   } catch (e) {
     return { ok: false, errors: [(e as Error).message], counts: { products: 0, tiers: 0, areas: 0, printPrices: 0 } };
   }
-  return { ok: true, errors: [], counts };
+  // 重新分類後留下的空分類清掉：先清沒有商品的子分類，再清沒有商品也沒有子分類的大分類
+    await db.run(sql`delete from categories where parent_id is not null and not exists (select 1 from products p where p.category_id = categories.id)`);
+    await db.run(sql`delete from categories where parent_id is null and not exists (select 1 from products p where p.category_id = categories.id) and not exists (select 1 from categories c2 where c2.parent_id = categories.id)`);
+    return { ok: true, errors: [], counts };
 }

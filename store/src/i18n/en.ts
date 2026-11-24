@@ -95,9 +95,9 @@ export default function en(m: Market): Dict {
       catAllDesc: "Home, bags, apparel, accessories and tech, all customisable.",
       catTiles: [
         { cat: "環保杯/馬克杯/水壺", d: "Mugs, tumblers, straw cups and bottles.", img: "/eg/cat-drinkware.jpg" },
-        { cat: "家居用品", d: "Blankets, cushions, tablecloths and kitchenware.", img: "/eg/cat-bottles.jpg" },
-        { cat: "箱包皮具", d: "Backpacks, totes, pouches and card holders.", img: "/eg/cat-bags.jpg" },
-        { cat: "消費電子", d: "Mouse pads, desk mats and device cases.", img: "/eg/cat-tech.jpg" },
+        { cat: "毛毯・抱枕・寢具", d: "Flannel blankets, cushion covers and bedding.", img: "/eg/cat-bottles.jpg" },
+        { cat: "包包・皮件", d: "Backpacks, totes, pouches and card holders.", img: "/eg/cat-bags.jpg" },
+        { cat: "3C 周邊", d: "Mouse pads, desk mats and device cases.", img: "/eg/cat-tech.jpg" },
       ],
       stepsEyebrow: "Process",
       stepsTitle: "How to get started",

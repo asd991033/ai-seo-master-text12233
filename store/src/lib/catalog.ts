@@ -45,7 +45,11 @@ function productConds(opts: { category?: string; q?: string; featured?: boolean;
   // 海外站只上架有英文資料的商品
   if (m.locale === "en") conds.push(like(products.sku, "HC-%"));
   // 選大分類時，底下所有子分類的商品都算
-  if (opts.category) conds.push(sql`(${categories.slug} = ${opts.category} or ${categories.parentId} = (select id from categories where slug = ${opts.category}))`);
+  const legacy = opts.category ? LEGACY_CATEGORIES[opts.category] : undefined;
+  if (legacy) {
+    const names = sql.join(legacy.parts.map((n) => sql`${n}`), sql`, `);
+    conds.push(sql`(${categories.parentId} is null and ${categories.name} in (${names}) or ${categories.parentId} in (select id from categories where parent_id is null and name in (${names})))`);
+  } else if (opts.category) conds.push(sql`(${categories.slug} = ${opts.category} or ${categories.parentId} = (select id from categories where slug = ${opts.category}))`);
   if (opts.exclude) conds.push(sql`${products.id} != ${opts.exclude}`);
   if (opts.featured) conds.push(eq(products.featured, true));
   if (opts.q?.trim()) {
@@ -146,6 +150,14 @@ export async function getProductsByIds(ids: number[], m: Market = currentMarket(
   return hydrate(rows.map((r) => ({ ...r.p, categoryName: r.categoryName, categorySlug: r.categorySlug })), m);
 }
 
+/**
+ * 已經拆開的舊分類：舊網址仍然有效，會顯示拆出來的那幾個分類的全部商品。
+ * 「家居用品」在 2026-11 拆成六個大分類。
+ */
+const LEGACY_CATEGORIES: Record<string, { name: string; parts: string[] }> = {
+  "c-229a0246": { name: "家居用品", parts: ["毛毯・抱枕・寢具", "掛畫・牆面裝飾", "旗幟・戶外裝飾", "廚房・餐桌用品", "衛浴・地墊・窗簾", "鑰匙圈・生活小物"] },
+};
+
 export type CategoryNode = { id: number; slug: string; name: string; key: string; count: number; image: string | null; children: { id: number; slug: string; name: string; count: number }[] };
 
 /** 大分類（含底下子分類的商品數）與各自的子分類。key 是原始的中文名稱，name 是目前語系的顯示名稱 */
@@ -168,6 +180,13 @@ export async function categoryCounts(m: Market = currentMarket()): Promise<Categ
 /** 依網址代稱找分類（大分類或子分類），回傳它和所屬的大分類 */
 export function findCategory(tree: CategoryNode[], slug: string | undefined) {
   if (!slug) return null;
+  const legacy = LEGACY_CATEGORIES[slug];
+  if (legacy) {
+    // 舊分類：組成一個虛擬的大分類，底下是拆出來的各個分類
+    const parts = tree.filter((t) => legacy.parts.includes(t.key));
+    const top: CategoryNode = { id: -1, slug, name: term(legacy.name, parts[0] && parts[0].name !== parts[0].key ? "en" : "zh-TW"), key: legacy.name, count: parts.reduce((a, x) => a + x.count, 0), image: parts[0]?.image ?? null, children: parts.map((x) => ({ id: x.id, slug: x.slug, name: x.name, count: x.count })) };
+    return { top, sub: null, name: top.name, count: top.count, slug };
+  }
   for (const top of tree) {
     if (top.slug === slug) return { top, sub: null, name: top.name, count: top.count, slug };
     const sub = top.children.find((c) => c.slug === slug);
