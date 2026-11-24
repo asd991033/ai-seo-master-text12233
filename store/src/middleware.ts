@@ -15,4 +15,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.rewrite(url, { request: { headers } });
 }
 
-export const config = { matcher: ["/((?!_next/|files/|samples/|eg/|draco/|favicon|icon|.*\\.(?:png|jpg|jpeg|svg|webp|gif|ico|js|css|wasm|glb|txt)$).*)"] };
+// API 不經過這裡：middleware 會把請求內容限制在 10MB，大尺寸商品的印刷檔與稿件上傳會被截斷。
+// API 需要的市場資訊由請求內容帶入（market 欄位），不靠這裡的標頭。
+export const config = { matcher: ["/((?!api/|_next/|files/|samples/|eg/|draco/|favicon|icon|.*\\.(?:png|jpg|jpeg|svg|webp|gif|ico|js|css|wasm|glb|txt)$).*)"] };
