@@ -253,6 +253,14 @@ export const orders = sqliteTable("orders", {
   postcode: text("postcode"),
   /** 訂單專屬連結的鑰匙：沒登入的訪客用「訂單網址 + key」查看與付款 */
   accessKey: text("access_key"),
+  /** 付款成功的時間 */
+  paidAt: integer("paid_at"),
+  /** 下單時瀏覽器的 GA 用戶代碼、工作階段與廣告點擊代碼（伺服器補送轉換時用） */
+  gaClientId: text("ga_client_id"),
+  gaSessionId: text("ga_session_id"),
+  gclid: text("gclid"),
+  /** 「購買」轉換已送出的時間（瀏覽器送過或伺服器補送過），避免重複計算 */
+  trackedAt: integer("tracked_at"),
   /** 下單的市場（tw / sg / my / au / ae / uk）與幣別；金額欄位都是這個幣別 */
   market: text("market").notNull().default("tw"),
   currency: text("currency").notNull().default("TWD"),

@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto";
 import { inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getUser } from "@/lib/auth";
+import { trackingFromCookies } from "@/lib/ga-server";
 import { guestUserId, newAccessKey } from "@/lib/order-access";
 import { priceCart, sanitizeLines } from "@/lib/checkout";
 import { computeTotals } from "@/lib/pricing";
@@ -24,10 +25,10 @@ function orderNo() {
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
-  return withMarket(typeof body?.market === "string" ? body.market : null, (m) => placeOrder(body, m));
+  return withMarket(typeof body?.market === "string" ? body.market : null, (m) => placeOrder(body, m, trackingFromCookies(req.headers.get("cookie"))));
 }
 
-async function placeOrder(body: Record<string, unknown> | null, m: Market) {
+async function placeOrder(body: Record<string, unknown> | null, m: Market, tracking: ReturnType<typeof trackingFromCookies>) {
   const E = dictFor(m).errors;
   // 沒登入也能下單（訪客結帳），訂單用專屬連結查看
   const user = await getUser();
@@ -65,7 +66,7 @@ async function placeOrder(body: Record<string, unknown> | null, m: Market) {
     const [order] = await tx
       .insert(schema.orders)
       .values({
-        orderNo: no, userId, accessKey, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: m.payment, market: m.code, currency: m.currency, ...totals,
+        orderNo: no, userId, accessKey, ...tracking, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: m.payment, market: m.code, currency: m.currency, ...totals,
         totalWeightKg: priced.pack.weightKg, totalCbm: priced.pack.cbm,
       })
       .returning();

@@ -53,7 +53,7 @@ export async function applySession(s: StripeSession): Promise<boolean> {
   if (s.payment_status !== "paid" || s.amount_total !== toMinor(order.total) || (s.currency ?? "").toUpperCase() !== order.currency) return false;
   // 加上 paid = false 條件，Webhook 與其他查證同時進來時只會有一個成功，不會重複送單
   const done = await db.update(schema.orders)
-    .set({ paid: true, paymentMethod: "stripe", paymentRef: String(s.payment_intent ?? s.id).slice(0, 80), status: order.status === "pending_payment" ? "reviewing" : order.status })
+    .set({ paid: true, paidAt: Math.floor(Date.now() / 1000), paymentMethod: "stripe", paymentRef: String(s.payment_intent ?? s.id).slice(0, 80), status: order.status === "pending_payment" ? "reviewing" : order.status })
     .where(and(eq(schema.orders.id, order.id), eq(schema.orders.paid, false))).returning({ id: schema.orders.id });
   if (done.length) void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
   return true;

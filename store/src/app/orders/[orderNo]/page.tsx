@@ -48,7 +48,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <p className="card mb-8 border-gold bg-gold/5 p-5 text-sm">{t.checkout.onlineOff}</p>
       )}
       {order.paid && (
-        <PurchaseEvent orderNo={order.orderNo} value={order.total} shipping={order.shippingFee} currency={order.currency}
+        <PurchaseEvent orderNo={order.orderNo} accessKey={order.accessKey} tracked={!!order.trackedAt}
+          userData={{
+            email: order.contactEmail.trim().toLowerCase(), phone_number: /^\+\d/.test(order.contactPhone) ? order.contactPhone.replace(/[^+\d]/g, "") : undefined,
+            address: { first_name: order.contactName, street: order.address, city: order.city ?? undefined, region: order.region ?? undefined, postal_code: order.postcode ?? undefined, country: order.country },
+          }}
+          value={order.total} shipping={order.shippingFee} currency={order.currency}
           adsSendTo={process.env.GADS_ID && process.env.GADS_PURCHASE_LABEL ? `${process.env.GADS_ID}/${process.env.GADS_PURCHASE_LABEL}` : null}
           items={items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty, price: i.unitPrice }))} />
       )}

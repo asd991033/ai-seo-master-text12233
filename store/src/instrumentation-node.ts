@@ -8,6 +8,10 @@ export function start() {
       const { syncStripePayments } = await import("@/lib/stripe-sync");
       const paid = await syncStripePayments();
       if (paid) console.log(`[stripe] confirmed ${paid} payment(s)`);
+      // 補送瀏覽器沒送出的「購買」轉換（ATM／超商付款、追蹤碼被擋）
+      const { sendMissedPurchases } = await import("@/lib/ga-server");
+      const tracked = await sendMissedPurchases();
+      if (tracked) console.log(`[ga] sent ${tracked} server-side purchase event(s)`);
       const { sendPendingToSupplier, syncAllFromSupplier } = await import("@/lib/supplier");
       const sent = await sendPendingToSupplier(), synced = await syncAllFromSupplier();
       if (sent || synced) console.log(`[supplier] sent ${sent}, synced ${synced}`);

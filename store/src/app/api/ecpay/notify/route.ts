@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (p.RtnCode === "1" && (!simulated || cfg.stage) && Number(p.TradeAmt) === Math.round(order.total)) {
     if (!order.paid) {
       await db.update(schema.orders)
-        .set({ paid: true, paymentMethod: `ecpay:${p.PaymentType ?? ""}`.slice(0, 60), paymentRef: (p.TradeNo ?? "").slice(0, 40), status: order.status === "pending_payment" ? "reviewing" : order.status })
+        .set({ paid: true, paidAt: Math.floor(Date.now() / 1000), paymentMethod: `ecpay:${p.PaymentType ?? ""}`.slice(0, 60), paymentRef: (p.TradeNo ?? "").slice(0, 40), status: order.status === "pending_payment" ? "reviewing" : order.status })
         .where(eq(schema.orders.id, order.id));
       // 付款成功就自動把訂單送給供應商；不等它做完，先回應綠界（失敗原因會記在訂單上）
       void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
