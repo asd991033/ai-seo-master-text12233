@@ -8,6 +8,7 @@ import { marketOf } from "@/config/markets";
 import { initMarket } from "@/market/server";
 import { getUser, requireUser } from "@/lib/auth";
 import { keyQs, orderFor } from "@/lib/order-access";
+import { checkOrderPayment } from "@/lib/stripe-sync";
 import { ecpayEnabled } from "@/lib/ecpay";
 import { PurchaseEvent } from "@/components/PurchaseEvent";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
@@ -19,8 +20,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const { orderNo } = await params;
   const sp = await searchParams;
   // 訂單本人（已登入）或帶著訂單專屬連結的訪客才能看
-  const order = await orderFor(orderNo, sp.key);
-  if (!order) { await requireUser(`/orders/${orderNo}`); notFound(); }
+  const found = await orderFor(orderNo, sp.key);
+  if (!found) { await requireUser(`/orders/${orderNo}`); notFound(); }
+  // 客戶剛從 Stripe 付款頁回來：直接向 Stripe 查證，不必等通知送到
+  const order = sp.paid === "1" && !found.paid && (await checkOrderPayment(found)) ? (await orderFor(orderNo, sp.key)) ?? found : found;
   const guest = !(await getUser()), k = keyQs(order, "&");
   const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
   const isNew = sp.new === "1", paidBack = sp.paid === "1";
