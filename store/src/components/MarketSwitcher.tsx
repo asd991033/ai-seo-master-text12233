@@ -12,7 +12,7 @@ export function MarketSwitcher() {
       </summary>
       <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-[14px] border border-line bg-white p-2 text-[13px] shadow-xl">
         {marketList.map((x) => (
-          <a key={x.code} href={localize(path.startsWith("/blog") && x.locale === "en" ? "/" : path, x) || "/"} hrefLang={x.lang} className={`flex items-center justify-between rounded-[10px] px-3 py-2 hover:bg-sand ${x.code === m.code ? "font-semibold" : ""}`}>
+          <a key={x.code} href={localize(path.startsWith("/blog/") && x.code !== m.code ? "/blog" : path, x) || "/"} hrefLang={x.lang} className={`flex items-center justify-between rounded-[10px] px-3 py-2 hover:bg-sand ${x.code === m.code ? "font-semibold" : ""}`}>
             <span>{x.countryName}</span><span className="text-xs text-mute">{x.currency}</span>
           </a>
         ))}

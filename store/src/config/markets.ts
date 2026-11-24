@@ -21,6 +21,8 @@ export type Market = {
   rate: number;
   shipping: { fee: number; freeOver: number; days: string };
   payment: "ecpay" | "stripe";
+  /** 電話國碼（結帳表單的預設值） */
+  dial: string;
 };
 
 const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : d);
@@ -33,15 +35,15 @@ function ship(cc: string, fee: number, freeOver: number, days: string) {
 
 export const markets: Record<MarketCode, Market> = {
   tw: {
-    code: "tw", prefix: "", locale: "zh-TW", lang: "zh-TW", country: "TW", countryName: "台灣", currency: "TWD", symbol: "NT$", rate: 1, payment: "ecpay",
+    code: "tw", dial: "+886", prefix: "", locale: "zh-TW", lang: "zh-TW", country: "TW", countryName: "台灣", currency: "TWD", symbol: "NT$", rate: 1, payment: "ecpay",
     shipping: { fee: Number(process.env.NEXT_PUBLIC_SHIP_FEE ?? "160"), freeOver: Number(process.env.NEXT_PUBLIC_SHIP_FREE_OVER ?? "2000"), days: process.env.NEXT_PUBLIC_SHIP_DAYS ?? "3–5" },
   },
-  us: { code: "us", prefix: "/us", locale: "en", lang: "en-US", country: "US", countryName: "United States", currency: "USD", symbol: "$", rate: num(process.env.NEXT_PUBLIC_FX_USD, 0.0313), payment: "stripe", shipping: ship("US", 15, 150, "8–14") },
-  sg: { code: "sg", prefix: "/sg", locale: "en", lang: "en-SG", country: "SG", countryName: "Singapore", currency: "SGD", symbol: "S$", rate: num(process.env.NEXT_PUBLIC_FX_SGD, 0.041), payment: "stripe", shipping: ship("SG", 15, 150, "7–12") },
-  my: { code: "my", prefix: "/my", locale: "en", lang: "en-MY", country: "MY", countryName: "Malaysia", currency: "MYR", symbol: "RM", rate: num(process.env.NEXT_PUBLIC_FX_MYR, 0.133), payment: "stripe", shipping: ship("MY", 39, 400, "7–12") },
-  au: { code: "au", prefix: "/au", locale: "en", lang: "en-AU", country: "AU", countryName: "Australia", currency: "AUD", symbol: "A$", rate: num(process.env.NEXT_PUBLIC_FX_AUD, 0.048), payment: "stripe", shipping: ship("AU", 20, 200, "8–14") },
-  ae: { code: "ae", prefix: "/ae", locale: "en", lang: "en-AE", country: "AE", countryName: "United Arab Emirates", currency: "AED", symbol: "AED ", rate: num(process.env.NEXT_PUBLIC_FX_AED, 0.116), payment: "stripe", shipping: ship("AE", 55, 550, "8–14") },
-  uk: { code: "uk", prefix: "/uk", locale: "en", lang: "en-GB", country: "GB", countryName: "United Kingdom", currency: "GBP", symbol: "£", rate: num(process.env.NEXT_PUBLIC_FX_GBP, 0.0238), payment: "stripe", shipping: ship("GB", 12, 120, "8–14") },
+  us: { code: "us", dial: "+1", prefix: "/us", locale: "en", lang: "en-US", country: "US", countryName: "United States", currency: "USD", symbol: "$", rate: num(process.env.NEXT_PUBLIC_FX_USD, 0.0313), payment: "stripe", shipping: ship("US", 15, 150, "8–14") },
+  sg: { code: "sg", dial: "+65", prefix: "/sg", locale: "en", lang: "en-SG", country: "SG", countryName: "Singapore", currency: "SGD", symbol: "S$", rate: num(process.env.NEXT_PUBLIC_FX_SGD, 0.041), payment: "stripe", shipping: ship("SG", 15, 150, "7–12") },
+  my: { code: "my", dial: "+60", prefix: "/my", locale: "en", lang: "en-MY", country: "MY", countryName: "Malaysia", currency: "MYR", symbol: "RM", rate: num(process.env.NEXT_PUBLIC_FX_MYR, 0.133), payment: "stripe", shipping: ship("MY", 39, 400, "7–12") },
+  au: { code: "au", dial: "+61", prefix: "/au", locale: "en", lang: "en-AU", country: "AU", countryName: "Australia", currency: "AUD", symbol: "A$", rate: num(process.env.NEXT_PUBLIC_FX_AUD, 0.048), payment: "stripe", shipping: ship("AU", 20, 200, "8–14") },
+  ae: { code: "ae", dial: "+971", prefix: "/ae", locale: "en", lang: "en-AE", country: "AE", countryName: "United Arab Emirates", currency: "AED", symbol: "AED ", rate: num(process.env.NEXT_PUBLIC_FX_AED, 0.116), payment: "stripe", shipping: ship("AE", 55, 550, "8–14") },
+  uk: { code: "uk", dial: "+44", prefix: "/uk", locale: "en", lang: "en-GB", country: "GB", countryName: "United Kingdom", currency: "GBP", symbol: "£", rate: num(process.env.NEXT_PUBLIC_FX_GBP, 0.0238), payment: "stripe", shipping: ship("GB", 12, 120, "8–14") },
 };
 export const marketList = Object.values(markets);
 export const marketOf = (code: string | null | undefined): Market => markets[(code ?? "tw") as MarketCode] ?? markets.tw;
@@ -72,3 +74,20 @@ export function moneyFmt(m: Pick<Market, "symbol" | "currency">) {
 /** 依幣別代碼取得格式（訂單用下單當時的幣別顯示） */
 export const moneyFmtOf = (currency: string | null | undefined) => moneyFmt(marketList.find((x) => x.currency === currency) ?? markets.tw);
 export const fmtNum = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(n);
+
+/** 結帳時可選的電話國碼：各國站的國碼排前面，其餘是常見國家 */
+export const DIAL_CODES: [string, string][] = [
+  ["+886", "TW"], ["+1", "US/CA"], ["+65", "SG"], ["+60", "MY"], ["+61", "AU"], ["+971", "AE"], ["+44", "UK"],
+  ["+852", "HK"], ["+853", "MO"], ["+86", "CN"], ["+81", "JP"], ["+82", "KR"], ["+66", "TH"], ["+84", "VN"], ["+63", "PH"], ["+62", "ID"], ["+91", "IN"],
+  ["+64", "NZ"], ["+966", "SA"], ["+974", "QA"], ["+965", "KW"], ["+973", "BH"], ["+968", "OM"], ["+353", "IE"], ["+33", "FR"], ["+49", "DE"], ["+34", "ES"], ["+39", "IT"], ["+31", "NL"],
+];
+/** 把「國碼 + 號碼」組成國際格式；號碼開頭的 0 會去掉（0912… → +886 912…） */
+export function intlPhone(code: string, number: string): string {
+  const digits = number.replace(/[^0-9]/g, "").replace(/^0+/, "");
+  return digits ? `${code} ${digits}` : "";
+}
+/** 國際格式轉回該國的本地寫法（+886 912345678 → 0912345678），給只收本地號碼的系統用 */
+export function localPhone(phone: string, dial: string): string {
+  const p = phone.replace(/[\s-]/g, "");
+  return p.startsWith(dial) ? `0${p.slice(dial.length)}` : p;
+}

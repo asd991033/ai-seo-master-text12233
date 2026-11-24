@@ -1,3 +1,5 @@
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./index";
 
@@ -143,9 +145,36 @@ Logo 如果帶著白色底，印在有顏色的商品上就會出現一塊白色
   },
 ];
 
+/** 讀取 catalog/posts/<國家>/*.md（開頭是 key: value 的檔頭，--- 之後是 Markdown 內文） */
+function filePosts() {
+  const root = path.join(process.cwd(), "catalog", "posts");
+  const out: ((typeof POSTS)[number] & { market: string; seoTitle: string | null; seoDescription: string | null })[] = [];
+  if (!existsSync(root)) return out;
+  for (const market of readdirSync(root)) {
+    const dir = path.join(root, market);
+    if (!/^[a-z]{2}$/.test(market) || !statSync(dir).isDirectory()) continue;
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".md")).sort()) {
+      const m = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(readFileSync(path.join(dir, f), "utf8").replace(/\r/g, ""));
+      if (!m) continue;
+      const head: Record<string, string> = {};
+      for (const line of m[1].split("\n")) { const i = line.indexOf(":"); if (i > 0) head[line.slice(0, i).trim()] = line.slice(i + 1).trim().replace(/^["']|["']$/g, ""); }
+      if (!head.slug || !head.title) continue;
+      out.push({ market, slug: head.slug, title: head.title, excerpt: head.excerpt ?? "", coverUrl: head.coverUrl ?? "/eg/hero-1.jpg", coverAlt: head.coverAlt ?? head.title, seoTitle: head.seoTitle || null, seoDescription: head.seoDescription || null, content: m[2].trim() });
+    }
+  }
+  return out;
+}
+
 export async function seedPosts() {
   for (const p of POSTS) {
     const hit = await db.select({ id: schema.posts.id }).from(schema.posts).where(eq(schema.posts.slug, p.slug));
     if (!hit.length) await db.insert(schema.posts).values(p);
+  }
+  // 各國文章：只新增還不存在的網址代稱，後台改過的內容不會被覆蓋。發布時間依序錯開，列表順序才固定
+  const now = Math.floor(Date.now() / 1000);
+  let n = 0;
+  for (const p of filePosts()) {
+    const hit = await db.select({ id: schema.posts.id }).from(schema.posts).where(eq(schema.posts.slug, p.slug));
+    if (!hit.length) { await db.insert(schema.posts).values({ ...p, publishedAt: now - n * 60, updatedAt: now - n * 60 }); n++; }
   }
 }

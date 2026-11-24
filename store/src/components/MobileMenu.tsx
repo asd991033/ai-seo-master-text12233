@@ -3,11 +3,11 @@ import Link from "@/components/Link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { useHref, useMarket, useT } from "@/market/client";
+import { useHref, useT } from "@/market/client";
 import { IconClose, IconMenu } from "./Icons";
 
 export function MobileMenu({ categories, loggedIn, admin }: { categories: { slug: string; name: string }[]; loggedIn: boolean; admin: boolean }) {
-  const t = useT(), market = useMarket(), href = useHref();
+  const t = useT(), href = useHref();
   const [open, setOpen] = useState(false);
   const path = usePathname();
   useEffect(() => setOpen(false), [path]);
@@ -39,7 +39,7 @@ export function MobileMenu({ categories, loggedIn, admin }: { categories: { slug
               <Link href="/guide" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.guide}</Link>
               <Link href="/guide#methods" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.methods}</Link>
               <Link href="/guide#faq" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.faq}</Link>
-              {market.locale === "zh-TW" && <Link href="/blog" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.blog}</Link>}
+              <Link href="/blog" className="block rounded-lg px-3 py-2.5 hover:bg-sand">{t.nav.blog}</Link>
               <Link href={loggedIn ? "/account" : "/login"} className="block rounded-lg px-3 py-2.5 hover:bg-sand">{loggedIn ? t.nav.account : t.nav.login}</Link>
               {admin && <Link href="/admin" className="block rounded-lg px-3 py-2.5 text-gold hover:bg-sand">{t.nav.admin}</Link>}
             </nav>

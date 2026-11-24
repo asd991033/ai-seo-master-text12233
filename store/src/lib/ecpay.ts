@@ -51,7 +51,7 @@ export function tradeNo(orderNo: string, now = Date.now()) {
 export const orderNoOf = (merchantTradeNo: string) => merchantTradeNo.slice(0, -5);
 
 /** 組出要送到綠界的表單欄位 */
-export function checkoutFields(cfg: NonNullable<ReturnType<typeof ecpayConfig>>, o: { orderNo: string; total: number; itemName: string; origin: string }) {
+export function checkoutFields(cfg: NonNullable<ReturnType<typeof ecpayConfig>>, o: { orderNo: string; total: number; itemName: string; origin: string; key?: string | null }) {
   const fields: Record<string, string | number> = {
     MerchantID: cfg.merchantId,
     MerchantTradeNo: tradeNo(o.orderNo),
@@ -62,10 +62,11 @@ export function checkoutFields(cfg: NonNullable<ReturnType<typeof ecpayConfig>>,
     ItemName: o.itemName.slice(0, 190),
     ReturnURL: `${o.origin}/api/ecpay/notify`,
     OrderResultURL: `${o.origin}/api/ecpay/return`,
-    ClientBackURL: `${o.origin}/orders/${o.orderNo}`,
+    ClientBackURL: `${o.origin}/orders/${o.orderNo}${o.key ? `?key=${o.key}` : ""}`,
     ChoosePayment: "ALL",
     EncryptType: 1,
     CustomField1: o.orderNo,
+    ...(o.key ? { CustomField2: o.key } : {}),
   };
   fields.CheckMacValue = checkMac(fields, cfg.hashKey, cfg.hashIv);
   return fields;

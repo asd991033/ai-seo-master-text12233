@@ -1,5 +1,6 @@
 "use client";
 import { track } from "@/lib/track";
+import { DIAL_CODES, intlPhone } from "@/config/markets";
 import Link from "@/components/Link";
 import { useState } from "react";
 import { useMarket, useMoney, useT } from "@/market/client";
@@ -16,6 +17,12 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
   const clear = useCart((s) => s.clear);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 會員資料裡的電話若已是國際格式就拆開，否則當成本地號碼搭配這個國家站的國碼
+  const phone0 = (() => {
+    const p = defaults.phone.replace(/[\s-]/g, "");
+    const hit = p.startsWith("+") ? [...DIAL_CODES].sort((x, y) => y[0].length - x[0].length).find(([c]) => p.startsWith(c)) : undefined;
+    return hit ? { code: hit[0], number: p.slice(hit[0].length) } : { code: market.dial, number: p };
+  })();
 
   if (!q.hydrated) return <p className="py-20 text-center text-mute">{t.common.loading}</p>;
   if (!q.items.length && !submitting) {
@@ -32,12 +39,14 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
     setSubmitting(true);
     setError(null);
     const fd = Object.fromEntries(new FormData(e.currentTarget));
+    // 電話存成國際格式（國碼 + 號碼）
+    const contactPhone = intlPhone(String(fd.phoneCode ?? market.dial), String(fd.phoneNumber ?? ""));
     track("begin_checkout", { currency: market.currency, value: q.totals?.total ?? 0, items: q.items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty })) });
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fd, items: q.items, zoneCode: q.data?.zoneCode, mode: q.mode, market: market.code }),
+        body: JSON.stringify({ ...fd, contactPhone, items: q.items, zoneCode: q.data?.zoneCode, mode: q.mode, market: market.code }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t.checkout.failed);
@@ -64,7 +73,15 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
           <h2 className="text-lg font-bold">{t.checkout.contact}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {field("contactName", t.checkout.name, { required: true, def: defaults.name, auto: "name" })}
-            {field("contactPhone", t.checkout.phone, { required: true, def: defaults.phone, type: "tel", auto: "tel" })}
+            <label className="block">
+              <span className="label">{t.checkout.phone}</span>
+              <span className="flex gap-2">
+                <select name="phoneCode" defaultValue={phone0.code} aria-label={t.intl.dialCode} className="input w-[112px] shrink-0 px-2" data-testid="phone-code">
+                  {DIAL_CODES.map(([c, n]) => <option key={c} value={c}>{c} {n}</option>)}
+                </select>
+                <input name="phoneNumber" type="tel" inputMode="tel" required defaultValue={phone0.number} autoComplete="tel-national" pattern="[0-9 \-]{6,15}" className="input min-w-0 flex-1" />
+              </span>
+            </label>
             {field("contactEmail", t.checkout.email, { required: true, def: defaults.email, type: "email", auto: "email" })}
             {field("company", t.checkout.company, { def: defaults.company, auto: "organization" })}
             {market.code === "tw" && field("taxId", t.checkout.taxId, { def: defaults.taxId })}

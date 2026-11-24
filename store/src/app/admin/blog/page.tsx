@@ -2,6 +2,7 @@ import Link from "@/components/Link";
 import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { deletePost, savePost } from "../actions";
+import { localize, marketList, marketOf } from "@/config/markets";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +22,10 @@ export default async function AdminBlog({ searchParams }: { searchParams: Promis
             <li key={p.id} className={`card flex items-center justify-between gap-3 p-3 text-sm ${p.id === editId ? "border-forest" : ""}`}>
               <div className="min-w-0">
                 <div className="truncate font-medium">{p.title}</div>
-                <div className="truncate text-xs text-mute">/blog/{p.slug}{!p.published && "・草稿"}</div>
+                <div className="truncate text-xs text-mute">{marketOf(p.market).countryName}・{localize(`/blog/${p.slug}`, marketOf(p.market))}{!p.published && "・草稿"}</div>
               </div>
               <div className="flex shrink-0 items-center gap-3 text-xs">
-                <Link href={`/blog/${p.slug}`} className="text-mute hover:text-ink" target="_blank">查看</Link>
+                <a href={localize(`/blog/${p.slug}`, marketOf(p.market))} className="text-mute hover:text-ink" target="_blank">查看</a>
                 <Link href={`/admin/blog?edit=${p.id}`} className="font-medium hover:underline">編輯</Link>
               </div>
             </li>
@@ -37,6 +38,9 @@ export default async function AdminBlog({ searchParams }: { searchParams: Promis
         <form action={savePost} className="card space-y-4 p-5">
           {cur && <input type="hidden" name="id" value={cur.id} />}
           <label className="block"><span className="label">標題</span><input name="title" required defaultValue={cur?.title} className="input" /></label>
+          <label className="block"><span className="label">發布到哪個國家站（文章語言請配合該站：台灣中文，其他英文）</span>
+            <select name="market" defaultValue={cur?.market ?? "tw"} className="input">{marketList.map((x) => <option key={x.code} value={x.code}>{x.countryName}（{x.prefix || "/"}）</option>)}</select>
+          </label>
           <label className="block"><span className="label">網址代稱（英文、數字、連字號；留空自動產生）</span><input name="slug" defaultValue={cur?.slug} className="input" placeholder="custom-gift-guide" /></label>
           <label className="block"><span className="label">摘要（列表與搜尋結果會顯示，建議 60–120 字）</span><textarea name="excerpt" rows={3} defaultValue={cur?.excerpt} className="input" /></label>
           <div className="grid gap-4 sm:grid-cols-2">

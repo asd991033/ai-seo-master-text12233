@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { getUser } from "@/lib/auth";
+import { keyQs, orderFor } from "@/lib/order-access";
 import { checkoutFields, ecpayConfig, siteOrigin } from "@/lib/ecpay";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +10,11 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 export async function GET(req: Request) {
   const cfg = ecpayConfig();
   const orderNo = new URL(req.url).searchParams.get("orderNo") ?? "";
-  const user = await getUser();
-  if (!user) return Response.redirect(`${siteOrigin(req)}/login?next=${encodeURIComponent(`/orders/${orderNo}`)}`, 302);
-  const [order] = await db.select().from(schema.orders).where(and(eq(schema.orders.orderNo, orderNo), eq(schema.orders.userId, user.id)));
-  if (!cfg || !order || order.paid || order.status !== "pending_payment") return Response.redirect(`${siteOrigin(req)}/orders/${encodeURIComponent(orderNo)}`, 302);
+  const order = await orderFor(orderNo, new URL(req.url).searchParams.get("key"));
+  if (!order) return Response.redirect(`${siteOrigin(req)}/login?next=${encodeURIComponent(`/orders/${orderNo}`)}`, 302);
+  if (!cfg || order.paid || order.status !== "pending_payment") return Response.redirect(`${siteOrigin(req)}/orders/${encodeURIComponent(orderNo)}${keyQs(order)}`, 302);
   const items = await db.select({ name: schema.orderItems.name, qty: schema.orderItems.qty }).from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
-  const fields = checkoutFields(cfg, { orderNo: order.orderNo, total: order.total, itemName: items.map((i) => `${i.name} x ${i.qty}`).join("#") || order.orderNo, origin: siteOrigin(req) });
+  const fields = checkoutFields(cfg, { orderNo: order.orderNo, total: order.total, itemName: items.map((i) => `${i.name} x ${i.qty}`).join("#") || order.orderNo, origin: siteOrigin(req), key: order.accessKey });
   const html = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>前往付款</title></head>
 <body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;color:#111">
 <form id="f" method="post" action="${esc(cfg.action)}">${Object.entries(fields).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(String(v))}">`).join("")}

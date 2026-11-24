@@ -14,7 +14,7 @@ export async function GET() {
   const [cats, posts, [{ n }]] = await Promise.all([
     db.select({ name: schema.categories.name, slug: schema.categories.slug, n: sql<number>`count(${schema.products.id})` })
       .from(schema.categories).leftJoin(schema.products, eq(schema.products.categoryId, schema.categories.id)).groupBy(schema.categories.id),
-    listPosts(30),
+    listPosts(30, "tw"),
     db.select({ n: sql<number>`count(*)` }).from(schema.products).where(eq(schema.products.active, true)),
   ]);
   const fs = markets.tw.shipping, cur = markets.tw.symbol;

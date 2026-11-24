@@ -251,6 +251,8 @@ export const orders = sqliteTable("orders", {
   trackingNo: text("tracking_no"),
   /** 郵遞區號（送單給供應商時必填） */
   postcode: text("postcode"),
+  /** 訂單專屬連結的鑰匙：沒登入的訪客用「訂單網址 + key」查看與付款 */
+  accessKey: text("access_key"),
   /** 下單的市場（tw / sg / my / au / ae / uk）與幣別；金額欄位都是這個幣別 */
   market: text("market").notNull().default("tw"),
   currency: text("currency").notNull().default("TWD"),
@@ -291,6 +293,8 @@ export const orderItems = sqliteTable("order_items", {
 export const posts = sqliteTable("posts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   slug: text("slug").notNull().unique(),
+  /** 這篇文章屬於哪個國家站（tw / us / sg / my / au / ae / uk） */
+  market: text("market").notNull().default("tw"),
   title: text("title").notNull(),
   /** 摘要：列表頁與搜尋結果的說明文字 */
   excerpt: text("excerpt").notNull().default(""),

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { initMarket } from "@/market/server";
 import { t } from "@/i18n";
@@ -10,13 +9,11 @@ import { PostCard } from "@/components/PostCard";
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   await initMarket();
-  return { title: t.blog.title, description: t.blog.lead, alternates: alts("/blog", true), openGraph: { title: t.blog.title, description: t.blog.lead, type: "website" } };
+  return { title: t.blog.title, description: t.blog.lead, alternates: alts("/blog"), openGraph: { title: t.blog.title, description: t.blog.lead, type: "website" } };
 }
 
 export default async function BlogIndex() {
-  const mkt = await initMarket();
-  // 部落格目前只有中文版，海外站導回該國首頁
-  if (mkt.locale === "en") redirect(mkt.prefix);
+  await initMarket();
   const posts = await listPosts();
   return (
     <div className="container-x py-12 md:py-16">

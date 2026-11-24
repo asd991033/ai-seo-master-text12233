@@ -229,7 +229,7 @@ const dict = {
     agree: "送出訂單即表示同意審稿後依確認稿生產，客製商品恕不接受無瑕疵退換。", failed: "訂單送出失敗",
   },
   order: {
-    title: "訂單", thanks: "訂單已成立，謝謝你！", no: "訂單編號", date: "下單時間", status: "狀態", payOnline: "這張訂單尚未付款", payNow: "前往付款", paidOk: "付款成功，謝謝你！訂單已進入審稿。", paidPending: "已返回本站。若你選擇 ATM 或超商付款，完成繳費後訂單會自動更新為已付款。",
+    title: "訂單", thanks: "訂單已成立，謝謝你！", no: "訂單編號", date: "下單時間", status: "狀態", payOnline: "這張訂單尚未付款", payNow: "前往付款", guestNote: "你是以訪客身分下單。請把這個頁面加入書籤或複製網址保存，之後用這個連結查看訂單進度與物流單號。", haveAccount: "已經有帳號？登入後結帳，訂單會記在會員中心。", signIn: "登入", paidOk: "付款成功，謝謝你！訂單已進入審稿。", paidPending: "已返回本站。若你選擇 ATM 或超商付款，完成繳費後訂單會自動更新為已付款。",
     items: "訂購明細", ship: "運送", tracking: "物流單號", paid: "已付款", unpaid: "未付款", myOrders: "我的訂單", none: "還沒有訂單。", view: "查看",
     statuses: {
       pending_payment: "待付款", reviewing: "稿件審核中", in_production: "生產中", shipped: "已出貨", completed: "已完成", cancelled: "已取消",
@@ -267,7 +267,7 @@ const dict = {
   },
   footer: { shop: "商品目錄", learn: "了解更多", help: "幫助", account: "帳戶", email: "信箱", phone: "電話", address: "地址", contactCta: "寫信給我們", about: "客製禮品與品牌周邊，依品項挑選最合適的印刷方式，線上設計、直接下單。", service: "客服信箱", links: "快速連結", rights: "版權所有" },
   errors: { login: "請先登入", emptyCart: "購物車是空的", incomplete: "請完整填寫收件資訊", noShip: "此地區暫無該運送方式的報價", badFormat: "格式錯誤", payOff: "線上付款尚未開放", quote: {} as Record<string, string> },
-  intl: { city: "城市", region: "州／省", country: "國家", duties: "", switchTitle: "國家／地區", payRedirect: "正在前往付款頁面…" },
+  intl: { city: "城市", region: "州／省", country: "國家", duties: "", switchTitle: "國家／地區", dialCode: "電話國碼", payRedirect: "正在前往付款頁面…" },
   meta: {
     productTitle: (name: string, moq: number) => `${name}｜印 Logo 圖案・${moq} 件起訂`,
     productDesc: (lead: string, price: string | null, moq: number) => [lead, price ? `${price} 起，${moq} 件起訂` : "", "可線上排版、即時看效果圖", `運送約 ${m.shipping.days} 個工作天`].filter(Boolean).join("；"),

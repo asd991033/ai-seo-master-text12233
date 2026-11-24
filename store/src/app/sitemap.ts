@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, cats, posts] = await Promise.all([
     db.select({ slug: schema.products.slug, images: schema.products.images, sample: schema.products.sampleImage }).from(schema.products).where(eq(schema.products.active, true)),
     db.select({ slug: schema.categories.slug }).from(schema.categories),
-    db.select({ slug: schema.posts.slug, updatedAt: schema.posts.updatedAt }).from(schema.posts).where(eq(schema.posts.published, true)),
+    db.select({ slug: schema.posts.slug, updatedAt: schema.posts.updatedAt, market: schema.posts.market }).from(schema.posts).where(eq(schema.posts.published, true)),
   ]);
   const img = (u: unknown) => (typeof u === "string" && u ? [u.startsWith("/") ? base + u : u] : undefined);
   const url = (path: string, code: keyof typeof markets) => `${base}${localize(path, markets[code]) || "/"}`.replace(/&/g, "&amp;");
@@ -21,11 +21,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...each("/", { priority: 1, changeFrequency: "weekly" }),
     ...each("/products", { priority: 0.9, changeFrequency: "daily" }),
-    { url: `${base}/blog`, priority: 0.7, changeFrequency: "weekly" },
+    ...each("/blog", { priority: 0.7, changeFrequency: "weekly" }),
     ...each("/guide", { priority: 0.5, changeFrequency: "monthly" }),
     ...each("/returns", { priority: 0.3, changeFrequency: "yearly" }),
     ...cats.flatMap((c) => each(`/products?category=${encodeURIComponent(c.slug)}`, { priority: 0.7, changeFrequency: "weekly" })),
-    ...posts.map((p) => ({ url: `${base}/blog/${p.slug}`, priority: 0.6, lastModified: new Date(p.updatedAt * 1000) })),
+    ...posts.filter((p) => p.market in markets).map((p) => ({ url: url(`/blog/${p.slug}`, p.market as keyof typeof markets), priority: 0.6, lastModified: new Date(p.updatedAt * 1000) })),
     ...products.flatMap((p) => each(`/products/${p.slug}`, { priority: 0.6, changeFrequency: "weekly", images: img(p.sample ?? (p.images as string[] | null)?.[0]) })),
   ];
 }

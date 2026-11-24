@@ -1,10 +1,10 @@
 import Link from "@/components/Link";
 import { initMarket } from "@/market/server";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { t } from "@/i18n";
-import { fmtPostDate, getPost, otherPosts } from "@/lib/blog";
-import { alts, articleLd, breadcrumbLd } from "@/lib/seo";
+import { faqOf, fmtPostDate, getPost, otherPosts } from "@/lib/blog";
+import { alts, articleLd, breadcrumbLd, faqLd } from "@/lib/seo";
 import { Markdown, headings } from "@/lib/markdown";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
@@ -25,14 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PostPage({ params }: Props) {
   const mkt = await initMarket();
-  // 部落格目前只有中文版，海外站導回該國首頁
-  if (mkt.locale === "en") redirect(mkt.prefix);
   const p = await getPost(decodeURIComponent((await params).slug));
   if (!p) notFound();
-  const [more, toc] = [await otherPosts(p.id), headings(p.content)];
+  const [more, toc, faq] = [await otherPosts(p.id), headings(p.content), faqOf(p.content)];
   return (
     <article className="container-x py-10 md:py-14">
       <JsonLd data={articleLd(p)} />
+      {faq.length >= 2 && <JsonLd data={faqLd(faq)} />}
       <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.blog.title, "/blog"], [p.title, `/blog/${p.slug}`]])} />
       <nav aria-label="breadcrumb" className="text-xs text-mute">
         <Link href="/" className="hover:text-ink">{t.blog.home}</Link> / <Link href="/blog" className="hover:text-ink">{t.blog.title}</Link>
@@ -56,7 +55,7 @@ export default async function PostPage({ params }: Props) {
             <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-mute">{toc.map((h) => <li key={h.id}><a href={`#${h.id}`} className="hover:text-ink hover:underline">{h.text}</a></li>)}</ol>
           </nav>
         )}
-        <Markdown source={p.content} />
+        <Markdown source={p.content} prefix={mkt.prefix} />
         <div className="mt-12 rounded-[14px] bg-forest px-6 py-7 text-white">
           <div className="text-[20px] font-bold">{t.blog.ctaTitle}</div>
           <p className="mt-2 text-sm leading-relaxed text-white/75">{t.blog.ctaText}</p>

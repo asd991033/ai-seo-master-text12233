@@ -12,10 +12,10 @@ export const abs = (path: string, m: Market = currentMarket()) => {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl()}${/\.[a-z0-9]{2,5}$/i.test(p.split("?")[0]) ? p : localize(p, m)}`;
 };
-/** 頁面的 canonical 與各國版本（hreflang）。onlyTw：只有中文版的頁面（部落格） */
-export function alts(path: string, onlyTw = false) {
+/** 頁面的 canonical 與各國版本（hreflang）。selfOnly：只存在於目前這個國家站的頁面（各國文章內容不同） */
+export function alts(path: string, selfOnly = false) {
   const m = currentMarket();
-  if (onlyTw) return { canonical: abs(path, markets.tw) };
+  if (selfOnly) return { canonical: abs(path, m) };
   return { canonical: abs(path, m), languages: { ...Object.fromEntries(marketList.map((x) => [x.lang, abs(path, x)])), "x-default": abs(path, markets.tw) } };
 }
 const lang = () => currentMarket().lang;
@@ -53,7 +53,7 @@ export const itemListLd = (name: string, items: { name: string; path: string; im
 });
 
 export const articleLd = (p: { slug: string; title: string; excerpt: string; coverUrl: string | null; publishedAt: number; updatedAt: number }) => ({
-  "@context": ctx, "@type": "BlogPosting", headline: p.title, description: p.excerpt, inLanguage: "zh-TW",
+  "@context": ctx, "@type": "BlogPosting", headline: p.title, description: p.excerpt, inLanguage: lang(),
   mainEntityOfPage: abs(`/blog/${p.slug}`), url: abs(`/blog/${p.slug}`), ...(p.coverUrl ? { image: [abs(p.coverUrl)] } : {}),
   datePublished: new Date(p.publishedAt * 1000).toISOString(), dateModified: new Date(p.updatedAt * 1000).toISOString(),
   author: { "@type": "Organization", name: site.brand, url: baseUrl() }, publisher: { "@id": `${baseUrl()}/#org` },

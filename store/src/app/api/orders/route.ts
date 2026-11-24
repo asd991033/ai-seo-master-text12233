@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto";
 import { inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getUser } from "@/lib/auth";
+import { guestUserId, newAccessKey } from "@/lib/order-access";
 import { priceCart, sanitizeLines } from "@/lib/checkout";
 import { computeTotals } from "@/lib/pricing";
 import { dictFor } from "@/i18n";
@@ -28,8 +29,9 @@ export async function POST(req: Request) {
 
 async function placeOrder(body: Record<string, unknown> | null, m: Market) {
   const E = dictFor(m).errors;
+  // 沒登入也能下單（訪客結帳），訂單用專屬連結查看
   const user = await getUser();
-  if (!user) return NextResponse.json({ error: E.login }, { status: 401 });
+  const userId = user?.id ?? (await guestUserId()), accessKey = newAccessKey();
   const lines = sanitizeLines(body?.items);
   if (!body || !lines?.length) return NextResponse.json({ error: E.emptyCart }, { status: 400 });
 
@@ -63,7 +65,7 @@ async function placeOrder(body: Record<string, unknown> | null, m: Market) {
     const [order] = await tx
       .insert(schema.orders)
       .values({
-        orderNo: no, userId: user.id, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: m.payment, market: m.code, currency: m.currency, ...totals,
+        orderNo: no, userId, accessKey, ...contact, zoneCode: zone.code, zoneName: zone.name, shippingMode: mode, paymentMethod: m.payment, market: m.code, currency: m.currency, ...totals,
         totalWeightKg: priced.pack.weightKg, totalCbm: priced.pack.cbm,
       })
       .returning();
@@ -79,6 +81,6 @@ async function placeOrder(body: Record<string, unknown> | null, m: Market) {
     );
   });
   // 有設定線上金流就直接帶去付款
-  const payUrl = m.payment === "stripe" ? (stripeEnabled() ? `/api/stripe/pay?orderNo=${no}` : null) : ecpayEnabled() ? `/api/ecpay/pay?orderNo=${no}` : null;
-  return NextResponse.json({ orderNo: no, payUrl, orderUrl: localize(`/orders/${no}?new=1`, m) });
+  const payUrl = m.payment === "stripe" ? (stripeEnabled() ? `/api/stripe/pay?orderNo=${no}&key=${accessKey}` : null) : ecpayEnabled() ? `/api/ecpay/pay?orderNo=${no}&key=${accessKey}` : null;
+  return NextResponse.json({ orderNo: no, payUrl, orderUrl: localize(`/orders/${no}?new=1&key=${accessKey}`, m) });
 }

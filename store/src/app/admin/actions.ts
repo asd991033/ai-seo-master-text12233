@@ -1,4 +1,5 @@
 "use server";
+import { marketOf } from "@/config/markets";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq, isNotNull } from "drizzle-orm";
@@ -111,7 +112,7 @@ export async function savePost(fd: FormData) {
   const raw = str("slug", 120) || title;
   const slug = raw.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 120) || `post-${Date.now()}`;
   const values = {
-    title, slug, excerpt: str("excerpt", 500), content: String(fd.get("content") ?? "").slice(0, 100_000),
+    title, slug, market: marketOf(str("market", 4)).code as string, excerpt: str("excerpt", 500), content: String(fd.get("content") ?? "").slice(0, 100_000),
     coverUrl: str("coverUrl", 500) || null, coverAlt: str("coverAlt", 200) || null, seoTitle: str("seoTitle", 200) || null, seoDescription: str("seoDescription", 300) || null,
     published: fd.get("published") === "on", updatedAt: Math.floor(Date.now() / 1000),
   };

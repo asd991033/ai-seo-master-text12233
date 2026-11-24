@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { originalOption } from "@/lib/localize";
+import { localPhone } from "@/config/markets";
 import { HC_STATUS, HicustomError, createOrder, getOrder, hcDesignOf, hicustomConfig, parseTwAddress, productTypeInfo, readSiteFile, synthesizeProduct, uploadGallery, type SynthCfg } from "@/lib/hicustom";
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -79,7 +80,7 @@ export async function sendOrderToSupplier(id: number, opts: { postcode?: string;
       ...(logistics ? { logistics_company_name: logistics } : {}),
       order_items: lines, out_order_id: order.orderNo, store_id: cfg.storeId, ...(overseas ? {} : { currency_code: 11 }), remark: (order.note ?? "").slice(0, 200),
       order_time: fmt(order.createdAt), payment_time: fmt(order.createdAt), ...(overseas ? {} : { subtotal: order.goodsTotal + order.printTotal, shipping_amount: order.shippingFee, grand_total: order.total }),
-      address: { country: order.country, region: addr.region, city: addr.city, area: "", street: addr.street, postcode: zip, mobile_phone: order.contactPhone, firstname: order.contactName, lastname: "", email: order.contactEmail },
+      address: { country: order.country, region: addr.region, city: addr.city, area: "", street: addr.street, postcode: zip, mobile_phone: overseas ? order.contactPhone.replace(/\s/g, "") : localPhone(order.contactPhone, "+886"), firstname: order.contactName, lastname: "", email: order.contactEmail },
     });
     await db.update(schema.orders).set({
       supplierOrderId: res.order_id, supplierStatus: res.status, supplierSyncedAt: now(),

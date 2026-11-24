@@ -37,7 +37,7 @@ export async function Footer() {
           <ul className="space-y-3">
             <li><Link href="/guide#methods" className="text-mute hover:text-ink">{t.nav.methods}</Link></li>
             <li><Link href="/guide" className="text-mute hover:text-ink">{t.nav.guide}</Link></li>
-            {m.locale === "zh-TW" && <li><Link href="/blog" className="text-mute hover:text-ink">{t.nav.blog}</Link></li>}
+            <li><Link href="/blog" className="text-mute hover:text-ink">{t.nav.blog}</Link></li>
             <li><Link href="/guide#files" className="text-mute hover:text-ink">{t.guide.fileTitle}</Link></li>
             <li><Link href="/guide#shipping" className="text-mute hover:text-ink">{t.guide.shipTitle}</Link></li>
           </ul>
@@ -57,7 +57,7 @@ export async function Footer() {
         <span className="text-mute">{t.intl.switchTitle}</span>
         {marketList.map((x) => (
           // 換國家要整頁重新載入（語系、幣別、購物車都不同），所以用一般連結
-          <a key={x.code} href={localize(path.startsWith("/blog") && x.locale === "en" ? "/" : path, x) || "/"} hrefLang={x.lang} className={x.code === m.code ? "font-semibold" : "text-mute hover:text-ink"}>{x.countryName} ({x.currency})</a>
+          <a key={x.code} href={localize(path.startsWith("/blog/") && x.code !== m.code ? "/blog" : path, x) || "/"} hrefLang={x.lang} className={x.code === m.code ? "font-semibold" : "text-mute hover:text-ink"}>{x.countryName} ({x.currency})</a>
         ))}
       </nav>
       <div className="container-x border-t border-ink/10 py-6 text-[11px] text-gold">© {new Date().getFullYear()} {site.brand}. {t.footer.rights}</div>

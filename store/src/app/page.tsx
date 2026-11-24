@@ -160,7 +160,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {m.locale === "zh-TW" && posts.length > 0 && (
+      {posts.length > 0 && (
         <section className="container-x py-16">
           <div className="flex items-end justify-between gap-4">
             <div><div className="eyebrow">{t.blog.eyebrow}</div><h2 className="mt-3 text-[26px] md:text-[32px]">{t.blog.latest}</h2></div>
