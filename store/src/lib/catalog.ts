@@ -17,6 +17,8 @@ export type Method = typeof printMethods.$inferSelect;
 export type ProductFull = Product & {
   categoryName: string | null;
   categorySlug: string | null;
+  /** 商品掛在子分類時，這是它的大分類 */
+  parentCategory?: { name: string; slug: string } | null;
   positions: Position[];
   methods: Method[];
   pricing: ProductPricing;
@@ -42,7 +44,8 @@ function productConds(opts: { category?: string; q?: string; featured?: boolean;
   const conds = [eq(products.active, true)];
   // 海外站只上架有英文資料的商品
   if (m.locale === "en") conds.push(like(products.sku, "HC-%"));
-  if (opts.category) conds.push(eq(categories.slug, opts.category));
+  // 選大分類時，底下所有子分類的商品都算
+  if (opts.category) conds.push(sql`(${categories.slug} = ${opts.category} or ${categories.parentId} = (select id from categories where slug = ${opts.category}))`);
   if (opts.exclude) conds.push(sql`${products.id} != ${opts.exclude}`);
   if (opts.featured) conds.push(eq(products.featured, true));
   if (opts.q?.trim()) {
@@ -131,7 +134,10 @@ const fullSelect = () =>
 
 export async function getProductBySlug(slug: string, m: Market = currentMarket()): Promise<ProductFull | null> {
   const rows = await fullSelect().where(and(eq(products.slug, slug), eq(products.active, true), ...(m.locale === "en" ? [like(products.sku, "HC-%")] : []))).limit(1);
-  return (await hydrate(rows.map((r) => ({ ...r.p, categoryName: r.categoryName, categorySlug: r.categorySlug })), m))[0] ?? null;
+  const p = (await hydrate(rows.map((r) => ({ ...r.p, categoryName: r.categoryName, categorySlug: r.categorySlug })), m))[0] ?? null;
+  if (!p?.categoryId) return p;
+  const [parent] = await db.select({ name: sql<string>`pc.name`, slug: sql<string>`pc.slug` }).from(categories).innerJoin(sql`categories pc`, sql`pc.id = ${categories.parentId}`).where(eq(categories.id, p.categoryId));
+  return { ...p, parentCategory: parent ? { name: term(parent.name, m.locale), slug: parent.slug } : null };
 }
 
 export async function getProductsByIds(ids: number[], m: Market = currentMarket()): Promise<ProductFull[]> {
@@ -140,17 +146,34 @@ export async function getProductsByIds(ids: number[], m: Market = currentMarket(
   return hydrate(rows.map((r) => ({ ...r.p, categoryName: r.categoryName, categorySlug: r.categorySlug })), m);
 }
 
-export async function categoryCounts(m: Market = currentMarket()) {
-  const rows = await categoryRows();
-  return m.locale === "en" ? rows.map((c) => ({ ...c, name: term(c.name, "en") })) : rows;
-}
-function categoryRows() {
-  return db
-    .select({ id: categories.id, slug: categories.slug, name: categories.name, count: sql<number>`count(${products.id})`, image: sql<string | null>`(select json_extract(p2.images, '$[0]') from products p2 where p2.category_id = ${categories.id} and p2.active = 1 order by p2.popularity desc limit 1)` })
+export type CategoryNode = { id: number; slug: string; name: string; key: string; count: number; image: string | null; children: { id: number; slug: string; name: string; count: number }[] };
+
+/** 大分類（含底下子分類的商品數）與各自的子分類。key 是原始的中文名稱，name 是目前語系的顯示名稱 */
+export async function categoryCounts(m: Market = currentMarket()): Promise<CategoryNode[]> {
+  const rows = await db
+    .select({ id: categories.id, slug: categories.slug, name: categories.name, parentId: categories.parentId, sort: categories.sort, count: sql<number>`count(${products.id})` })
     .from(categories)
-    .leftJoin(products, and(eq(products.categoryId, categories.id), eq(products.active, true)))
-    .groupBy(categories.id)
-    .orderBy(sql`count(${products.id}) desc`);
+    .leftJoin(products, and(eq(products.categoryId, categories.id), eq(products.active, true), ...(m.locale === "en" ? [like(products.sku, "HC-%")] : [])))
+    .groupBy(categories.id);
+  const images = await db.select({ id: categories.id, parentId: categories.parentId, image: sql<string | null>`(select json_extract(p2.images, '$[0]') from products p2 where p2.category_id = ${categories.id} and p2.active = 1 order by p2.popularity desc limit 1)` }).from(categories);
+  const loc = (x: string) => term(x, m.locale);
+  const tops = rows.filter((r) => r.parentId == null).map((r) => {
+    const kids = rows.filter((k) => k.parentId === r.id && k.count > 0).sort((a, b) => b.count - a.count);
+    const image = images.find((i) => i.id === r.id)?.image ?? images.find((i) => i.parentId === r.id && i.image)?.image ?? null;
+    return { id: r.id, slug: r.slug, name: loc(r.name), key: r.name, count: r.count + kids.reduce((a, k) => a + k.count, 0), image, children: kids.map((k) => ({ id: k.id, slug: k.slug, name: loc(k.name), count: k.count })) };
+  });
+  return tops.sort((a, b) => b.count - a.count);
+}
+
+/** 依網址代稱找分類（大分類或子分類），回傳它和所屬的大分類 */
+export function findCategory(tree: CategoryNode[], slug: string | undefined) {
+  if (!slug) return null;
+  for (const top of tree) {
+    if (top.slug === slug) return { top, sub: null, name: top.name, count: top.count, slug };
+    const sub = top.children.find((c) => c.slug === slug);
+    if (sub) return { top, sub, name: sub.name, count: sub.count, slug };
+  }
+  return null;
 }
 
 export type Zone = { code: string; name: string; rates: RateRow[] };

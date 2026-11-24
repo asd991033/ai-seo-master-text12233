@@ -22,7 +22,10 @@ async function main() {
       continue;
     }
     const t0 = Date.now();
-    const res = await importCatalog(JSON.parse(raw.toString("utf8")) as ImportData);
+    const data = JSON.parse(raw.toString("utf8")) as ImportData;
+    // 不是商品目錄的 JSON（沒有 products 陣列）就略過，不要讓啟動失敗
+    if (!Array.isArray((data as { products?: unknown }).products)) { console.log(`[catalog] ${file} is not a catalogue, skip`); continue; }
+    const res = await importCatalog(data);
     if (!res.ok) {
       console.error(`[catalog] ${file} failed:\n` + res.errors.slice(0, 30).join("\n"));
       process.exitCode = 1;

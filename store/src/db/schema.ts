@@ -38,6 +38,8 @@ export const categories = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
+  /** 上層分類；大分類是 null，子分類指向它的大分類 */
+  parentId: integer("parent_id"),
   sort: integer("sort").notNull().default(0),
 });
 

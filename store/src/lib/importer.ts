@@ -11,7 +11,7 @@ import { getPricingSettings } from "./settings";
 const { products, categories, priceTiers, printPositions, printAreas, printPrices, printMethods } = schema;
 
 export type ProductRow = {
-  sku: string; name: string; category?: string; summary?: string; description?: string; material?: string; size?: string;
+  sku: string; name: string; category?: string; subcategory?: string; summary?: string; description?: string; material?: string; size?: string;
   /** 例：米白:#F2EDE4|黑:#111111 */
   colors?: string;
   /** 例：S|M|L|XL */
@@ -126,12 +126,25 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
       // ---- 分類 ----
       // 分類改名：沿用原本的分類（網址不變），不另外新增一個
       for (const [from, to] of Object.entries(CATEGORY_RENAMES)) await tx.update(categories).set({ name: to }).where(eq(categories.name, from));
-      const catByName = new Map((await tx.select().from(categories)).map((c) => [c.name, c.id]));
+      const allCats = await tx.select().from(categories);
+      const catByName = new Map(allCats.filter((c) => c.parentId == null).map((c) => [c.name, c.id]));
       for (const name of new Set(data.products.map((p) => p.category?.trim()).filter((x): x is string => !!x))) {
         if (catByName.has(name)) continue;
         const slug = slugify(name) || `c-${createHash("md5").update(name).digest("hex").slice(0, 8)}`;
         const [row] = await tx.insert(categories).values({ name, slug, sort: catByName.size }).returning();
         catByName.set(name, row.id);
+      }
+      // 子分類：以「大分類/子分類」為鍵，網址代稱由這個鍵產生，所以重新匯入不會變
+      const subKey = (c: string, s: string) => `${c}/${s}`;
+      const nameById = new Map([...catByName].map(([n, id]) => [id, n]));
+      const subByKey = new Map(allCats.filter((c) => c.parentId != null && nameById.has(c.parentId)).map((c) => [subKey(nameById.get(c.parentId!)!, c.name), c.id]));
+      let subSort = subByKey.size;
+      for (const r of data.products) {
+        const c = r.category?.trim(), s = r.subcategory?.trim();
+        if (!c || !s || subByKey.has(subKey(c, s))) continue;
+        const slug = `s-${createHash("md5").update(subKey(c, s)).digest("hex").slice(0, 8)}`;
+        const [row] = await tx.insert(categories).values({ name: s, slug, parentId: catByName.get(c)!, sort: subSort++ }).returning();
+        subByKey.set(subKey(c, s), row.id);
       }
 
       const { margin, fx } = await getPricingSettings(tx);
@@ -140,7 +153,7 @@ export async function importCatalog(data: ImportData): Promise<ImportResult> {
       for (const r of data.products) {
         const values = {
           sku: r.sku.trim(), slug: slugify(r.sku), name: r.name.trim(),
-          categoryId: r.category ? catByName.get(r.category.trim()) ?? null : null,
+          categoryId: r.category ? (r.subcategory ? subByKey.get(subKey(r.category.trim(), r.subcategory.trim())) : undefined) ?? catByName.get(r.category.trim()) ?? null : null,
           summary: r.summary ?? "", description: r.description ?? "", material: r.material ?? "", sizeText: r.size ?? "",
           colors: parseColors(r.colors).map((c) => ({ ...c, ...(r.colorImages?.[c.name] ? { image: r.colorImages[c.name] } : {}), ...(r.colorDisplay?.[c.name] ? { display: r.colorDisplay[c.name] } : {}) })),
           popularity: r.popularity ?? 0,

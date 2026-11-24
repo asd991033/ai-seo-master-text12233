@@ -24,12 +24,17 @@ export async function Header() {
               {t.nav.catalogue}
             </Link>
             <div className="invisible absolute inset-x-0 top-full pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              <div className="grid grid-cols-3 gap-x-6 gap-y-1 rounded-[14px] border border-line bg-white p-6 shadow-xl lg:grid-cols-4">
+              <div className="grid max-h-[72vh] grid-cols-3 gap-x-8 gap-y-6 overflow-y-auto rounded-[14px] border border-line bg-white p-7 shadow-xl lg:grid-cols-4 xl:grid-cols-5" data-testid="mega-menu">
                 {list.map((c) => (
-                  <Link key={c.id} href={`/products?category=${encodeURIComponent(c.slug)}`} className="flex items-baseline justify-between rounded-[10px] px-3 py-2.5 hover:bg-sand">
-                    <span>{c.name}</span>
-                    <span className="text-xs text-mute">{c.count}</span>
-                  </Link>
+                  <div key={c.id}>
+                    <Link href={`/products?category=${encodeURIComponent(c.slug)}`} className="flex items-baseline justify-between gap-2 border-b border-line pb-2 text-[14px] font-semibold hover:opacity-60">
+                      <span>{c.name}</span><span className="text-xs font-normal text-mute">{c.count}</span>
+                    </Link>
+                    <ul className="mt-2 space-y-1.5 text-[13px]">
+                      {c.children.slice(0, 7).map((k) => <li key={k.id}><Link href={`/products?category=${encodeURIComponent(k.slug)}`} className="text-mute hover:text-ink">{k.name}</Link></li>)}
+                      {c.children.length > 7 && <li><Link href={`/products?category=${encodeURIComponent(c.slug)}`} className="text-xs text-mute underline underline-offset-4 hover:text-ink">＋{c.children.length - 7}</Link></li>}
+                    </ul>
+                  </div>
                 ))}
               </div>
             </div>

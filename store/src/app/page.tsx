@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   const m = await initMarket();
   const [featured, cats, posts] = await Promise.all([listProducts({ limit: 8 }), categoryCounts(), listPosts(3)]);
-  const slugOf = (name: string) => cats.find((c) => c.name === name)?.slug;
+  const slugOf = (name: string) => cats.find((c) => c.key === name)?.slug;
   const catHref = (name: string) => (slugOf(name) ? `/products?category=${encodeURIComponent(slugOf(name)!)}` : "/products");
   return (
     <div className="-mt-[70px]">

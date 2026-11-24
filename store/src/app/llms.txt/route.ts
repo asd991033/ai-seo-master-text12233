@@ -5,6 +5,7 @@ import { marketList, markets } from "@/config/markets";
 import { t } from "@/i18n";
 import { baseUrl } from "@/lib/seo";
 import { listPosts } from "@/lib/blog";
+import { categoryCounts } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const base = baseUrl();
   const [cats, posts, [{ n }]] = await Promise.all([
-    db.select({ name: schema.categories.name, slug: schema.categories.slug, n: sql<number>`count(${schema.products.id})` })
-      .from(schema.categories).leftJoin(schema.products, eq(schema.products.categoryId, schema.categories.id)).groupBy(schema.categories.id),
+    categoryCounts(markets.tw),
     listPosts(30, "tw"),
     db.select({ n: sql<number>`count(*)` }).from(schema.products).where(eq(schema.products.active, true)),
   ]);
@@ -46,7 +46,7 @@ ${site.brand} also sells to these countries in English, with prices in local cur
 ${marketList.filter((x) => x.locale === "en").map((x) => `- [${x.countryName}](${base}${x.prefix}): prices in ${x.currency}; delivery ${x.symbol}${x.shipping.fee} per order, free over ${x.symbol}${x.shipping.freeOver}; about ${x.shipping.days} working days after dispatch`).join("\n")}
 
 ## 商品分類
-${cats.filter((c) => c.n > 0).sort((a, b) => b.n - a.n).map((c) => `- [${c.name}](${base}/products?category=${encodeURIComponent(c.slug)})：${c.n} 款`).join("\n")}
+${cats.filter((c) => c.count > 0).map((c) => `- [${c.name}](${base}/products?category=${encodeURIComponent(c.slug)})：${c.count} 款${c.children.length ? `（${c.children.map((k) => `[${k.name}](${base}/products?category=${encodeURIComponent(k.slug)})`).join("、")}）` : ""}`).join("\n")}
 
 ## 文章
 ${posts.map((p) => `- [${p.title}](${base}/blog/${p.slug})：${p.excerpt}`).join("\n")}

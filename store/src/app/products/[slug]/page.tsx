@@ -42,7 +42,7 @@ export default async function ProductPage({ params }: Props) {
   const range = priceRange(p.pricing.tiers);
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4).map((u) => abs(u)),
-    ...(p.categoryName ? { category: p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
+    ...(p.categoryName ? { category: p.parentCategory ? `${p.parentCategory.name} > ${p.categoryName}` : p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
     ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: currentMarket().currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
     url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
   };
@@ -60,6 +60,7 @@ export default async function ProductPage({ params }: Props) {
     <div id="top" className="container-x pt-6 pb-14">
       <nav className="mb-6 text-xs text-mute">
         <Link href="/products" className="hover:text-ink">{t.nav.products}</Link>
+        {p.parentCategory && <> / <Link href={`/products?category=${encodeURIComponent(p.parentCategory.slug)}`} className="hover:text-ink">{p.parentCategory.name}</Link></>}
         {p.categoryName && <> / <Link href={`/products?category=${encodeURIComponent(p.categorySlug ?? "")}`} className="hover:text-ink">{p.categoryName}</Link></>}
       </nav>
       <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,460px)]">
@@ -187,7 +188,7 @@ export default async function ProductPage({ params }: Props) {
 
     <Faq eyebrow={t.product.faqEyebrow} title={t.product.faqTitle} cta={t.home.faqCta} href="#top" items={t.product.faq} />
       <JsonLd data={jsonLd} />
-      <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(p.categoryName && p.categorySlug ? [[p.categoryName, `/products?category=${encodeURIComponent(p.categorySlug)}`] as [string, string]] : []), [p.name, `/products/${p.slug}`]])} />
+      <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(p.parentCategory ? [[p.parentCategory.name, `/products?category=${encodeURIComponent(p.parentCategory.slug)}`] as [string, string]] : []), ...(p.categoryName && p.categorySlug ? [[p.categoryName, `/products?category=${encodeURIComponent(p.categorySlug)}`] as [string, string]] : []), [p.name, `/products/${p.slug}`]])} />
       <JsonLd data={faqLd(t.product.faq)} />
       <div className="h-20 bg-[#111] lg:hidden" />
     </>

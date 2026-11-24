@@ -4,7 +4,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { alts, breadcrumbLd, itemListLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { t } from "@/i18n";
-import { categoryCounts, countProducts, listProducts, PAGE_SIZE } from "@/lib/catalog";
+import { categoryCounts, countProducts, findCategory, listProducts, PAGE_SIZE } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ type SP = { category?: string; q?: string; sort?: string; page?: string };
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   await initMarket();
   const sp = await searchParams;
-  const cat = sp.category ? (await categoryCounts()).find((c) => c.slug === sp.category) : null;
+  const cat = findCategory(await categoryCounts(), sp.category);
   const title = cat ? t.meta.catTitle(cat.name) : sp.q ? t.products.resultFor(sp.q) : t.products.title;
   const description = cat ? t.meta.catDesc(cat.name, cat.count) : t.meta.allDesc;
   // 搜尋結果與排序頁不收錄，避免重複內容
@@ -28,7 +28,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const [cats, items, total] = await Promise.all([categoryCounts(), listProducts({ ...sp, page }), countProducts(sp)]);
   const list = cats.filter((c) => c.count > 0);
   const all = list.reduce((a, c) => a + c.count, 0);
-  const current = list.find((c) => c.slug === sp.category);
+  // 目前選的分類（大分類或子分類）與它所屬的大分類
+  const current = findCategory(list, sp.category), top = current?.top;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const href = (patch: Partial<SP>) => {
     const next = { ...sp, page: undefined, ...patch };
@@ -44,7 +45,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         <img src="/eg/coll-banner.jpg" alt={t.alt.collection} className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="container-x pt-8 pb-20">
-        <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(sp.category && cats.find((c) => c.slug === sp.category) ? [[cats.find((c) => c.slug === sp.category)!.name, `/products?category=${encodeURIComponent(sp.category)}`] as [string, string]] : [])])} />
+        <JsonLd data={breadcrumbLd([[t.blog.home, "/"], [t.nav.products, "/products"], ...(top ? [[top.name, `/products?category=${encodeURIComponent(top.slug)}`] as [string, string]] : []), ...(current?.sub ? [[current.sub.name, `/products?category=${encodeURIComponent(current.sub.slug)}`] as [string, string]] : [])])} />
         <JsonLd data={itemListLd(t.products.title, items.map((x) => ({ name: x.name, path: `/products/${x.slug}`, image: x.images[0] })))} />
         <h1 className="text-[32px] md:text-[38px]">{sp.q ? t.products.resultFor(sp.q) : current?.name ?? t.products.title}</h1>
         <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-mute">{t.products.listLead}</p>
@@ -53,15 +54,32 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <aside className="min-w-0">
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden">
               <Link href={href({ category: undefined })} className={`shrink-0 ${sp.category ? "chip" : "chip-on"}`}>{t.products.all}</Link>
-              {list.map((c) => <Link key={c.id} href={href({ category: c.slug })} className={`shrink-0 ${sp.category === c.slug ? "chip-on" : "chip"}`}>{c.name}</Link>)}
+              {list.map((c) => <Link key={c.id} href={href({ category: c.slug })} className={`shrink-0 ${top?.id === c.id ? "chip-on" : "chip"}`}>{c.name}</Link>)}
             </div>
+            {/* 手機：選了大分類後，第二排顯示它的子分類 */}
+            {top && top.children.length > 0 && (
+              <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden" data-testid="sub-chips">
+                <Link href={href({ category: top.slug })} className={`shrink-0 ${current?.sub ? "chip" : "chip-on"}`}>{t.products.all}</Link>
+                {top.children.map((c) => <Link key={c.id} href={href({ category: c.slug })} className={`shrink-0 ${current?.sub?.id === c.id ? "chip-on" : "chip"}`}>{c.name}</Link>)}
+              </div>
+            )}
             <div className="sticky top-24 hidden lg:block">
               <div className="text-[20px] font-bold tracking-tight">{t.products.filters}</div>
               <div className="mt-5 border-t border-line pt-4 text-[12px] font-semibold">{t.products.filter}</div>
               <div className="mt-3 space-y-0.5">
                 <Link href={href({ category: undefined })} className={item(!sp.category)}><span>{t.products.all}</span><span className="text-xs opacity-60">{all}</span></Link>
                 {list.map((c) => (
-                  <Link key={c.id} href={href({ category: c.slug })} className={item(sp.category === c.slug)}><span>{c.name}</span><span className="text-xs opacity-60">{c.count}</span></Link>
+                  <div key={c.id}>
+                    <Link href={href({ category: c.slug })} className={item(sp.category === c.slug)}><span>{c.name}</span><span className="text-xs opacity-60">{c.count}</span></Link>
+                    {/* 展開目前大分類底下的子分類 */}
+                    {top?.id === c.id && c.children.length > 0 && (
+                      <div className="my-1 ml-3 space-y-0.5 border-l border-line pl-2" data-testid="sub-list">
+                        {c.children.map((k) => (
+                          <Link key={k.id} href={href({ category: k.slug })} className={`flex items-baseline justify-between rounded-[8px] px-2.5 py-1.5 text-[12px] transition ${current?.sub?.id === k.id ? "bg-sand font-semibold text-ink" : "text-mute hover:bg-sand hover:text-ink"}`}><span>{k.name}</span><span className="text-[11px] opacity-60">{k.count}</span></Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
