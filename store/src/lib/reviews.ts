@@ -2,6 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { readSheets, SheetReadError, type Sheet } from "./sheet-reader";
 import { averageRating, canReviewOrder, cleanReview, parseReviewDate } from "./review-rules";
 
 export type Review = typeof schema.reviews.$inferSelect;
@@ -59,43 +60,54 @@ export async function buildReviewTemplate(): Promise<Buffer> {
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
-function cellText(v: ExcelJS.CellValue): string {
-  if (v == null) return "";
-  if (typeof v === "object") {
-    if (v instanceof Date) return v.toISOString();
-    if ("richText" in v) return v.richText.map((r) => r.text).join("");
-    if ("result" in v) return cellText(v.result as ExcelJS.CellValue);
-    if ("text" in v) return String(v.text);
-    return "";
-  }
-  return String(v);
-}
+/** 把使用者檔案裡的各種標題寫法對到欄位（不分大小寫，忽略 *、空白與括號說明） */
+const ALIASES: Record<RowKey, string[]> = {
+  sku: ["sku", "商品sku", "產品sku", "商品編號", "產品編號", "商品貨號", "貨號"],
+  orderNo: ["訂單編號", "訂單號", "訂單號碼", "orderno", "order", "ordernumber", "orderid"],
+  authorName: ["評價者名稱", "評價者", "評論者", "姓名", "名稱", "買家", "買家名稱", "顧客", "顧客名稱", "name", "author", "authorname", "reviewer", "reviewername", "customer", "customername"],
+  rating: ["星等", "星數", "評分", "rating", "stars", "star", "score"],
+  title: ["標題", "評價標題", "title", "headline", "reviewtitle"],
+  body: ["評價內容", "評論內容", "內容", "評價", "評論", "review", "body", "content", "comment", "reviewtext", "reviewbody"],
+  date: ["評價日期", "評論日期", "日期", "date", "reviewdate", "createdat"],
+};
+const normHeader = (s: string) => s.replace(/[（(][^）)]*[）)]/g, "").replace(/[\s*＊_\-]/g, "").toLowerCase();
+const headerKey = (s: string) => (Object.keys(ALIASES) as RowKey[]).find((k) => ALIASES[k].includes(normHeader(s)));
+/** Excel 日期序號（備援讀法與 CSV 會拿到數字）轉成 YYYY-MM-DD */
+const fixDate = (s: string) => (/^\d{5}(\.\d+)?$/.test(s) ? new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(s)) * 86400000).toISOString().slice(0, 10) : s);
 
 export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: ReviewRow[]; errors: string[] }> {
-  const wb = new ExcelJS.Workbook();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await wb.xlsx.load(data as any);
-  const ws = wb.getWorksheet(REVIEW_SHEET) ?? wb.worksheets[0];
-  if (!ws) return { rows: [], errors: ["檔案裡沒有工作表"] };
-  const headers = new Map<number, RowKey>();
-  ws.getRow(1).eachCell((cell, col) => {
-    const hit = COLS.find(([h]) => h === cellText(cell.value).trim());
-    if (hit) headers.set(col, hit[1]);
+  let sheets: Sheet[];
+  try {
+    sheets = await readSheets(data);
+  } catch (e) {
+    if (e instanceof SheetReadError) return { rows: [], errors: [e.message] };
+    throw e;
+  }
+  const required = COLS.filter(([h]) => h.includes("*"));
+  const candidates = sheets.filter((s) => s.rows.length).map((s) => {
+    const headers = new Map<number, RowKey>();
+    s.rows[0].cells.forEach((text, col) => { const k = headerKey(text); if (k && ![...headers.values()].includes(k)) headers.set(col, k); });
+    return { sheet: s, headers, missing: required.filter(([, k]) => ![...headers.values()].includes(k)).map(([h]) => h.replace(/\s*\*.*/, "")) };
   });
-  const missing = COLS.filter(([h, k]) => h.includes("*") && ![...headers.values()].includes(k)).map(([h]) => h);
-  if (missing.length) return { rows: [], errors: [`找不到必要欄位：${missing.join("、")}。請使用範本的標題列`] };
+  if (!candidates.length) return { rows: [], errors: ["檔案中沒有可匯入的評價"] };
+  // 優先用「評價」工作表；不然用第一個標題列齊全的工作表
+  const pick = candidates.find((c) => !c.missing.length && c.sheet.name === REVIEW_SHEET) ?? candidates.find((c) => !c.missing.length);
+  if (!pick) {
+    const best = [...candidates].sort((a, b) => a.missing.length - b.missing.length)[0];
+    const seen = best.sheet.rows[0].cells.filter(Boolean).slice(0, 12).join("、") || "（空白）";
+    return { rows: [], errors: [`第一列（標題列）找不到必要欄位：${best.missing.join("、")}。目前讀到的標題是：${seen}。請把第一列改成範本的標題`] };
+  }
   const rows: ReviewRow[] = [];
-  ws.eachRow((row, rowNo) => {
-    if (rowNo === 1) return;
-    const rec: ReviewRow = { rowNo };
+  for (const row of pick.sheet.rows.slice(1)) {
+    const rec: ReviewRow = { rowNo: row.rowNo };
     let any = false;
-    for (const [col, key] of headers) {
-      const text = cellText(row.getCell(col).value).trim();
-      if (text) { rec[key] = text; any = true; }
+    for (const [col, key] of pick.headers) {
+      const text = (row.cells[col] ?? "").trim();
+      if (text) { rec[key] = key === "date" ? fixDate(text) : text; any = true; }
     }
     if (any) rows.push(rec);
-  });
-  if (!rows.length) return { rows, errors: ["檔案中沒有可匯入的評價"] };
+  }
+  if (!rows.length) return { rows, errors: ["檔案中沒有可匯入的評價（只有標題列）"] };
   if (rows.length > MAX_ROWS) return { rows: [], errors: [`一次最多匯入 ${MAX_ROWS} 列，這個檔案有 ${rows.length} 列`] };
   return { rows, errors: [] };
 }
