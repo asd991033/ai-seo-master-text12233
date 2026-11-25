@@ -53,7 +53,8 @@ export async function priceCart(inputs: CartLineInput[], zoneCode: string | null
   const m = currentMarket();
   // 海外站只送到該國，不用運送地區表
   const [products, zones] = await Promise.all([getProductsByIds([...new Set(inputs.map((i) => i.productId))], m), m.code === "tw" ? listZones() : [{ code: m.country, name: m.countryName, rates: [] }]]);
-  if (m.code !== "tw") zoneCode = m.country;
+  // 統一運費時每個地區金額都一樣，購物車不再讓客戶選地區，一律用站台所在國家（也蓋掉瀏覽器裡以前存的選擇）
+  if (m.code !== "tw" || (m.shipping.fee >= 0 && zones.some((z) => z.code === m.country))) zoneCode = m.country;
   const byId = new Map(products.map((p) => [p.id, p]));
   const lines: PricedLine[] = inputs.map((i) => {
     const product = byId.get(i.productId);

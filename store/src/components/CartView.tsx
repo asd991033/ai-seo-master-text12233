@@ -65,12 +65,15 @@ export function ShippingPicker({ q }: { q: ReturnType<typeof useCartQuote> }) {
   if (!q.data) return null;
   return (
     <div className="space-y-3">
-      <label className="block">
-        <span className="label">{t.cart.shipTo}</span>
-        <select className="input" value={q.data.zoneCode ?? ""} onChange={(e) => setShipping(e.target.value, q.mode)}>
-          {q.data.zones.map((z) => <option key={z.code} value={z.code}>{z.name}</option>)}
-        </select>
-      </label>
+      {/* 統一運費時每個地區金額都一樣，不需要選運送地區 */}
+      {!q.data.shipping[0]?.flat && (
+        <label className="block">
+          <span className="label">{t.cart.shipTo}</span>
+          <select className="input" value={q.data.zoneCode ?? ""} onChange={(e) => setShipping(e.target.value, q.mode)}>
+            {q.data.zones.map((z) => <option key={z.code} value={z.code}>{z.name}</option>)}
+          </select>
+        </label>
+      )}
       {q.data.shipping[0]?.flat ? (
         <div className="rounded-xl border border-line bg-white p-3 text-sm" data-testid="flat-ship">
           <div className="flex items-baseline justify-between">
