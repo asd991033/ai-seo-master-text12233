@@ -1,30 +1,34 @@
 import Link from "@/components/Link";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { fmtDate } from "@/lib/format";
 import { Stars } from "@/components/Stars";
 import { ReviewImport } from "@/components/admin/ReviewImport";
-import { addReview, dedupeReviews, deleteReview, setReviewStatus } from "../review-actions";
+import { addReview, dedupeReviews, deleteReview, deleteReviewsByName, setReviewStatus } from "../review-actions";
 
 const TABS = [["pending", "待審核"], ["published", "已公開"], ["hidden", "已隱藏"]] as const;
 const SOURCE: Record<string, string> = { customer: "買家填寫", import: "Excel 匯入", admin: "後台代登" };
 const LIMIT = 200;
 
-export default async function AdminReviews({ searchParams }: { searchParams: Promise<{ status?: string; msg?: string }> }) {
+export default async function AdminReviews({ searchParams }: { searchParams: Promise<{ status?: string; msg?: string; q?: string }> }) {
   const sp = await searchParams;
   const status = TABS.find(([k]) => k === sp.status)?.[0] ?? "pending";
+  const q = (sp.q ?? "").trim();
+  const nameHas = q ? sql`instr(lower(${schema.reviews.authorName}), ${q.toLowerCase()}) > 0` : undefined;
   const [rows, counts] = await Promise.all([
     db
       .select({ r: schema.reviews, productName: schema.products.name, sku: schema.products.sku, slug: schema.products.slug, orderNo: schema.orders.orderNo })
       .from(schema.reviews)
       .innerJoin(schema.products, eq(schema.products.id, schema.reviews.productId))
       .leftJoin(schema.orders, eq(schema.orders.id, schema.reviews.orderId))
-      .where(eq(schema.reviews.status, status))
+      .where(and(eq(schema.reviews.status, status), nameHas))
       .orderBy(desc(schema.reviews.createdAt), desc(schema.reviews.id))
       .limit(LIMIT),
-    db.select({ status: schema.reviews.status, n: sql<number>`count(*)` }).from(schema.reviews).groupBy(schema.reviews.status),
+    db.select({ status: schema.reviews.status, n: sql<number>`count(*)` }).from(schema.reviews).where(nameHas).groupBy(schema.reviews.status),
   ]);
   const countOf = (s: string) => Number(counts.find((c) => c.status === s)?.n ?? 0);
+  const matched = counts.reduce((n, c) => n + Number(c.n), 0);
+  const qs = q ? `&q=${encodeURIComponent(q)}` : "";
   return (
     <>
       <h1 className="mb-2 text-2xl font-bold">商品評價</h1>
@@ -51,9 +55,24 @@ export default async function AdminReviews({ searchParams }: { searchParams: Pro
         </form>
       </div>
 
+      <div className="card mb-4 flex flex-wrap items-center gap-3 p-4 text-sm">
+        <form method="get" action="/admin/reviews" className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="status" value={status} />
+          <input name="q" defaultValue={q} placeholder="搜尋評價者名稱" aria-label="搜尋評價者名稱" className="input w-56" />
+          <button className="btn-ghost py-1.5">搜尋</button>
+          {q && <Link href={`/admin/reviews?status=${status}`} className="text-xs text-mute hover:text-forest">清除搜尋</Link>}
+        </form>
+        {q && (
+          <form action={deleteReviewsByName} className="ml-auto flex flex-wrap items-center gap-3">
+            <input type="hidden" name="q" value={q} />
+            <span className="text-xs text-mute">評價者名稱含「{q}」的評價共 {matched} 則（三個分頁合計）</span>
+            {matched > 0 && q.length >= 2 && <button className="btn-ghost py-1.5 text-danger">全部刪除這 {matched} 則</button>}
+          </form>
+        )}
+      </div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <nav className="flex flex-wrap gap-2">
-          {TABS.map(([k, label]) => <Link key={k} href={`/admin/reviews?status=${k}`} className={k === status ? "chip-on" : "chip"}>{label}（{countOf(k)}）</Link>)}
+          {TABS.map(([k, label]) => <Link key={k} href={`/admin/reviews?status=${k}${qs}`} className={k === status ? "chip-on" : "chip"}>{label}（{countOf(k)}）</Link>)}
         </nav>
         <form action={dedupeReviews} className="flex items-center gap-3">
           <span className="text-xs text-mute">同商品、同評價者、同星等、同內容的只留一則</span>

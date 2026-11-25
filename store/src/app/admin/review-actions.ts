@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
 import { removeDuplicateReviews } from "@/lib/reviews";
@@ -60,4 +60,17 @@ export async function dedupeReviews() {
   const n = await removeDuplicateReviews();
   revalidatePath("/", "layout");
   redirect(`/admin/reviews?msg=${encodeURIComponent(n ? `已清除 ${n} 則重複的評價` : "沒有重複的評價")}`);
+}
+
+/** 評價者名稱包含關鍵字（不分大小寫）的條件；後台搜尋與整批刪除共用 */
+const nameHas = (q: string) => sql`instr(lower(${schema.reviews.authorName}), ${q.toLowerCase()}) > 0`;
+
+/** 刪除評價者名稱包含關鍵字的全部評價（不分狀態） */
+export async function deleteReviewsByName(fd: FormData) {
+  await requireAdmin();
+  const q = String(fd.get("q") ?? "").trim();
+  if (q.length < 2) redirect(`/admin/reviews?msg=${encodeURIComponent("關鍵字至少要 2 個字")}`);
+  const gone = await db.delete(schema.reviews).where(nameHas(q)).returning({ id: schema.reviews.id });
+  revalidatePath("/", "layout");
+  redirect(`/admin/reviews?msg=${encodeURIComponent(`已刪除 ${gone.length} 則評價者名稱含「${q}」的評價`)}`);
 }
