@@ -16,6 +16,9 @@ import { site } from "@/config/site";
 import { IconBrush, IconLayers, IconTag, IconTruck } from "@/components/Icons";
 import { Configurator } from "@/components/Configurator";
 import { Gallery } from "@/components/Gallery";
+import { Stars } from "@/components/Stars";
+import { ProductReviews } from "@/components/Reviews";
+import { productReviews } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -40,11 +43,17 @@ export default async function ProductPage({ params }: Props) {
   const gallery = p.sampleImage ? [p.sampleImage, ...p.images] : p.images;
   const related = p.categorySlug ? await listProducts({ category: p.categorySlug, exclude: p.id, limit: 4 }) : [];
   const range = priceRange(p.pricing.tiers);
+  const reviews = await productReviews(p.id);
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4).map((u) => abs(u)),
     ...(p.categoryName ? { category: p.parentCategory ? `${p.parentCategory.name} > ${p.categoryName}` : p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
     ...(range ? { offers: { "@type": "AggregateOffer", priceCurrency: currentMarket().currency, lowPrice: range.min, highPrice: range.max, offerCount: p.pricing.tiers.length, availability: "https://schema.org/InStock", url: abs(`/products/${p.slug}`), itemCondition: "https://schema.org/NewCondition", seller: { "@id": `${baseUrl()}/#org` }, shippingDetails: shippingLd() } } : {}),
     url: abs(`/products/${p.slug}`), ...(p.material ? { material: p.material } : {}),
+    // 有公開評價時才輸出評分
+    ...(reviews.count ? {
+      aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.average, reviewCount: reviews.count, bestRating: 5, worstRating: 1 },
+      review: reviews.list.slice(0, 5).map((r) => ({ "@type": "Review", author: { "@type": "Person", name: r.authorName }, datePublished: new Date(r.createdAt * 1000).toISOString().slice(0, 10), reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 }, ...(r.title ? { name: r.title } : {}), reviewBody: r.body })),
+    } : {}),
   };
   const points = [[IconLayers, t.home.promise[0].t], [IconTag, t.home.promise[1].t], [IconBrush, t.home.promise[2].t], [IconTruck, t.home.promise[3].t]] as const;
   const specs: [string, string][] = [
@@ -71,6 +80,7 @@ export default async function ProductPage({ params }: Props) {
         </div>
         <div className="min-w-0">
           <h1 className="text-[26px] leading-[1.2] md:text-[30px]">{p.name}</h1>
+          {reviews.count > 0 && <a href="#reviews" className="mt-2 flex items-center gap-2 text-[12.5px] text-mute hover:text-ink"><Stars value={reviews.average} label={t.reviews.stars(reviews.average)} /><span>{reviews.average.toFixed(1)}・{t.reviews.count(reviews.count)}</span></a>}
           {range && <div className="mt-3 flex items-baseline gap-2"><span className="text-[19px] font-medium">{fmtMoney(range.min)}</span><span className="text-[13px] text-mute">{t.products.from}・{t.product.perPiece}</span></div>}
           <ul className="mt-4 list-disc space-y-1 pl-5 text-[12.5px] text-mute">
             {p.summary && <li>{p.summary}</li>}
@@ -130,6 +140,8 @@ export default async function ProductPage({ params }: Props) {
         </dl>
       </div>
     </section>
+
+    <ProductReviews data={reviews} />
 
     <MethodStrip eyebrow={t.product.methodsEyebrow} title={t.product.methodsTitle} more={t.product.methodsAll} href="/guide#methods" items={t.home.methods} />
 

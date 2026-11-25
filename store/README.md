@@ -24,6 +24,7 @@ npm run dev               # http://localhost:3000
 | 空運 / 海運運費（實重、材積重、CBM、級距） | `src/lib/shipping.ts`，後台 `/admin/shipping` |
 | 產品、刀模、圖片批量匯入 | 後台 `/admin/import`，`src/lib/importer.ts`、`src/lib/excel.ts` |
 | 購物車、結帳、會員、訂單、後台訂單管理 | `src/app/*` |
+| 商品評價：買家在已出貨訂單頁評價、後台審核、Excel 批量匯入（每列需對應本站訂單） | 後台 `/admin/reviews`，`src/lib/reviews.ts`、`src/lib/review-rules.ts` |
 
 下單時伺服器一律重新計價（`src/lib/checkout.ts`），不採信前端金額。
 

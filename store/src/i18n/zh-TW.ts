@@ -279,6 +279,11 @@ const dict = {
     feedDesc: (name: string) => `${name}，可線上排版印上你的 Logo、圖案或文字，一件起訂。`,
     feedChannel: "商品",
   },
+  reviews: {
+    eyebrow: "評價", title: "顧客評價", count: (n: number) => `${n} 則評價`, stars: (n: number) => `${n} 顆星（滿分 5）`, verified: "已驗證購買", more: (n: number) => `顯示最新 ${n} 則`,
+    writeTitle: "評價這次購買的商品", writeLead: "收到商品了嗎？留下你的使用心得，審核後會顯示在商品頁。", rating: "星等", name: "顯示名稱", headline: "標題（選填）", body: "評價內容", submit: "送出評價",
+    sent: "評價已送出，謝謝你！審核後會顯示在商品頁。", failed: "評價沒有送出，請確認星等與內容後再試一次。", yours: "你的評價", statusPending: "審核中", statusPublished: "已公開", statusHidden: "未公開",
+  },
   common: { loading: "載入中…", save: "儲存", cancel: "取消", close: "關閉", required: "必填", notFound: "找不到頁面", backHome: "回首頁" },
 };
 

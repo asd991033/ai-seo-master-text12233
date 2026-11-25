@@ -12,10 +12,12 @@ import { checkOrderPayment } from "@/lib/stripe-sync";
 import { ecpayEnabled } from "@/lib/ecpay";
 import { PurchaseEvent } from "@/components/PurchaseEvent";
 import { OrderDetail, StatusBadge } from "@/components/OrderDetail";
+import { OrderReviews } from "@/components/Reviews";
+import { orderReviewState } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrderPage({ params, searchParams }: { params: Promise<{ orderNo: string }>; searchParams: Promise<{ new?: string; paid?: string; key?: string }> }) {
+export default async function OrderPage({ params, searchParams }: { params: Promise<{ orderNo: string }>; searchParams: Promise<{ new?: string; paid?: string; key?: string; review?: string }> }) {
   await initMarket();
   const { orderNo } = await params;
   const sp = await searchParams;
@@ -26,6 +28,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const order = sp.paid === "1" && !found.paid && (await checkOrderPayment(found)) ? (await orderFor(orderNo, sp.key)) ?? found : found;
   const guest = !(await getUser()), k = keyQs(order, "&");
   const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
+  const reviewItems = await orderReviewState(order, items);
   const isNew = sp.new === "1", paidBack = sp.paid === "1";
   const stripe = marketOf(order.market).payment === "stripe", canPay = stripe ? stripeEnabled() : ecpayEnabled();
   return (
@@ -58,6 +61,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           items={items.map((i) => ({ item_id: i.sku, item_name: i.name, quantity: i.qty, price: i.unitPrice }))} />
       )}
       <OrderDetail order={order} items={items} />
+      <OrderReviews orderNo={order.orderNo} accessKey={sp.key && order.accessKey ? order.accessKey : null} defaultName={order.contactName} flag={sp.review} items={reviewItems} />
     </div>
   );
 }

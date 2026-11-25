@@ -279,6 +279,11 @@ export default function en(m: Market): Dict {
       feedDesc: (name: string) => `${name}. Design it online with your logo, artwork or text and order from a single piece.`,
       feedChannel: "products",
     },
+    reviews: {
+      eyebrow: "Reviews", title: "Customer reviews", count: (n: number) => `${n} review${n === 1 ? "" : "s"}`, stars: (n: number) => `${n} out of 5 stars`, verified: "Verified purchase", more: (n: number) => `Showing the latest ${n}`,
+      writeTitle: "Review the items in this order", writeLead: "Received your order? Tell us how it turned out. Reviews appear on the product page once approved.", rating: "Rating", name: "Display name", headline: "Title (optional)", body: "Your review", submit: "Submit review",
+      sent: "Thanks for your review! It will appear on the product page once approved.", failed: "Your review was not submitted. Please check the rating and text and try again.", yours: "Your review", statusPending: "Awaiting approval", statusPublished: "Published", statusHidden: "Not published",
+    },
     common: { loading: "Loading…", save: "Save", cancel: "Cancel", close: "Close", required: "Required", notFound: "Page not found", backHome: "Back to home" },
   };
 }

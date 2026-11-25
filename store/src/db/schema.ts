@@ -323,3 +323,27 @@ export const posts = sqliteTable("posts", {
   publishedAt: integer("published_at").notNull().default(now),
   updatedAt: integer("updated_at").notNull().default(now),
 });
+
+/**
+ * 商品評價。
+ * verified：對得到本站一張已付款、已出貨的訂單，而且訂單裡有這件商品，前台才會標示「已驗證購買」。
+ * source：customer＝買家在訂單頁自己寫的；import＝後台 Excel 批量匯入（每列都要有訂單編號）；admin＝後台單筆代登。
+ */
+export const reviews = sqliteTable(
+  "reviews",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+    authorName: text("author_name").notNull(),
+    rating: integer("rating").notNull(),
+    title: text("title").notNull().default(""),
+    body: text("body").notNull(),
+    status: text("status", { enum: ["pending", "published", "hidden"] }).notNull().default("pending"),
+    source: text("source", { enum: ["customer", "import", "admin"] }).notNull().default("customer"),
+    verified: integer("verified", { mode: "boolean" }).notNull().default(false),
+    /** 評價日期 */
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [uniqueIndex("reviews_order_product_uq").on(t.orderId, t.productId), index("reviews_product").on(t.productId, t.status)],
+);

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "管理後台" };
 
 const NAV = [
-  ["/admin", "總覽"], ["/admin/orders", "訂單"], ["/admin/products", "產品"], ["/admin/import", "批量匯入"], ["/admin/blog", "部落格"], ["/admin/pricing", "定價設定"], ["/admin/methods", "印刷方式"], ["/admin/shipping", "運費設定"],
+  ["/admin", "總覽"], ["/admin/orders", "訂單"], ["/admin/products", "產品"], ["/admin/import", "批量匯入"], ["/admin/reviews", "評價"], ["/admin/blog", "部落格"], ["/admin/pricing", "定價設定"], ["/admin/methods", "印刷方式"], ["/admin/shipping", "運費設定"],
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
