@@ -298,12 +298,15 @@ export function Configurator({ p }: { p: ConfigProduct }) {
         <div className="card p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="font-bold">{t.product.shipTitle}</div>
-            <label className="flex items-center gap-2 text-sm text-mute">
-              {t.product.shipTo}
-              <select value={zoneCode} onChange={(e) => setZoneCode(e.target.value)} className="input w-auto py-1">
-                {p.zones.map((z) => <option key={z.code} value={z.code}>{z.name}</option>)}
-              </select>
-            </label>
+            {/* 統一運費時每個地區金額都一樣，不需要選運送地區 */}
+            {!(market.shipping.fee >= 0) && (
+              <label className="flex items-center gap-2 text-sm text-mute">
+                {t.product.shipTo}
+                <select value={zoneCode} onChange={(e) => setZoneCode(e.target.value)} className="input w-auto py-1">
+                  {p.zones.map((z) => <option key={z.code} value={z.code}>{z.name}</option>)}
+                </select>
+              </label>
+            )}
           </div>
           {pack && shipQuotes[0]?.flat ? (
             <div className="flex items-baseline justify-between rounded-xl border border-line p-3" data-testid="flat-ship">
