@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
-import { removeDuplicateReviews } from "@/lib/reviews";
+import { deleteReviewImport, removeDuplicateReviews } from "@/lib/reviews";
 import { canReviewOrder, cleanReview, parseReviewDate } from "@/lib/review-rules";
 
 const STATUSES = ["pending", "published", "hidden"] as const;
@@ -73,4 +73,14 @@ export async function deleteReviewsByName(fd: FormData) {
   const gone = await db.delete(schema.reviews).where(nameHas(q)).returning({ id: schema.reviews.id });
   revalidatePath("/", "layout");
   redirect(`/admin/reviews?msg=${encodeURIComponent(`已刪除 ${gone.length} 則評價者名稱含「${q}」的評價`)}`);
+}
+
+/** 刪除某次 Excel 上傳匯入的全部評價 */
+export async function deleteImportBatch(fd: FormData) {
+  await requireAdmin();
+  const id = Number(fd.get("id")) || 0;
+  if (!id) return;
+  const n = await deleteReviewImport(id);
+  revalidatePath("/", "layout");
+  redirect(`/admin/reviews?msg=${encodeURIComponent(`已刪除這次匯入的 ${n} 則評價`)}`);
 }

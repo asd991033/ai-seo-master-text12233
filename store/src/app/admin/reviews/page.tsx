@@ -4,9 +4,11 @@ import { db, schema } from "@/db";
 import { fmtDate } from "@/lib/format";
 import { Stars } from "@/components/Stars";
 import { ReviewImport } from "@/components/admin/ReviewImport";
-import { addReview, dedupeReviews, deleteReview, deleteReviewsByName, setReviewStatus } from "../review-actions";
+import { listReviewImports } from "@/lib/reviews";
+import { addReview, deleteImportBatch, dedupeReviews, deleteReview, deleteReviewsByName, setReviewStatus } from "../review-actions";
 
 const TABS = [["pending", "待審核"], ["published", "已公開"], ["hidden", "已隱藏"]] as const;
+const fmtDateTime = (unix: number) => new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Taipei" }).format(new Date(unix * 1000));
 const SOURCE: Record<string, string> = { customer: "買家填寫", import: "Excel 匯入", admin: "後台代登" };
 const LIMIT = 200;
 
@@ -15,7 +17,8 @@ export default async function AdminReviews({ searchParams }: { searchParams: Pro
   const status = TABS.find(([k]) => k === sp.status)?.[0] ?? "pending";
   const q = (sp.q ?? "").trim();
   const nameHas = q ? sql`instr(lower(${schema.reviews.authorName}), ${q.toLowerCase()}) > 0` : undefined;
-  const [rows, counts] = await Promise.all([
+  const [imports, rows, counts] = await Promise.all([
+    listReviewImports(),
     db
       .select({ r: schema.reviews, productName: schema.products.name, sku: schema.products.sku, slug: schema.products.slug, orderNo: schema.orders.orderNo })
       .from(schema.reviews)
@@ -54,6 +57,25 @@ export default async function AdminReviews({ searchParams }: { searchParams: Pro
           <button className="btn-primary">新增評價</button>
         </form>
       </div>
+
+      {imports.length > 0 && (
+        <section className="card mb-10 p-6 text-sm">
+          <h2 className="text-lg font-bold">匯入紀錄</h2>
+          <p className="mt-1 text-mute">每次上傳的檔案一筆。上傳錯了可以把那一次匯入的評價整批刪除，不影響其他評價。</p>
+          <ul className="mt-4 divide-y divide-line">
+            {imports.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                <span className="font-medium break-all">{b.fileName || "（未命名檔案）"}</span>
+                <span className="text-xs text-mute">{fmtDateTime(b.createdAt)}・匯入 {b.imported} 則{b.left !== b.imported && <>・目前剩 {b.left} 則</>}</span>
+                <form action={deleteImportBatch} className="ml-auto">
+                  <input type="hidden" name="id" value={b.id} />
+                  <button className="btn-ghost py-1.5 text-danger">{b.left > 0 ? `刪除這次匯入的 ${b.left} 則` : "移除紀錄"}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="card mb-4 flex flex-wrap items-center gap-3 p-4 text-sm">
         <form method="get" action="/admin/reviews" className="flex flex-wrap items-center gap-2">

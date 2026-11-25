@@ -113,7 +113,7 @@ export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: Re
 }
 
 /** 檢查每一列後整批寫入；有任何錯誤就完全不寫入。匯入的評價一律標示已驗證購買（由店家確認是真實買家） */
-export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; imported: number; skipped: number; errors: string[] }> {
+export async function importReviews(rows: ReviewRow[], fileName = ""): Promise<{ ok: boolean; imported: number; skipped: number; errors: string[] }> {
   const errors: string[] = [];
   const err = (r: ReviewRow, msg: string) => { if (errors.length < 100) errors.push(`第 ${r.rowNo} 列：${msg}`); };
   const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))];
@@ -166,7 +166,13 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
     values.push({ ...base, productId: item.productId, orderId: order.id, verified: true });
   }
   if (errors.length) return { ok: false, imported: 0, skipped: 0, errors };
-  await db.transaction(async (tx) => { for (const c of chunk(values, 100)) await tx.insert(schema.reviews).values(c); });
+  if (values.length) {
+    await db.transaction(async (tx) => {
+      // 記下這次上傳，之後可以在後台整批刪除這個檔案匯入的評價
+      const [batch] = await tx.insert(schema.reviewImports).values({ fileName: fileName.slice(0, 200), imported: values.length }).returning({ id: schema.reviewImports.id });
+      for (const c of chunk(values, 100)) await tx.insert(schema.reviews).values(c.map((v) => ({ ...v, importId: batch.id })));
+    });
+  }
   return { ok: true, imported: values.length, skipped, errors: [] };
 }
 
@@ -190,4 +196,23 @@ export async function removeDuplicateReviews(): Promise<number> {
   }
   for (let i = 0; i < remove.length; i += 200) await db.delete(schema.reviews).where(inArray(schema.reviews.id, remove.slice(i, i + 200)));
   return remove.length;
+}
+
+/* ───────── 匯入紀錄 ───────── */
+
+/** 最近的匯入紀錄，left = 這次匯入的評價目前還剩幾則 */
+export async function listReviewImports(limit = 20) {
+  const batches = await db.select().from(schema.reviewImports).orderBy(desc(schema.reviewImports.id)).limit(limit);
+  if (!batches.length) return [];
+  const left = await db.select({ importId: schema.reviews.importId, n: sql<number>`count(*)` }).from(schema.reviews).where(inArray(schema.reviews.importId, batches.map((b) => b.id))).groupBy(schema.reviews.importId);
+  return batches.map((b) => ({ ...b, left: Number(left.find((l) => l.importId === b.id)?.n ?? 0) }));
+}
+
+/** 刪除某次上傳匯入的全部評價與那筆紀錄；回傳刪掉幾則 */
+export async function deleteReviewImport(id: number): Promise<number> {
+  return db.transaction(async (tx) => {
+    const gone = await tx.delete(schema.reviews).where(eq(schema.reviews.importId, id)).returning({ id: schema.reviews.id });
+    await tx.delete(schema.reviewImports).where(eq(schema.reviewImports.id, id));
+    return gone.length;
+  });
 }

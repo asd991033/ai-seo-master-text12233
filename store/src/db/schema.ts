@@ -329,6 +329,14 @@ export const posts = sqliteTable("posts", {
  * verified：對得到本站一張已付款、已出貨的訂單，而且訂單裡有這件商品，前台才會標示「已驗證購買」。
  * source：customer＝買家在訂單頁自己寫的；import＝後台 Excel 批量匯入（每列都要有訂單編號）；admin＝後台單筆代登。
  */
+/** 評價的 Excel 匯入紀錄：每上傳一個檔案一筆 */
+export const reviewImports = sqliteTable("review_imports", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  fileName: text("file_name").notNull().default(""),
+  imported: integer("imported").notNull().default(0),
+  createdAt: integer("created_at").notNull().default(now),
+});
+
 export const reviews = sqliteTable(
   "reviews",
   {
@@ -342,6 +350,8 @@ export const reviews = sqliteTable(
     status: text("status", { enum: ["pending", "published", "hidden"] }).notNull().default("pending"),
     source: text("source", { enum: ["customer", "import", "admin"] }).notNull().default("customer"),
     verified: integer("verified", { mode: "boolean" }).notNull().default(false),
+    /** Excel 匯入的批次（reviewImports.id），用來整批刪除某次上傳的評價 */
+    importId: integer("import_id"),
     /** 評價日期 */
     createdAt: integer("created_at").notNull().default(now),
   },

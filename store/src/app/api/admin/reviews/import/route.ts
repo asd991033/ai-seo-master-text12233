@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, errors: [`無法讀取檔案（${e instanceof Error ? e.message : String(e)}）。請用 Excel「另存新檔」成 .xlsx 或 CSV 後再上傳`] }, { status: 400 });
   }
   if (parsed.errors.length) return NextResponse.json({ ok: false, errors: parsed.errors }, { status: 400 });
-  const result = await importReviews(parsed.rows);
-  if (result.ok) revalidatePath("/admin/reviews");
+  const result = await importReviews(parsed.rows, file.name);
+  if (result.ok) revalidatePath("/", "layout");
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }
