@@ -274,7 +274,7 @@ export default function en(m: Market): Dict {
       catTitle: (cat: string) => `Custom ${cat}`,
       catDesc: (cat: string, n: number) => `${n} customisable products in ${cat}. No minimum order, lower unit prices at higher quantities, and a live preview as you design online.`,
       allDesc: `Custom printed gifts and merchandise delivered to ${m.countryName}: home, bags, apparel, accessories and tech. No minimum order, with a live preview as you design online.`,
-      imageN: (alt: string, n: number) => `${alt} - image ${n}`, printable: "printable area", otherAngle: "another angle",
+      imageN: (alt: string, n: number) => `${alt} - image ${n}`, printable: "printable area", sampleAlt: (name: string) => `${name} with a custom print, shown in use`, otherAngle: "another angle",
       feedTitle: (name: string, material: string) => `${name}${material && !name.toLowerCase().includes(material.toLowerCase()) ? ` - ${material}` : ""} - Print Your Logo or Design`,
       feedDesc: (name: string) => `${name}. Design it online with your logo, artwork or text and order from a single piece.`,
       feedChannel: "products",

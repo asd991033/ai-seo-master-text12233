@@ -274,7 +274,7 @@ const dict = {
     catTitle: (cat: string) => `${cat}客製化印刷`,
     catDesc: (cat: string, n: number) => `${cat}共 ${n} 款可客製化商品，一件起訂、數量越多單價越低，線上排版即時看效果圖。`,
     allDesc: "居家、包袋、服飾、配件、3C 周邊，全部可以客製。一件起訂，線上排版即時看效果圖。",
-    imageN: (alt: string, n: number) => `${alt}｜圖片 ${n}`, printable: "可印刷範圍", otherAngle: "另一個角度",
+    imageN: (alt: string, n: number) => `${alt}｜圖片 ${n}`, printable: "可印刷範圍", sampleAlt: (name: string) => `${name}｜客製印刷成品情境示意圖`, otherAngle: "另一個角度",
     feedTitle: (name: string, material: string) => `${name}${material && !name.includes(material) ? `｜${material}` : ""}｜可印 Logo 與圖案`,
     feedDesc: (name: string) => `${name}，可線上排版印上你的 Logo、圖案或文字，一件起訂。`,
     feedChannel: "商品",

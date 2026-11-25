@@ -15,7 +15,7 @@ export function ProductCard({ p }: { p: Card }) {
       <div className="relative aspect-square overflow-hidden rounded-[10px] bg-sand">
         {main && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={main} alt={p.name} loading="lazy" className={`h-full w-full object-cover transition duration-500 ${hover ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`} />
+          <img src={main} alt={p.sampleImage ? t.meta.sampleAlt(p.name) : p.name} loading="lazy" className={`h-full w-full object-cover transition duration-500 ${hover ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"}`} />
         )}
         {hover && (
           // eslint-disable-next-line @next/next/no-img-element
