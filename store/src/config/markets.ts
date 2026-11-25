@@ -91,3 +91,10 @@ export function localPhone(phone: string, dial: string): string {
   const p = phone.replace(/[\s-]/g, "");
   return p.startsWith(dial) ? `0${p.slice(dial.length)}` : p;
 }
+
+/**
+ * 暫時不顯示商品評價的站台（逗號分隔的站台代碼）。預設隱藏台灣站；
+ * 要重新顯示就把環境變數 NEXT_PUBLIC_HIDE_REVIEWS 設成空字串。評價資料本身不會被刪除。
+ */
+const HIDE_REVIEWS = new Set((process.env.NEXT_PUBLIC_HIDE_REVIEWS ?? "tw").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean));
+export const reviewsHidden = (marketCode: string) => HIDE_REVIEWS.has(marketCode.toLowerCase());

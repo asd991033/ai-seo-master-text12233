@@ -19,6 +19,7 @@ import { Gallery } from "@/components/Gallery";
 import { Stars } from "@/components/Stars";
 import { ProductReviews } from "@/components/Reviews";
 import { productReviews } from "@/lib/reviews";
+import { reviewsHidden } from "@/config/markets";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,8 @@ export default async function ProductPage({ params }: Props) {
   const gallery = p.sampleImage ? [p.sampleImage, ...p.images] : p.images;
   const related = p.categorySlug ? await listProducts({ category: p.categorySlug, exclude: p.id, limit: 4 }) : [];
   const range = priceRange(p.pricing.tiers);
-  const reviews = await productReviews(p.id);
+  // 隱藏評價的站台：星等、評價列表與評價的結構化資料都不輸出
+  const reviews = reviewsHidden(mkt.code) ? { count: 0, average: 0, list: [] } : await productReviews(p.id);
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.summary || p.name, image: gallery.slice(0, 4).map((u) => abs(u)),
     ...(p.categoryName ? { category: p.parentCategory ? `${p.parentCategory.name} > ${p.categoryName}` : p.categoryName } : {}), brand: { "@type": "Brand", name: site.brand },
