@@ -27,7 +27,7 @@ export async function orderReviewState(order: { id: number; paid: boolean; statu
 /* ───────── Excel 批量匯入 ───────── */
 
 const COLS = [
-  ["訂單編號 *", "orderNo"], ["SKU *", "sku"], ["評價者名稱 *", "authorName"], ["星等 * (1–5)", "rating"], ["標題", "title"], ["評價內容 *", "body"], ["評價日期", "date"],
+  ["SKU *", "sku"], ["訂單編號", "orderNo"], ["評價者名稱 *", "authorName"], ["星等 * (1–5)", "rating"], ["標題", "title"], ["評價內容 *", "body"], ["評價日期", "date"],
 ] as const;
 type RowKey = (typeof COLS)[number][1];
 export type ReviewRow = Partial<Record<RowKey, string>> & { rowNo: number };
@@ -36,12 +36,13 @@ const MAX_ROWS = 5000;
 
 const NOTES = [
   "【填寫說明】",
-  "1. 每一列是一則評價，必須對應本站一張「已付款、已出貨或已完成」的訂單，而且該訂單裡有這個 SKU。對不到訂單的列不會匯入。",
-  "2. 同一張訂單的同一件商品只能有一則評價；已經有評價的不會重複匯入。",
-  "3. 評價者名稱與內容請照買家原文填寫。星等為 1–5 的整數。",
-  "4. 評價日期格式 YYYY-MM-DD，不能早於下單日、不能是未來日期；留空則用匯入當下的時間。",
-  "5. 只要有任何一列有問題，整個檔案都不會匯入，請依錯誤訊息修正後重新上傳。",
-  "6. 匯入的評價會直接公開，並標示「已驗證購買」。範本中的示範列匯入前請刪除。",
+  "1. 每一列是一則評價，SKU 必須是本站已有的商品。",
+  "2. 訂單編號可以留空。有填的話，必須是本站「已付款、已出貨或已完成」而且買了這個 SKU 的訂單，這則評價才會標示「已驗證購買」；留空的評價照常匯入，但不帶這個標示。",
+  "3. 同一張訂單的同一件商品只能有一則評價；已經有評價的不會重複匯入。",
+  "4. 評價者名稱與內容請照買家原文填寫。星等為 1–5 的整數。",
+  "5. 評價日期格式 YYYY-MM-DD，不能是未來日期（有填訂單編號時也不能早於下單日）；留空則用匯入當下的時間。",
+  "6. 只要有任何一列有問題，整個檔案都不會匯入，請依錯誤訊息修正後重新上傳。",
+  "7. 匯入的評價會直接公開。範本中的示範列匯入前請刪除。",
 ];
 
 export async function buildReviewTemplate(): Promise<Buffer> {
@@ -51,7 +52,7 @@ export async function buildReviewTemplate(): Promise<Buffer> {
   ws.getRow(1).font = { bold: true };
   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1ECE3" } };
   ws.views = [{ state: "frozen", ySplit: 1 }];
-  ws.addRow({ orderNo: "（訂單編號）", sku: "BAG-DEMO-01", authorName: "王小明", rating: 5, title: "印刷很清楚", body: "顏色跟預覽幾乎一樣，車線也很整齊。", date: "2026-01-15" });
+  ws.addRow({ sku: "BAG-DEMO-01", orderNo: "", authorName: "王小明", rating: 5, title: "印刷很清楚", body: "顏色跟預覽幾乎一樣，車線也很整齊。", date: "2026-01-15" });
   const notes = wb.addWorksheet("說明");
   notes.getColumn(1).width = 120;
   NOTES.forEach((line) => notes.addRow([line]));
@@ -82,7 +83,7 @@ export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: Re
     if (hit) headers.set(col, hit[1]);
   });
   const missing = COLS.filter(([h, k]) => h.includes("*") && ![...headers.values()].includes(k)).map(([h]) => h);
-  if (missing.length) return { rows: [], errors: [`找不到必要欄位：${missing.join("、")}。請使用範本的標題列（每則評價都需要訂單編號）`] };
+  if (missing.length) return { rows: [], errors: [`找不到必要欄位：${missing.join("、")}。請使用範本的標題列`] };
   const rows: ReviewRow[] = [];
   ws.eachRow((row, rowNo) => {
     if (rowNo === 1) return;
@@ -99,7 +100,7 @@ export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: Re
   return { rows, errors: [] };
 }
 
-/** 檢查每一列都對得到真實訂單後整批寫入；有任何錯誤就完全不寫入 */
+/** 檢查每一列後整批寫入；有任何錯誤就完全不寫入。有填訂單編號且對得上的才標示已驗證購買 */
 export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; imported: number; errors: string[] }> {
   const errors: string[] = [];
   const err = (r: ReviewRow, msg: string) => { if (errors.length < 100) errors.push(`第 ${r.rowNo} 列：${msg}`); };
@@ -114,28 +115,37 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
     Promise.all(chunk(orderIds).map((c) => db.select({ orderId: schema.orderItems.orderId, productId: schema.orderItems.productId, sku: schema.orderItems.sku }).from(schema.orderItems).where(inArray(schema.orderItems.orderId, c)))).then((x) => x.flat()),
     Promise.all(chunk(orderIds).map((c) => db.select({ orderId: schema.reviews.orderId, productId: schema.reviews.productId }).from(schema.reviews).where(inArray(schema.reviews.orderId, c)))).then((x) => x.flat()),
   ]);
+  const skus = uniq(rows.filter((r) => !r.orderNo).map((r) => r.sku?.toLowerCase()));
+  const products = (await Promise.all(chunk(skus).map((c) => db.select({ id: schema.products.id, sku: schema.products.sku }).from(schema.products).where(inArray(sql`lower(${schema.products.sku})`, c))))).flat();
+  const productBySku = new Map(products.map((p) => [p.sku.toLowerCase(), p.id]));
   const taken = new Set(existing.map((e) => `${e.orderId}:${e.productId}`));
   const nowSec = Math.floor(Date.now() / 1000);
   const values: (typeof schema.reviews.$inferInsert)[] = [];
 
   for (const r of rows) {
-    if (!r.orderNo) { err(r, "缺少訂單編號"); continue; }
     if (!r.sku) { err(r, "缺少 SKU"); continue; }
-    const order = orderByNo.get(r.orderNo);
-    if (!order) { err(r, `找不到訂單 ${r.orderNo}`); continue; }
-    if (!canReviewOrder(order)) { err(r, `訂單 ${r.orderNo} 尚未付款或尚未出貨，不能評價`); continue; }
-    const item = items.find((i) => i.orderId === order.id && i.sku.toLowerCase() === r.sku!.toLowerCase());
-    if (!item) { err(r, `訂單 ${r.orderNo} 裡沒有商品 ${r.sku}`); continue; }
     const cleaned = cleanReview(r);
     if (!cleaned.ok) { err(r, cleaned.error); continue; }
     const date = parseReviewDate(r.date);
     if (date === null) { err(r, `評價日期格式錯誤：${r.date}（請用 YYYY-MM-DD）`); continue; }
     if (date !== undefined && date > nowSec) { err(r, "評價日期不能是未來"); continue; }
+    const base = { ...cleaned.value, status: "published" as const, source: "import" as const, createdAt: date ?? nowSec };
+    if (!r.orderNo) {
+      const productId = productBySku.get(r.sku.toLowerCase());
+      if (!productId) { err(r, `找不到 SKU「${r.sku}」`); continue; }
+      values.push({ ...base, productId, orderId: null, verified: false });
+      continue;
+    }
+    const order = orderByNo.get(r.orderNo);
+    if (!order) { err(r, `找不到訂單 ${r.orderNo}（沒有本站訂單的評價請把訂單編號留空）`); continue; }
+    if (!canReviewOrder(order)) { err(r, `訂單 ${r.orderNo} 尚未付款或尚未出貨，不能評價`); continue; }
+    const item = items.find((i) => i.orderId === order.id && i.sku.toLowerCase() === r.sku!.toLowerCase());
+    if (!item) { err(r, `訂單 ${r.orderNo} 裡沒有商品 ${r.sku}`); continue; }
     if (date !== undefined && date < order.createdAt - 86400) { err(r, "評價日期早於下單日"); continue; }
     const key = `${order.id}:${item.productId}`;
     if (taken.has(key)) { err(r, `訂單 ${r.orderNo} 的 ${r.sku} 已經有評價`); continue; }
     taken.add(key);
-    values.push({ ...cleaned.value, productId: item.productId, orderId: order.id, status: "published", source: "import", verified: true, createdAt: date ?? nowSec });
+    values.push({ ...base, productId: item.productId, orderId: order.id, verified: true });
   }
   if (errors.length) return { ok: false, imported: 0, errors };
   await db.transaction(async (tx) => { for (const c of chunk(values, 100)) await tx.insert(schema.reviews).values(c); });
