@@ -1,6 +1,8 @@
 import { t } from "@/i18n";
 import { fmtDate, fmtMoney as money, fmtNum } from "@/lib/format";
 import type { schema } from "@/db";
+import { marketOf } from "@/config/markets";
+import { trackingUrl } from "@/lib/ship-mail";
 import type { LineQuote } from "@/lib/pricing";
 
 type Order = typeof schema.orders.$inferSelect;
@@ -64,7 +66,14 @@ export function OrderDetail({ order, items, extra }: { order: Order; items: Item
           <div className="mb-2 font-bold">{t.order.ship}</div>
           <div>{order.zoneName}</div>
           <div className="text-xs text-mute">{t.cart.weight} {fmtNum(order.totalWeightKg)} kg・{t.cart.volume} {fmtNum(order.totalCbm)} CBM</div>
-          {order.trackingNo && <div>{t.order.tracking}：{order.trackingNo}</div>}
+          {order.trackingNo && (
+            <div className="space-y-1.5 py-1">
+              {order.trackingCarrier && <div>{t.order.carrier}：{order.trackingCarrier}</div>}
+              <div>{t.order.tracking}：<span className="font-medium break-all">{order.trackingNo}</span></div>
+              <a href={trackingUrl(order.trackingNo, marketOf(order.market).locale)} target="_blank" rel="noopener noreferrer" className="btn-ghost mt-1 inline-block py-1.5">{t.order.trackCta} ↗</a>
+              <div className="text-xs text-mute">{t.order.trackNote}</div>
+            </div>
+          )}
           <div className="border-t border-line pt-3 text-mute">
             <div className="text-ink">{order.contactName}　{order.contactPhone}</div>
             <div>{order.contactEmail}</div>

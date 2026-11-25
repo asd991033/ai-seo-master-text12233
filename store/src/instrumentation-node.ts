@@ -19,6 +19,10 @@ export function start() {
       const { sendPendingToSupplier, syncAllFromSupplier } = await import("@/lib/supplier");
       const sent = await sendPendingToSupplier(), synced = await syncAllFromSupplier();
       if (sent || synced) console.log(`[supplier] sent ${sent}, synced ${synced}`);
+      // 出貨通知信（放在同步物流單號之後，剛拿到單號的訂單這一輪就會寄）
+      const { sendShipNotices } = await import("@/lib/ship-notify");
+      const notified = await sendShipNotices();
+      if (notified) console.log(`[ship-mail] sent ${notified} shipping notice(s)`);
     } catch (e) {
       console.error("[supplier] scheduled job failed", e);
     }

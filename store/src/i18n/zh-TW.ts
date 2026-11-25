@@ -230,7 +230,7 @@ const dict = {
   },
   order: {
     title: "訂單", thanks: "訂單已成立，謝謝你！", no: "訂單編號", date: "下單時間", status: "狀態", payOnline: "這張訂單尚未付款", payNow: "前往付款", guestNote: "你是以訪客身分下單。請把這個頁面加入書籤或複製網址保存，之後用這個連結查看訂單進度與物流單號。", haveAccount: "已經有帳號？登入後結帳，訂單會記在會員中心。", signIn: "登入", paidOk: "付款成功，謝謝你！訂單已進入審稿。", paidPending: "已返回本站。若你選擇 ATM 或超商付款，完成繳費後訂單會自動更新為已付款。",
-    items: "訂購明細", ship: "運送", tracking: "物流單號", paid: "已付款", unpaid: "未付款", myOrders: "我的訂單", none: "還沒有訂單。", view: "查看",
+    items: "訂購明細", ship: "運送", tracking: "物流單號", carrier: "物流商", trackCta: "查看即時貨態", trackNote: "貨態由物流商提供，單號建立後約 1–2 天開始更新。", paid: "已付款", unpaid: "未付款", myOrders: "我的訂單", none: "還沒有訂單。", view: "查看",
     statuses: {
       pending_payment: "待付款", reviewing: "稿件審核中", in_production: "生產中", shipped: "已出貨", completed: "已完成", cancelled: "已取消",
     } as Record<string, string>,

@@ -109,7 +109,7 @@ export async function syncOrderFromSupplier(id: number) {
     if (res.status === 9 && ["reviewing", "in_production", "pending_payment"].includes(status)) status = "shipped";
     else if ([5, 8].includes(res.status) && status === "reviewing") status = "in_production";
     await db.update(schema.orders).set({
-      supplierStatus: res.status, supplierSyncedAt: now(), status, trackingNo: track || order.trackingNo,
+      supplierStatus: res.status, supplierSyncedAt: now(), status, trackingNo: track || order.trackingNo, trackingCarrier: res.logistic_info?.logistics_company_name?.trim().slice(0, 80) || order.trackingCarrier,
       supplierCost: res.platform_grand_total ? `¥${res.platform_grand_total}（貨款 ¥${res.platform_subtotal}＋運費 ¥${res.platform_shipping_amount}）` : order.supplierCost,
       supplierNote: (res.error_msg || "").replace(/<br\s*\/?>/g, "；") || `${HC_STATUS[res.status] ?? res.status}${res.logistic_info?.logistics_company_name ? `・${res.logistic_info.logistics_company_name}` : ""}`,
     }).where(eq(schema.orders.id, id));

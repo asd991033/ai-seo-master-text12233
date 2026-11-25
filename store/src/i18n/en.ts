@@ -230,7 +230,7 @@ export default function en(m: Market): Dict {
     },
     order: {
       title: "Order", thanks: "Thank you! Your order has been placed.", no: "Order number", date: "Placed on", status: "Status", payOnline: "This order has not been paid yet", payNow: "Pay now", guestNote: "You ordered as a guest. Please bookmark this page or save its link; use it to check your order status and tracking number later.", haveAccount: "Have an account? Sign in so the order is saved to it.", signIn: "Sign in", paidOk: "Payment received, thank you! Your order is now in review.", paidPending: "You are back on our site. If the payment went through, the order will update shortly.",
-      items: "Items", ship: "Delivery", tracking: "Tracking number", paid: "Paid", unpaid: "Unpaid", myOrders: "My orders", none: "No orders yet.", view: "View",
+      items: "Items", ship: "Delivery", tracking: "Tracking number", carrier: "Carrier", trackCta: "Track your parcel", trackNote: "Tracking is provided by the carrier and can take 1–2 days to start updating.", paid: "Paid", unpaid: "Unpaid", myOrders: "My orders", none: "No orders yet.", view: "View",
       statuses: {
         pending_payment: "Awaiting payment", reviewing: "Artwork in review", in_production: "In production", shipped: "Shipped", completed: "Completed", cancelled: "Cancelled",
       } as Record<string, string>,

@@ -251,6 +251,10 @@ export const orders = sqliteTable("orders", {
   totalWeightKg: real("total_weight_kg").notNull().default(0),
   totalCbm: real("total_cbm").notNull().default(0),
   trackingNo: text("tracking_no"),
+  /** 物流商名稱（供應商回傳），顯示給客戶看 */
+  trackingCarrier: text("tracking_carrier"),
+  /** 出貨通知信寄出的時間（每張訂單只寄一次） */
+  shipMailAt: integer("ship_mail_at"),
   /** 郵遞區號（送單給供應商時必填） */
   postcode: text("postcode"),
   /** 訂單專屬連結的鑰匙：沒登入的訪客用「訂單網址 + key」查看與付款 */
