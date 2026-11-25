@@ -8,7 +8,7 @@
  *   tsx src/db/migrate.ts          備份資料庫檔，補上缺少的欄位
  *   tsx src/db/migrate.ts verify   確認資料表與欄位都齊全，不齊就以錯誤結束（讓部署失敗、保留舊版繼續運作）
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readSync, statSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@libsql/client";
 import { is, SQL } from "drizzle-orm";
@@ -16,22 +16,62 @@ import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
 import * as schema from "./schema";
 
 const url = process.env.DATABASE_URL ?? "file:./data/store.db";
-const KEEP_BACKUPS = 14;
+const KEEP_BACKUPS = 5;
+const BACKUP_RE = /^store-\d{8}T\d{6}Z?\.db$/;
 
-/** 更新前先複製一份資料庫檔到同一個磁碟的 backups 資料夾 */
+/** 備份檔是否完整：檔案大小要達到 SQLite 檔頭記錄的頁數（磁碟滿時複製到一半的檔案會比較小） */
+function isComplete(file: string): boolean {
+  try {
+    const size = statSync(file).size;
+    if (size < 100) return false;
+    const head = Buffer.alloc(32);
+    const fd = openSync(file, "r");
+    try { readSync(fd, head, 0, 32, 0); } finally { closeSync(fd); }
+    if (head.toString("latin1", 0, 15) !== "SQLite format 3") return false;
+    const pageSize = head.readUInt16BE(16) === 1 ? 65536 : head.readUInt16BE(16);
+    return size >= pageSize * head.readUInt32BE(28);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 更新前先複製一份資料庫檔到同一個磁碟的 backups 資料夾。
+ * 備份不能讓網站起不來：磁碟空間不夠時先刪最舊的備份再試，真的放不下就略過這次備份繼續啟動。
+ */
 function backup() {
   if (!url.startsWith("file:")) return;
   const file = path.resolve(url.slice(5));
   if (!existsSync(file) || statSync(file).size === 0) return;
   const dir = path.join(path.dirname(file), "backups");
-  mkdirSync(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
-  const dest = path.join(dir, `store-${stamp}.db`);
-  copyFileSync(file, dest);
-  for (const ext of ["-wal", "-shm"]) if (existsSync(file + ext)) copyFileSync(file + ext, dest + ext);
-  const old = readdirSync(dir).filter((f) => /^store-\d{8}T\d{6}Z\.db$/.test(f)).sort().reverse().slice(KEEP_BACKUPS);
-  for (const f of old) for (const ext of ["", "-wal", "-shm"]) { const p = path.join(dir, f + ext); if (existsSync(p)) unlinkSync(p); }
-  console.log(`[migrate] backup saved: ${dest}`);
+  const remove = (name: string) => { for (const ext of ["", "-wal", "-shm"]) { try { unlinkSync(path.join(dir, name + ext)); } catch { /* 不存在 */ } } };
+  try {
+    mkdirSync(dir, { recursive: true });
+    // 舊到新；先清掉複製到一半的殘檔，再只留最近幾份
+    let old = readdirSync(dir).filter((f) => BACKUP_RE.test(f)).sort();
+    for (const f of old.filter((f) => !isComplete(path.join(dir, f)))) { remove(f); console.warn(`[migrate] removed incomplete backup: ${f}`); }
+    old = readdirSync(dir).filter((f) => BACKUP_RE.test(f)).sort();
+    while (old.length > KEEP_BACKUPS - 1) remove(old.shift()!);
+    const name = `store-${new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "")}.db`;
+    for (;;) {
+      try {
+        copyFileSync(file, path.join(dir, name));
+        for (const ext of ["-wal", "-shm"]) if (existsSync(file + ext)) copyFileSync(file + ext, path.join(dir, name + ext));
+        console.log(`[migrate] backup saved: ${path.join(dir, name)}`);
+        return;
+      } catch (e) {
+        remove(name);
+        if ((e as NodeJS.ErrnoException).code !== "ENOSPC") throw e;
+        // 至少保留最新的一份舊備份
+        if (old.length <= 1) { console.warn("[migrate] 磁碟空間不足，略過這次備份（請擴充磁碟或清理檔案）"); return; }
+        const victim = old.shift()!;
+        remove(victim);
+        console.warn(`[migrate] 磁碟空間不足，刪除最舊的備份 ${victim} 後重試`);
+      }
+    }
+  } catch (e) {
+    console.warn("[migrate] 備份失敗，略過（不影響啟動）", e);
+  }
 }
 
 const q = (s: string) => `\`${s.replace(/`/g, "")}\``;
