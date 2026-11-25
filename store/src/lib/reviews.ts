@@ -113,7 +113,7 @@ export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: Re
 }
 
 /** 檢查每一列後整批寫入；有任何錯誤就完全不寫入。匯入的評價一律標示已驗證購買（由店家確認是真實買家） */
-export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; imported: number; errors: string[] }> {
+export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; imported: number; skipped: number; errors: string[] }> {
   const errors: string[] = [];
   const err = (r: ReviewRow, msg: string) => { if (errors.length < 100) errors.push(`第 ${r.rowNo} 列：${msg}`); };
   const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))];
@@ -130,6 +130,9 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
   const skus = uniq(rows.filter((r) => !r.orderNo).map((r) => r.sku?.toLowerCase()));
   const products = (await Promise.all(chunk(skus).map((c) => db.select({ id: schema.products.id, sku: schema.products.sku }).from(schema.products).where(inArray(sql`lower(${schema.products.sku})`, c))))).flat();
   const productBySku = new Map(products.map((p) => [p.sku.toLowerCase(), p.id]));
+  // 沒有訂單編號的列：同商品、同評價者、同星等、同標題、同內容的評價已經存在就跳過，重複上傳同一個檔案不會多出來
+  const sameKeys = new Set((await Promise.all(chunk([...new Set(productBySku.values())]).map((c) => db.select().from(schema.reviews).where(inArray(schema.reviews.productId, c))))).flat().map(sameReviewKey));
+  let skipped = 0;
   const taken = new Set(existing.map((e) => `${e.orderId}:${e.productId}`));
   const nowSec = Math.floor(Date.now() / 1000);
   const values: (typeof schema.reviews.$inferInsert)[] = [];
@@ -145,6 +148,9 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
     if (!r.orderNo) {
       const productId = productBySku.get(r.sku.toLowerCase());
       if (!productId) { err(r, `找不到 SKU「${r.sku}」`); continue; }
+      const same = sameReviewKey({ ...cleaned.value, productId });
+      if (sameKeys.has(same)) { skipped++; continue; }
+      sameKeys.add(same);
       values.push({ ...base, productId, orderId: null, verified: true });
       continue;
     }
@@ -159,7 +165,29 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
     taken.add(key);
     values.push({ ...base, productId: item.productId, orderId: order.id, verified: true });
   }
-  if (errors.length) return { ok: false, imported: 0, errors };
+  if (errors.length) return { ok: false, imported: 0, skipped: 0, errors };
   await db.transaction(async (tx) => { for (const c of chunk(values, 100)) await tx.insert(schema.reviews).values(c); });
-  return { ok: true, imported: values.length, errors: [] };
+  return { ok: true, imported: values.length, skipped, errors: [] };
+}
+
+/* ───────── 重複評價 ───────── */
+
+const sameReviewKey = (r: { productId: number; authorName: string; rating: number; title: string; body: string }) => JSON.stringify([r.productId, r.authorName, r.rating, r.title, r.body]);
+
+/**
+ * 刪除重複的評價：同商品、同評價者、同星等、同標題、同內容的只留一則。
+ * 有對應訂單的評價一律保留（那是不同訂單各自的評價），只刪沒有訂單的重複項。
+ */
+export async function removeDuplicateReviews(): Promise<number> {
+  const all = await db.select({ id: schema.reviews.id, productId: schema.reviews.productId, orderId: schema.reviews.orderId, authorName: schema.reviews.authorName, rating: schema.reviews.rating, title: schema.reviews.title, body: schema.reviews.body }).from(schema.reviews).orderBy(schema.reviews.id);
+  const kept = new Set(all.filter((r) => r.orderId != null).map(sameReviewKey));
+  const remove: number[] = [];
+  for (const r of all) {
+    if (r.orderId != null) continue;
+    const key = sameReviewKey(r);
+    if (kept.has(key)) remove.push(r.id);
+    else kept.add(key);
+  }
+  for (let i = 0; i < remove.length; i += 200) await db.delete(schema.reviews).where(inArray(schema.reviews.id, remove.slice(i, i + 200)));
+  return remove.length;
 }

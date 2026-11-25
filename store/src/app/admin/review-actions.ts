@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/auth";
+import { removeDuplicateReviews } from "@/lib/reviews";
 import { canReviewOrder, cleanReview, parseReviewDate } from "@/lib/review-rules";
 
 const STATUSES = ["pending", "published", "hidden"] as const;
@@ -52,4 +53,11 @@ export async function addReview(fd: FormData) {
   await db.insert(schema.reviews).values({ ...cleaned.value, productId: product.id, orderId, status: "published", source: "admin", verified: orderId != null, createdAt: date ?? nowSec });
   revalidatePath("/admin/reviews");
   back("已新增評價");
+}
+
+export async function dedupeReviews() {
+  await requireAdmin();
+  const n = await removeDuplicateReviews();
+  revalidatePath("/", "layout");
+  redirect(`/admin/reviews?msg=${encodeURIComponent(n ? `已清除 ${n} 則重複的評價` : "沒有重複的評價")}`);
 }

@@ -4,7 +4,7 @@ import { db, schema } from "@/db";
 import { fmtDate } from "@/lib/format";
 import { Stars } from "@/components/Stars";
 import { ReviewImport } from "@/components/admin/ReviewImport";
-import { addReview, deleteReview, setReviewStatus } from "../review-actions";
+import { addReview, dedupeReviews, deleteReview, setReviewStatus } from "../review-actions";
 
 const TABS = [["pending", "待審核"], ["published", "已公開"], ["hidden", "已隱藏"]] as const;
 const SOURCE: Record<string, string> = { customer: "買家填寫", import: "Excel 匯入", admin: "後台代登" };
@@ -51,9 +51,15 @@ export default async function AdminReviews({ searchParams }: { searchParams: Pro
         </form>
       </div>
 
-      <nav className="mb-4 flex flex-wrap gap-2">
-        {TABS.map(([k, label]) => <Link key={k} href={`/admin/reviews?status=${k}`} className={k === status ? "chip-on" : "chip"}>{label}（{countOf(k)}）</Link>)}
-      </nav>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex flex-wrap gap-2">
+          {TABS.map(([k, label]) => <Link key={k} href={`/admin/reviews?status=${k}`} className={k === status ? "chip-on" : "chip"}>{label}（{countOf(k)}）</Link>)}
+        </nav>
+        <form action={dedupeReviews} className="flex items-center gap-3">
+          <span className="text-xs text-mute">同商品、同評價者、同星等、同內容的只留一則</span>
+          <button className="btn-ghost py-1.5">清除重複評價</button>
+        </form>
+      </div>
       {rows.length === 0 ? <p className="card p-6 text-sm text-mute">這個分類目前沒有評價。</p> : (
         <ul className="space-y-3">
           {rows.map(({ r, productName, sku, slug, orderNo }) => (
