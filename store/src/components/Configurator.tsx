@@ -134,7 +134,16 @@ export function Configurator({ p }: { p: ConfigProduct }) {
     if (!chosen.length) {
       const first = p.positions[0], st = first && posState[first.code];
       if (!first || !st?.methodCode) return setNotice(t.product.needPrint);
-      chosen = [{ positionCode: first.code, areaCode: st.areaCode, methodCode: st.methodCode, colors: st.colors }];
+      const pick = (code: string) => { const x = posState[code]; return { positionCode: code, areaCode: x.areaCode, methodCode: x.methodCode, colors: x.colors }; };
+      // 不另外收費的印刷面（例如滿版印花服飾的口袋、前後片、袖子、帽子）全部一起帶入，
+      // 客戶換底色或設計時整件商品才會一致，不會只有第一個面有變化
+      const free = (code: string) => {
+        const x = posState[code];
+        const rows = p.pricing.printPrices.filter((r) => r.positionCode === code && r.areaCode === x.areaCode && r.methodCode === x.methodCode);
+        return !!x?.methodCode && rows.length > 0 && rows.every((r) => r.unitPrice === 0 && r.setupFee === 0);
+      };
+      const all = p.pricing.extraFacePrice ? [] : p.positions.filter((pos) => free(pos.code));
+      chosen = all.length > 1 && all.some((pos) => pos.code === first.code) ? all.map((pos) => pick(pos.code)) : [pick(first.code)];
     }
     saveDraft({ slug: p.slug, qty, colorName: color, sizeName: size, prints: chosen });
     nav.push(`/design/${p.slug}`);

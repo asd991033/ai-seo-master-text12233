@@ -104,6 +104,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   const [mockState, setMockState] = useState<"idle" | "loading" | "ready" | "none">("idle");
   const [guides, setGuides] = useState({ v: false, h: false });
   const [bg, setBg] = useState<string | null>(null);
+  // 換底色時是否所有印刷面一起換（整件衣服同色）
+  const [bgAll, setBgAll] = useState(true);
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [, setTick] = useState(0);
   /** 供應商排版器的設定（印刷面、刀模、效果圖貼法）；有這份資料就完全照它呈現 */
@@ -480,6 +482,38 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   }, [active, hcMode]);
 
   // ---------- 初始化 fabric ----------
+  /** 不切換畫面，直接把某一面存檔的內容算出預覽與輸出檔（重新編輯時的其他面、整件換底色時都用這個） */
+  const bakeFace = async (i: number) => {
+    const fabric = fabricRef.current;
+    const q = geom(i), doc = docs.current[q.pos.code];
+    if (!fabric || !doc || !((doc.canvas as { objects?: unknown[] }).objects?.length || (doc.canvas as { background?: string }).background)) return;
+    const sc = new fabric.StaticCanvas(undefined, { width: q.W, height: q.H });
+    await sc.loadFromJSON(doc.canvas as Record<string, unknown>);
+    const k = q.scale / doc.pxPerMm;
+    if (Math.abs(k - 1) > 1e-3) sc.getObjects().forEach((o) => { o.set({ left: o.left * k, top: o.top * k, scaleX: o.scaleX * k, scaleY: o.scaleY * k }); o.setCoords(); });
+    const o0 = docOrigin(doc.canvas);
+    const dx = q.ax - o0.x * k, dy = q.ay - o0.y * k;
+    if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) sc.getObjects().forEach((o) => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
+    sc.clipPath = clipFor(fabric, q);
+    sc.renderAll();
+    const json = sc.toJSON() as Record<string, unknown>;
+    delete json.clipPath;
+    json.__ox = q.ax; json.__oy = q.ay;
+    docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
+    const crop = { left: q.ax, top: q.ay, width: q.aw, height: q.ah };
+    const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
+    outputs.current[q.pos.code] = {
+      areaCode: q.area.code, json, pxPerMm: q.scale,
+      print: sc.toDataURL({ format: "png", ...crop, multiplier }),
+      svg: sc.toSVG({ viewBox: { x: q.ax, y: q.ay, width: q.aw, height: q.ah }, width: `${q.area.widthMm}mm`, height: `${q.area.heightMm}mm` }),
+      flat: sc.toDataURL({ format: "png", multiplier: Math.min(2, 1000 / Math.max(q.W, q.H)) }),
+    };
+    flats.current[q.pos.code] = sc.toCanvasElement(Math.min(2, 900 / Math.max(q.aw, q.ah)), crop);
+    const thumb = sc.toDataURL({ format: "png", ...crop, multiplier: Math.min(2, 520 / Math.max(q.aw, q.ah)) });
+    setThumbs((t0) => ({ ...t0, [q.pos.code]: thumb }));
+    sc.dispose();
+  };
+
   useEffect(() => {
     if (hcState === "loading" || !selected.length || !host.current || canvasRef.current) return;
     let disposed = false;
@@ -498,35 +532,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       await loadPosition(0);
       history.current = { stack: [JSON.stringify(snapshot())], index: 0 };
       // 重新編輯：把其他面原本的設計也先算出預覽與輸出檔，沒點開的面才不會在儲存時遺失
-      for (let i = 1; i < selected.length; i++) {
-        const q = geom(i), doc = docs.current[q.pos.code];
-        if (!doc || !((doc.canvas as { objects?: unknown[] }).objects?.length || (doc.canvas as { background?: string }).background)) continue;
-        const sc = new fabric.StaticCanvas(undefined, { width: q.W, height: q.H });
-        await sc.loadFromJSON(doc.canvas as Record<string, unknown>);
-        const k = q.scale / doc.pxPerMm;
-        if (Math.abs(k - 1) > 1e-3) sc.getObjects().forEach((o) => { o.set({ left: o.left * k, top: o.top * k, scaleX: o.scaleX * k, scaleY: o.scaleY * k }); o.setCoords(); });
-        const o0 = docOrigin(doc.canvas);
-        const dx = q.ax - o0.x * k, dy = q.ay - o0.y * k;
-        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) sc.getObjects().forEach((o) => { o.set({ left: o.left + dx, top: o.top + dy }); o.setCoords(); });
-        sc.clipPath = clipFor(fabric, q);
-        sc.renderAll();
-        const json = sc.toJSON() as Record<string, unknown>;
-        delete json.clipPath;
-        json.__ox = q.ax; json.__oy = q.ay;
-        docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
-        const crop = { left: q.ax, top: q.ay, width: q.aw, height: q.ah };
-        const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
-        outputs.current[q.pos.code] = {
-          areaCode: q.area.code, json, pxPerMm: q.scale,
-          print: sc.toDataURL({ format: "png", ...crop, multiplier }),
-          svg: sc.toSVG({ viewBox: { x: q.ax, y: q.ay, width: q.aw, height: q.ah }, width: `${q.area.widthMm}mm`, height: `${q.area.heightMm}mm` }),
-          flat: sc.toDataURL({ format: "png", multiplier: Math.min(2, 1000 / Math.max(q.W, q.H)) }),
-        };
-        flats.current[q.pos.code] = sc.toCanvasElement(Math.min(2, 900 / Math.max(q.aw, q.ah)), crop);
-        const thumb = sc.toDataURL({ format: "png", ...crop, multiplier: Math.min(2, 520 / Math.max(q.aw, q.ah)) });
-        setThumbs((t0) => ({ ...t0, [q.pos.code]: thumb }));
-        sc.dispose();
-      }
+      for (let i = 1; i < selected.length; i++) await bakeFace(i);
       (window as unknown as { __designer?: Canvas }).__designer = canvas;
       setReady(true);
       Promise.all(FONTS.slice(0, 2).map((f) => document.fonts.load(`16px "${f.v}"`))).then(() => canvas.requestRenderAll(), () => {});
@@ -750,6 +756,35 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     if (kind !== "delete" && kind !== "duplicate") canvas.fire("object:modified", { target: o } as never);
   }
 
+  /** 整件換底色：其他印刷面也套用同一個底色（拖曳選色時會連續觸發，所以稍等一下再算） */
+  const bgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bgRun = useRef(0);
+  function spreadBackground(value: string | null) {
+    if (bgTimer.current) clearTimeout(bgTimer.current);
+    const run = ++bgRun.current;
+    bgTimer.current = setTimeout(async () => {
+      const fabric = fabricRef.current;
+      if (!fabric) return;
+      for (let i = 0; i < selected.length; i++) {
+        // 又選了新的顏色就放棄這一輪，交給新的那一輪
+        if (run !== bgRun.current) return;
+        if (i === activeRef.current) continue;
+        const q = geom(i), code = q.pos.code;
+        const doc = docs.current[code] ?? { canvas: { version: fabric.version, objects: [], __ox: q.ax, __oy: q.ay } as Record<string, unknown>, pxPerMm: q.scale };
+        const cv = doc.canvas as { objects?: unknown[]; background?: string };
+        if (value) cv.background = value; else delete cv.background;
+        docs.current[code] = doc;
+        if (value || cv.objects?.length) await bakeFace(i);
+        else {
+          delete outputs.current[code];
+          delete flats.current[code];
+          setThumbs((t0) => ({ ...t0, [code]: null }));
+        }
+      }
+      schedulePreview();
+    }, 400);
+  }
+
   function setBackground(value: string | null) {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -758,6 +793,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     canvas.requestRenderAll();
     pushHistory();
     schedulePreview();
+    if (bgAll && selected.length > 1) spreadBackground(value);
   }
 
   function pick(o: FabricObject) {
@@ -940,6 +976,12 @@ export default function Designer({ product }: { product: DesignerProduct }) {
               <input type="color" aria-label={t.designer.bg} className="h-8 w-10 rounded border border-line" value={bg ?? "#ffffff"} onChange={(e) => setBackground(e.target.value)} disabled={!ready} />
               <button type="button" className={mini} onClick={() => setBackground(null)} disabled={!bg}>{t.designer.clearBg}</button>
             </div>
+            {selected.length > 1 && (
+              <label className="col-span-2 flex items-center gap-2 px-1 text-xs text-mute">
+                <input type="checkbox" checked={bgAll} onChange={(e) => setBgAll(e.target.checked)} />
+                {t.designer.bgAll}
+              </label>
+            )}
             <div className="col-span-2 flex gap-2 pt-1">
               <button type="button" className={mini} onClick={() => travel(-1)} disabled={!hist.undo}>↶ {t.designer.undo}</button>
               <button type="button" className={mini} onClick={() => travel(1)} disabled={!hist.redo}>↷ {t.designer.redo}</button>
