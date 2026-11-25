@@ -37,12 +37,12 @@ const MAX_ROWS = 5000;
 const NOTES = [
   "【填寫說明】",
   "1. 每一列是一則評價，SKU 必須是本站已有的商品。",
-  "2. 訂單編號可以留空。有填的話，必須是本站「已付款、已出貨或已完成」而且買了這個 SKU 的訂單，這則評價才會標示「已驗證購買」；留空的評價照常匯入，但不帶這個標示。",
+  "2. 訂單編號可以留空。有填的話，必須是本站「已付款、已出貨或已完成」而且買了這個 SKU 的訂單。",
   "3. 同一張訂單的同一件商品只能有一則評價；已經有評價的不會重複匯入。",
   "4. 評價者名稱與內容請照買家原文填寫。星等為 1–5 的整數。",
   "5. 評價日期格式 YYYY-MM-DD，不能是未來日期（有填訂單編號時也不能早於下單日）；留空則用匯入當下的時間。",
   "6. 只要有任何一列有問題，整個檔案都不會匯入，請依錯誤訊息修正後重新上傳。",
-  "7. 匯入的評價會直接公開。範本中的示範列匯入前請刪除。",
+  "7. 匯入的評價會直接公開，並一律標示「已驗證購買」，請只匯入真實買家的評價。範本中的示範列匯入前請刪除。",
 ];
 
 export async function buildReviewTemplate(): Promise<Buffer> {
@@ -100,7 +100,7 @@ export async function parseReviewWorkbook(data: ArrayBuffer): Promise<{ rows: Re
   return { rows, errors: [] };
 }
 
-/** 檢查每一列後整批寫入；有任何錯誤就完全不寫入。有填訂單編號且對得上的才標示已驗證購買 */
+/** 檢查每一列後整批寫入；有任何錯誤就完全不寫入。匯入的評價一律標示已驗證購買（由店家確認是真實買家） */
 export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; imported: number; errors: string[] }> {
   const errors: string[] = [];
   const err = (r: ReviewRow, msg: string) => { if (errors.length < 100) errors.push(`第 ${r.rowNo} 列：${msg}`); };
@@ -133,7 +133,7 @@ export async function importReviews(rows: ReviewRow[]): Promise<{ ok: boolean; i
     if (!r.orderNo) {
       const productId = productBySku.get(r.sku.toLowerCase());
       if (!productId) { err(r, `找不到 SKU「${r.sku}」`); continue; }
-      values.push({ ...base, productId, orderId: null, verified: false });
+      values.push({ ...base, productId, orderId: null, verified: true });
       continue;
     }
     const order = orderByNo.get(r.orderNo);

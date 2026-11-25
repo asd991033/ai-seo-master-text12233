@@ -27,7 +27,7 @@ export function ReviewImport() {
   return (
     <form onSubmit={onSubmit} className="card space-y-4 p-6">
       <h2 className="text-lg font-bold">Excel 批量匯入</h2>
-      <p className="text-sm leading-relaxed text-mute">每一列是一則評價，填 <strong className="text-ink">SKU</strong>、評價者名稱、星等與內容即可匯入並直接公開。訂單編號選填：有填且對得上本站已出貨訂單的，才會標示「已驗證購買」。只要有一列有問題，整個檔案都不會匯入。</p>
+      <p className="text-sm leading-relaxed text-mute">每一列是一則評價，填 <strong className="text-ink">SKU</strong>、評價者名稱、星等與內容即可匯入並直接公開。匯入的評價一律標示「已驗證購買」，請只匯入真實買家的評價。訂單編號選填，有填會核對本站訂單。只要有一列有問題，整個檔案都不會匯入。</p>
       <a href="/api/admin/reviews/template" className="btn-ghost">下載 Excel 範本</a>
       <input type="file" name="file" accept=".xlsx" required className="input" />
       <button className="btn-primary" disabled={busy}>{busy ? "匯入中…" : "開始匯入"}</button>
