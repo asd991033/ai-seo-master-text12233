@@ -701,8 +701,9 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       fd.set("kind", "image");
       fd.set("file", file);
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      // 伺服器出錯時回應可能不是 JSON（Safari 會丟出看不懂的英文錯誤），統一換成看得懂的訊息
+      const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (!res.ok || !json?.url) throw new Error(json?.error || t.designer.uploadFailed);
       const img = await fabric.FabricImage.fromURL(json.url);
       const w = img.width || 300, h = img.height || 300;
       const s = Math.min((g.aw * 0.8) / w, (g.ah * 0.8) / h);

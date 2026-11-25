@@ -207,7 +207,7 @@ const dict = {
     allFaces: "各印刷面預覽", propDesign: "設計編號", propFiles: "設計檔案", emptyFace: "尚未排版", doneFace: "已排版", flatOf: (name: string) => `${name}・實際印刷畫面`,
     fullArea: "虛線框內整面都會印刷。沒有放圖的地方會是白色，想要整面有顏色可以用左側的「底色」。",
     notInPhoto: (name: string) => `商品照片只拍到正面，所以「${name}」不會出現在這張照片上。`,
-    bg: "底色", bgAll: "所有印刷面一起換底色", clearBg: "清除", cover: "鋪滿印刷範圍", flipH: "水平翻轉", flipV: "垂直翻轉", layersTitle: "圖層", layerText: "文字", layerImage: "圖片", hide: "隱藏", show: "顯示",
+    bg: "底色", uploadFailed: "圖片上傳失敗，請稍後再試一次。", bgAll: "所有印刷面一起換底色", clearBg: "清除", cover: "鋪滿印刷範圍", flipH: "水平翻轉", flipV: "垂直翻轉", layersTitle: "圖層", layerText: "文字", layerImage: "圖片", hide: "隱藏", show: "顯示",
     saveEdit: "儲存修改",
     lowDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi，低於建議的 150 dpi，印刷可能模糊。`,
     okDpi: (dpi: number) => `圖片解析度約 ${dpi} dpi`,

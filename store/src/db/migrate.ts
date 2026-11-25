@@ -8,7 +8,7 @@
  *   tsx src/db/migrate.ts          備份資料庫檔，補上缺少的欄位
  *   tsx src/db/migrate.ts verify   確認資料表與欄位都齊全，不齊就以錯誤結束（讓部署失敗、保留舊版繼續運作）
  */
-import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readSync, statSync, unlinkSync } from "node:fs";
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readSync, statfsSync, statSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@libsql/client";
 import { is, SQL } from "drizzle-orm";
@@ -16,7 +16,7 @@ import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
 import * as schema from "./schema";
 
 const url = process.env.DATABASE_URL ?? "file:./data/store.db";
-const KEEP_BACKUPS = 5;
+const KEEP_BACKUPS = 2;
 const BACKUP_RE = /^store-\d{8}T\d{6}Z?\.db$/;
 
 /** 備份檔是否完整：檔案大小要達到 SQLite 檔頭記錄的頁數（磁碟滿時複製到一半的檔案會比較小） */
@@ -82,9 +82,34 @@ function literal(v: unknown): string {
   return `'${JSON.stringify(v).replace(/'/g, "''")}'`;
 }
 
+/** 啟動時印出資料磁碟的用量（資料庫、備份、各類上傳檔），磁碟快滿時才知道是什麼佔掉空間 */
+function reportDisk() {
+  if (!url.startsWith("file:")) return;
+  try {
+    const root = path.dirname(path.resolve(url.slice(5)));
+    const size = (p: string): number => {
+      try {
+        const st = statSync(p);
+        return st.isDirectory() ? readdirSync(p).reduce((a, f) => a + size(path.join(p, f)), 0) : st.size;
+      } catch { return 0; }
+    };
+    const mb = (n: number) => `${(n / 1048576).toFixed(1)}MB`;
+    const parts: string[] = [];
+    for (const f of readdirSync(root)) {
+      const full = path.join(root, f);
+      if (f === "files" && statSync(full).isDirectory()) for (const g of readdirSync(full)) parts.push(`files/${g} ${mb(size(path.join(full, g)))}`);
+      else parts.push(`${f} ${mb(size(full))}`);
+    }
+    const fsStat = statfsSync(root);
+    console.log(`[disk] free ${mb(fsStat.bavail * fsStat.bsize)} of ${mb(fsStat.blocks * fsStat.bsize)} | ${parts.join(" | ")}`);
+  } catch (e) {
+    console.warn("[disk] usage report failed", e);
+  }
+}
+
 async function main() {
   const verify = process.argv[2] === "verify";
-  if (!verify) backup();
+  if (!verify) { reportDisk(); backup(); reportDisk(); }
   const client = createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN || undefined });
   const tables = (Object.values(schema) as unknown[]).filter((t) => is(t, SQLiteTable)).map((t) => getTableConfig(t as SQLiteTable));
   const problems: string[] = [];

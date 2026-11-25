@@ -207,7 +207,7 @@ export default function en(m: Market): Dict {
       allFaces: "All print sides", propDesign: "Design ID", propFiles: "Design files", emptyFace: "Empty", doneFace: "Designed", flatOf: (name: string) => `${name} · actual print`,
       fullArea: "Everything inside the dashed frame is printed. Areas without artwork stay white; use “Background” on the left for a solid colour.",
       notInPhoto: (name: string) => `The product photo only shows the front, so “${name}” does not appear in this picture.`,
-      bg: "Background", bgAll: "Apply to every print area", clearBg: "Clear", cover: "Fill print area", flipH: "Flip horizontal", flipV: "Flip vertical", layersTitle: "Layers", layerText: "Text", layerImage: "Image", hide: "Hide", show: "Show",
+      bg: "Background", uploadFailed: "The image could not be uploaded. Please try again in a moment.", bgAll: "Apply to every print area", clearBg: "Clear", cover: "Fill print area", flipH: "Flip horizontal", flipV: "Flip vertical", layersTitle: "Layers", layerText: "Text", layerImage: "Image", hide: "Hide", show: "Show",
       saveEdit: "Save changes",
       lowDpi: (dpi: number) => `Image resolution is about ${dpi} dpi, below the recommended 150 dpi. The print may look blurry.`,
       okDpi: (dpi: number) => `Image resolution is about ${dpi} dpi`,

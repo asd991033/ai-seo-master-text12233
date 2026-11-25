@@ -31,6 +31,12 @@ export async function POST(req: Request) {
   if (file.size > limit) return NextResponse.json({ error: `檔案過大（上限 ${limit / MB}MB）` }, { status: 400 });
   const data = Buffer.from(await file.arrayBuffer());
   if (!looksLike(ext, data)) return NextResponse.json({ error: "檔案內容與副檔名不符" }, { status: 400 });
-  const url = await saveRandom(kind === "artwork" ? "artwork" : "uploads", ext, data);
-  return NextResponse.json({ url });
+  try {
+    const url = await saveRandom(kind === "artwork" ? "artwork" : "uploads", ext, data);
+    return NextResponse.json({ url });
+  } catch (e) {
+    // 存檔失敗（例如磁碟空間不足）也要回 JSON，前端才顯示得出看得懂的訊息
+    console.error("[uploads] save failed", file.name, file.size, e);
+    return NextResponse.json({ error: "檔案暫時無法儲存，請稍後再試。問題持續的話請聯絡我們。" }, { status: 507 });
+  }
 }
