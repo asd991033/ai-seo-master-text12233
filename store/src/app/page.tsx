@@ -33,8 +33,9 @@ export default async function Home() {
       {/* 主視覺 */}
       <section className="relative overflow-hidden rounded-b-[22px] bg-sand">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/eg/hero-2.jpg" alt={t.alt.hero} className="absolute inset-0 h-full w-full object-cover" />
-        <div className="container-x relative flex min-h-[560px] flex-col justify-end pt-32 pb-12 md:min-h-[640px] md:pb-16">
+        {/* 手機：圖在上、文字在下，深色商品才不會壓在標題後面看不清楚；桌機維持文字疊在圖的左側 */}
+        <img src="/eg/hero-2.jpg" alt={t.alt.hero} className="block h-[340px] w-full object-cover object-[72%_60%] md:absolute md:inset-0 md:h-full md:object-center" />
+        <div className="container-x relative flex flex-col justify-end pt-7 pb-10 md:min-h-[640px] md:pt-32 md:pb-16">
           <h1 className="max-w-[560px] text-[38px] leading-[1.12] md:text-[52px]">{t.home.title}</h1>
           <p className="mt-4 max-w-[400px] text-[15px] leading-relaxed">{t.home.lead}</p>
           <div className="mt-7 flex flex-wrap gap-2.5">
