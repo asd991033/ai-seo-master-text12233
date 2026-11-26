@@ -265,6 +265,15 @@ export default function en(m: Market): Dict {
         { q: "Can I get an invoice?", a: "Yes. Enter your company name at checkout and contact us if you need a formal invoice." },
       ],
     },
+    about: {
+      title: "About us", metaDesc: "Kindmark is an online store for custom gifts and branded merchandise: design online, see a live preview and order from one piece. Company details and contact.",
+      lead: "Kindmark is an online store for custom gifts and branded merchandise. Pick a product, add your logo or artwork, check the preview and order directly.",
+      sections: [
+        { h: "What we do", p: ["We take corporate gifts, event giveaways and branded merchandise online: no back-and-forth for quotes. Choose your quantity and print options and the price is shown straight away.", "From bags and apparel to drinkware, homeware and pet products, every item can be laid out online with a live preview of the printed result."] },
+        { h: "How ordering works", p: ["You can order from a single piece, so samples, small gifts and bulk orders all work.", "After you order we check your artwork, then produce and ship. Your tracking number appears on your order page."] },
+      ],
+      companyTitle: "Company details", brandLabel: "Brand", contactNote: "Questions? Email us and we will get back to you as soon as we can.",
+    },
     footer: { shop: "Catalogue", learn: "Learn more", help: "Help", account: "Account", email: "Email", phone: "Phone", address: "Address", contactCta: "Email us", about: "Custom gifts and branded merchandise, printed with the method that best suits each item. Design online and order directly.", service: "Customer service", links: "Quick links", rights: "All rights reserved." },
     errors: { login: "Please sign in first", emptyCart: "Your cart is empty", incomplete: "Please complete the delivery details", noShip: "Delivery is not available for this destination", badFormat: "Invalid request", payOff: "Online payment is not available yet", quote: { BAD_QTY: "Quantity must be a whole number greater than zero", BELOW_MOQ: "Below the minimum order quantity", BAD_VARIANT: "Please choose a colour and size", NO_TIER: "No price is available for this quantity", NO_PRINT_PRICE: "This print option is not available at this quantity", BAD_COLORS: "The number of colours is outside the allowed range", DUP_POSITION: "Each print position can only be selected once" } as Record<string, string> },
     intl: { city: "City / Suburb", region: "State / Region", country: "Country", duties: "Import duties or taxes, if charged by local customs, are payable by the recipient.", switchTitle: "Country / region", dialCode: "Country calling code", payRedirect: "Taking you to secure payment…" },

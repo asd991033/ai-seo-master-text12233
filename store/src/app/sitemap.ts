@@ -23,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...each("/products", { priority: 0.9, changeFrequency: "daily" }),
     ...each("/blog", { priority: 0.7, changeFrequency: "weekly" }),
     ...each("/guide", { priority: 0.5, changeFrequency: "monthly" }),
+    ...each("/about", { priority: 0.3, changeFrequency: "yearly" }),
     ...each("/returns", { priority: 0.3, changeFrequency: "yearly" }),
     ...cats.flatMap((c) => each(`/products?category=${encodeURIComponent(c.slug)}`, { priority: 0.7, changeFrequency: "weekly" })),
     ...posts.filter((p) => p.market in markets).map((p) => ({ url: url(`/blog/${p.slug}`, p.market as keyof typeof markets), priority: 0.6, lastModified: new Date(p.updatedAt * 1000) })),

@@ -265,6 +265,15 @@ const dict = {
       { q: "可以開立發票嗎？", a: "可以。結帳時填寫公司名稱與統一編號即可。" },
     ],
   },
+  about: {
+    title: "關於我們", metaDesc: "Kindmark 是客製禮品與品牌周邊的線上訂製平台：線上設計、即時看示意圖、一件起訂。公司資訊與聯絡方式。",
+    lead: "Kindmark 是客製禮品與品牌周邊的線上訂製平台。選商品、放上你的 Logo 或圖案、看過示意圖就能直接下單。",
+    sections: [
+      { h: "我們在做什麼", p: ["把企業禮品、活動贈品和品牌周邊的訂製流程搬到線上：不用來回詢價和等報價單，數量和印刷選好，價格當場就看得到。", "包包、服飾、杯具、居家用品到寵物用品，每個品項都可以在線上排版，並即時看到印上去的成品示意圖。"] },
+      { h: "怎麼訂購", p: ["一件就能下單，不用湊量；打樣、小量送禮和大量訂購都適用。", "下單後我們會確認稿件，接著生產、出貨，物流單號會顯示在你的訂單頁。"] },
+    ],
+    companyTitle: "公司資訊", brandLabel: "品牌", contactNote: "有任何問題，歡迎來信，我們會盡快回覆。",
+  },
   footer: { shop: "商品目錄", learn: "了解更多", help: "幫助", account: "帳戶", email: "信箱", phone: "電話", address: "地址", contactCta: "寫信給我們", about: "客製禮品與品牌周邊，依品項挑選最合適的印刷方式，線上設計、直接下單。", service: "客服信箱", links: "快速連結", rights: "版權所有" },
   errors: { login: "請先登入", emptyCart: "購物車是空的", incomplete: "請完整填寫收件資訊", noShip: "此地區暫無該運送方式的報價", badFormat: "格式錯誤", payOff: "線上付款尚未開放", quote: {} as Record<string, string> },
   intl: { city: "城市", region: "州／省", country: "國家", duties: "", switchTitle: "國家／地區", dialCode: "電話國碼", payRedirect: "正在前往付款頁面…" },
