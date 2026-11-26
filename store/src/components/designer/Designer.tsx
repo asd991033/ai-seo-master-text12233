@@ -483,7 +483,9 @@ export default function Designer({ product }: { product: DesignerProduct }) {
 
   // ---------- 初始化 fabric ----------
   /** 不切換畫面，直接把某一面存檔的內容算出預覽與輸出檔（重新編輯時的其他面、整件換底色時都用這個） */
-  const bakeFace = async (i: number) => {
+  /** light：只算示意圖用的小圖（換底色時用，避免畫面卡住），完整的印刷檔留到儲存時再算 */
+  const pendingFull = useRef(new Set<string>());
+  const bakeFace = async (i: number, light = false) => {
     const fabric = fabricRef.current;
     const q = geom(i), doc = docs.current[q.pos.code];
     if (!fabric || !doc || !((doc.canvas as { objects?: unknown[] }).objects?.length || (doc.canvas as { background?: string }).background)) return;
@@ -501,13 +503,17 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     json.__ox = q.ax; json.__oy = q.ay;
     docs.current[q.pos.code] = { canvas: json, pxPerMm: q.scale };
     const crop = { left: q.ax, top: q.ay, width: q.aw, height: q.ah };
-    const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
-    outputs.current[q.pos.code] = {
-      areaCode: q.area.code, json, pxPerMm: q.scale,
-      print: sc.toDataURL({ format: "png", ...crop, multiplier }),
-      svg: sc.toSVG({ viewBox: { x: q.ax, y: q.ay, width: q.aw, height: q.ah }, width: `${q.area.widthMm}mm`, height: `${q.area.heightMm}mm` }),
-      flat: sc.toDataURL({ format: "png", multiplier: Math.min(2, 1000 / Math.max(q.W, q.H)) }),
-    };
+    if (light) pendingFull.current.add(q.pos.code);
+    else {
+      pendingFull.current.delete(q.pos.code);
+      const multiplier = q.pos.pxW ? Math.min(q.pos.pxW / q.aw, 8000 / Math.max(q.aw, q.ah)) : Math.min(PX_PER_MM_300DPI / q.scale, MAX_PRINT_PX / Math.max(q.aw, q.ah));
+      outputs.current[q.pos.code] = {
+        areaCode: q.area.code, json, pxPerMm: q.scale,
+        print: sc.toDataURL({ format: "png", ...crop, multiplier }),
+        svg: sc.toSVG({ viewBox: { x: q.ax, y: q.ay, width: q.aw, height: q.ah }, width: `${q.area.widthMm}mm`, height: `${q.area.heightMm}mm` }),
+        flat: sc.toDataURL({ format: "png", multiplier: Math.min(2, 1000 / Math.max(q.W, q.H)) }),
+      };
+    }
     flats.current[q.pos.code] = sc.toCanvasElement(Math.min(2, 900 / Math.max(q.aw, q.ah)), crop);
     const thumb = sc.toDataURL({ format: "png", ...crop, multiplier: Math.min(2, 520 / Math.max(q.aw, q.ah)) });
     setThumbs((t0) => ({ ...t0, [q.pos.code]: thumb }));
@@ -775,10 +781,15 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         const cv = doc.canvas as { objects?: unknown[]; background?: string };
         if (value) cv.background = value; else delete cv.background;
         docs.current[code] = doc;
-        if (value || cv.objects?.length) await bakeFace(i);
+        if (value || cv.objects?.length) {
+          await bakeFace(i, true);
+          // 讓出主執行緒，連續算好幾個面時畫面才不會凍住
+          await new Promise((r) => setTimeout(r, 0));
+        }
         else {
           delete outputs.current[code];
           delete flats.current[code];
+          pendingFull.current.delete(code);
           setThumbs((t0) => ({ ...t0, [code]: null }));
         }
       }
@@ -865,10 +876,13 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     if (!draft || !canvasRef.current) return;
     setError(null);
     capture(active);
-    const codes = Object.keys(outputs.current);
-    if (!codes.length) return setError(t.designer.empty);
+    if (!Object.keys(outputs.current).length && !pendingFull.current.size) return setError(t.designer.empty);
     setBusy(t.designer.saving);
     try {
+      // 換底色時只先算了小圖的面，這裡補算完整的印刷檔
+      for (const [i, s0] of selected.entries()) if (i !== active && pendingFull.current.has(s0.pos.code)) await bakeFace(i);
+      pendingFull.current.delete(selected[active]?.pos.code ?? "");
+      if (!Object.keys(outputs.current).length) { setBusy(null); return setError(t.designer.empty); }
       const positions: Record<string, Omit<Output, "flat"> & { mockup: string }> = {};
       let previewImg: string | null = null;
       for (const [i, s] of selected.entries()) {
