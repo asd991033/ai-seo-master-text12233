@@ -19,7 +19,8 @@ export async function Footer() {
           <address className="mt-6 space-y-1.5 not-italic">
             {!en && <div><span className="text-mute">{t.footer.phone}　</span><a href={`tel:${telE164(site.contactPhone).replace(/[^0-9+]/g, "")}`} className="hover:underline">{en ? telE164(site.contactPhone) : site.contactPhone}</a></div>}
             <div><span className="text-mute">{t.footer.email}　</span><a href={`mailto:${site.contactEmail}`} className="hover:underline">{site.contactEmail}</a></div>
-            <div><span className="text-mute">{t.footer.address}　</span><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{en ? site.address.fullEn : site.address.full}</a></div>
+            {/* 海外站不顯示台灣的地址 */}
+            {!en && <div><span className="text-mute">{t.footer.address}　</span><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.full)}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{en ? site.address.fullEn : site.address.full}</a></div>}
           </address>
           <div>
             <a href={`mailto:${site.contactEmail}`} className="mt-6 inline-flex rounded-[12px] border border-ink/15 bg-white px-4 py-2 text-xs font-medium hover:border-ink">{t.footer.contactCta}</a>

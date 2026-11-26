@@ -32,7 +32,7 @@ export default async function ReturnsPage() {
               <address className="mt-3 space-y-1.5 leading-relaxed not-italic">
                 {!en && <div>{t.footer.phone}：<a href={`tel:${telE164(site.contactPhone).replace(/[^0-9+]/g, "")}`} className="underline underline-offset-4">{en ? telE164(site.contactPhone) : site.contactPhone}</a></div>}
                 <div>{t.footer.email}：<a href={`mailto:${site.contactEmail}`} className="underline underline-offset-4">{site.contactEmail}</a></div>
-                <div>{t.footer.address}：{en ? site.address.fullEn : site.address.full}</div>
+                {!en && <div>{t.footer.address}：{site.address.full}</div>}
               </address>
             )}
           </section>
