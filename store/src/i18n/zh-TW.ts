@@ -197,6 +197,16 @@ const dict = {
   },
   designer: {
     title: "線上排版", back: "返回商品頁", noDraft: "請先在商品頁選擇數量與印刷設定，再進入線上排版。", toProduct: "前往商品頁",
+    ai: {
+      open: "AI 設計", title: "AI 設計", close: "關閉", tabStyle: "照片換風格", tabText: "自由發揮", style: "風格",
+      styleLead: "上傳一張照片（寵物、家人、產品都可以），選一個風格，AI 會把它重畫成那個風格。", pickPhoto: "選擇照片", noPhoto: "尚未選擇", useSelected: "使用畫布上選取的圖片",
+      textLead: "描述你想要的圖案，越具體越好。", textPh: "例：一隻戴墨鏡的柴犬坐在衝浪板上",
+      generate: "開始生成", again: "重新生成", use: "放進設計", working: "AI 正在繪製，大約需要 10–30 秒，請稍候…", workingShort: "生成中…", resultAlt: "AI 生成的圖案",
+      resNote: "AI 圖案解析度約 1024 像素，適合中小面積印刷；印在大面積商品上可能不夠清晰。",
+      remaining: (n: number, limit: number) => `今天還可以生成 ${n} 張（每日 ${limit} 張）`, usedUpGuest: "今天的次數已用完。登入會員每天可以生成更多張。", usedUpMember: "今天的次數已用完，明天會重新計算。",
+      failed: "生成失敗，請稍後再試一次。", off: "AI 設計目前沒有開放。",
+      terms: "請勿上傳或生成他人擁有著作權、商標或肖像權的內容。你需要對送印的圖案負責。",
+    },
     addText: "加入文字", addImage: "上傳圖片", defaultText: "輸入文字", undo: "復原", redo: "重做", delete: "刪除", duplicate: "複製",
     forward: "上移一層", backward: "下移一層", centerH: "水平置中", centerV: "垂直置中", fit: "等比放入",
     showDieline: "顯示刀模", font: "字體", fontSize: "字級", fill: "顏色", bold: "粗體", italic: "斜體", align: "對齊",

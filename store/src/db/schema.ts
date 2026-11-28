@@ -333,6 +333,18 @@ export const posts = sqliteTable("posts", {
  * verified：對得到本站一張已付款、已出貨的訂單，而且訂單裡有這件商品，前台才會標示「已驗證購買」。
  * source：customer＝買家在訂單頁自己寫的；import＝後台 Excel 批量匯入（每列都要有訂單編號）；admin＝後台單筆代登。
  */
+/** AI 設計的每日用量：who 是「user:會員編號」「ip:雜湊」或全站合計的「all」 */
+export const aiUsage = sqliteTable(
+  "ai_usage",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    who: text("who").notNull(),
+    day: text("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [uniqueIndex("ai_usage_who_day_uq").on(t.who, t.day)],
+);
+
 /** 評價的 Excel 匯入紀錄：每上傳一個檔案一筆 */
 export const reviewImports = sqliteTable("review_imports", {
   id: integer("id").primaryKey({ autoIncrement: true }),

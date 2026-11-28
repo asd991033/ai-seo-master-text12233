@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "@/components/Link";
 import type { Canvas, FabricObject, FabricImage, Textbox } from "fabric";
 import { useNav, useT } from "@/market/client";
+import { AiDesign } from "./AiDesign";
 import { loadDraft, useCart, type Draft } from "@/lib/cart";
 import { analyze, planMockup, renderMockup, type MockupModel, type Placement } from "@/lib/mockup";
 import type { HcDesign } from "@/lib/hc3d";
@@ -697,6 +698,30 @@ export default function Designer({ product }: { product: DesignerProduct }) {
     refreshSel();
   }
 
+  /** 把一張圖（上傳的或 AI 生成的）放到目前印刷面的正中間 */
+  async function placeImage(url: string) {
+    const fabric = fabricRef.current, canvas = canvasRef.current;
+    if (!fabric || !canvas || !g) return;
+    const img = await fabric.FabricImage.fromURL(url);
+    const w = img.width || 300, h = img.height || 300;
+    const s = Math.min((g.aw * 0.8) / w, (g.ah * 0.8) / h);
+    img.set({ left: g.ax + g.aw / 2, top: g.ay + g.ah / 2, originX: "center", originY: "center", scaleX: s, scaleY: s });
+    canvas.add(img);
+    canvas.setActiveObject(img);
+    canvas.requestRenderAll();
+    refreshSel();
+  }
+
+  /** AI 設計：功能有開才顯示按鈕；目前選取的若是上傳的圖片，可以直接拿來換風格 */
+  const [aiOn, setAiOn] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  useEffect(() => { fetch("/api/ai-image").then((r) => r.json()).then((j) => setAiOn(!!j.enabled)).catch(() => {}); }, []);
+  const selectedUploadUrl = (() => {
+    const o = canvasRef.current?.getActiveObject() as { type?: string; getSrc?: () => string } | undefined;
+    const src = o && typeof o.getSrc === "function" ? o.getSrc() : "";
+    return /\/files\/uploads\//.test(src) ? src : null;
+  })();
+
   async function addImage(file: File | undefined) {
     const fabric = fabricRef.current, canvas = canvasRef.current;
     if (!file || !fabric || !canvas || !g) return;
@@ -710,14 +735,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
       // 伺服器出錯時回應可能不是 JSON（Safari 會丟出看不懂的英文錯誤），統一換成看得懂的訊息
       const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
       if (!res.ok || !json?.url) throw new Error(json?.error || t.designer.uploadFailed);
-      const img = await fabric.FabricImage.fromURL(json.url);
-      const w = img.width || 300, h = img.height || 300;
-      const s = Math.min((g.aw * 0.8) / w, (g.ah * 0.8) / h);
-      img.set({ left: g.ax + g.aw / 2, top: g.ay + g.ah / 2, originX: "center", originY: "center", scaleX: s, scaleY: s });
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
-      refreshSel();
+      await placeImage(json.url);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -970,6 +988,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         <button type="button" onClick={save} disabled={!!busy || !ready} className="btn-primary ml-auto" data-testid="save-design">{busy ?? (editItem.current ? t.designer.saveEdit : t.designer.save)}</button>
       </div>
       {error && <p className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{error}</p>}
+      <AiDesign open={aiOpen} onClose={() => setAiOpen(false)} onUse={placeImage} selectedUrl={aiOpen ? selectedUploadUrl : null} />
 
       <div className="mt-4 flex flex-wrap gap-2" role="tablist">
         {selected.map((s, i) => (
@@ -986,6 +1005,7 @@ export default function Designer({ product }: { product: DesignerProduct }) {
             <button type="button" className={tool} onClick={addText} disabled={!ready}>Ｔ　{t.designer.addText}</button>
             <button type="button" className={tool} onClick={() => fileInput.current?.click()} disabled={!ready}>▣　{t.designer.addImage}</button>
             <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp,.svg" className="sr-only" onChange={(e) => addImage(e.target.files?.[0])} data-testid="image-input" />
+            {aiOn && <button type="button" className={`${tool} col-span-2`} onClick={() => setAiOpen(true)} disabled={!ready} data-testid="ai-open">✦　{t.designer.ai.open}</button>}
             <div className="col-span-2 flex items-center gap-2 px-1 py-1 text-sm">
               <span className="flex-1">{t.designer.bg}</span>
               <input type="color" aria-label={t.designer.bg} className="h-8 w-10 rounded border border-line" value={bg ?? "#ffffff"} onChange={(e) => setBackground(e.target.value)} disabled={!ready} />
