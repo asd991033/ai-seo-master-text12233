@@ -66,7 +66,8 @@ export async function generateAiImage(req: AiRequest, who: string, isMember: boo
   if (!cfg) throw new AiError("provider", "AI is not configured");
   const style = AI_STYLES.find((s) => s.id === req.styleId) ?? null;
   const userText = req.prompt.trim();
-  if (req.mode === "style" && (!req.image || !style)) throw new AiError("input", "missing image or style");
+  // 照片模式：要有照片，而且至少選了風格或寫了想怎麼改
+  if (req.mode === "style" && (!req.image || (!style && !userText))) throw new AiError("input", "missing image, style or instruction");
   if (req.mode === "text" && !userText) throw new AiError("input", "missing prompt");
   if (userText && promptBlocked(userText)) throw new AiError("blocked", "blocked term");
   const quota = await aiQuota(who, isMember);
@@ -78,7 +79,10 @@ export async function generateAiImage(req: AiRequest, who: string, isMember: boo
   if (req.mode === "style") {
     // 手機照片很大，縮到 1536px 再送（省費用，也比較快）
     const jpeg = await sharp(req.image!, { failOn: "none" }).rotate().resize(1536, 1536, { fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer().catch(() => { throw new AiError("input", "unreadable image"); });
-    parts.push({ text: `Redraw this photo as ${style!.prompt}. Keep the same subjects, their identity, pose, proportions and overall composition; change only the artistic style. Use a clean, simple background.${userText ? ` Extra request from the customer: ${userText}.` : ""} ${tail}` });
+    const text = style
+      ? `Redraw this photo as ${style.prompt}. Keep the same subjects, their identity, pose, proportions and overall composition; change only the artistic style.${userText ? ` Also apply this change requested by the customer: ${userText}.` : " Use a clean, simple background."}`
+      : `Edit this photo exactly as the customer asks: ${userText}. Keep the subjects' identity and everything the request does not mention unchanged, and keep the photo's original style.`;
+    parts.push({ text: `${text} ${tail}` });
     parts.push({ inlineData: { mimeType: "image/jpeg", data: jpeg.toString("base64") } });
   } else {
     parts.push({ text: `Create an original illustration: ${userText}.${style ? ` Art style: ${style.prompt}.` : ""} Use a plain white background. ${tail}` });

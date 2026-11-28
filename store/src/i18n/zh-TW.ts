@@ -198,8 +198,8 @@ const dict = {
   designer: {
     title: "線上排版", back: "返回商品頁", noDraft: "請先在商品頁選擇數量與印刷設定，再進入線上排版。", toProduct: "前往商品頁",
     ai: {
-      open: "AI 設計", title: "AI 設計", close: "關閉", tabStyle: "照片換風格", tabText: "自由發揮", style: "風格",
-      styleLead: "上傳一張照片（寵物、家人、產品都可以），選一個風格，AI 會把它重畫成那個風格。", pickPhoto: "選擇照片", noPhoto: "尚未選擇", useSelected: "使用畫布上選取的圖片",
+      open: "AI 設計", title: "AI 設計", close: "關閉", editLead: "想另外修改的地方（選填），例如換背景、加配件。", editPh: "例：把背景換成海邊，幫牠戴上聖誕帽", styleKeep: "不換風格", styleAny: "不指定", tabStyle: "修改照片", tabText: "自由發揮", style: "風格",
+      styleLead: "上傳一張照片（寵物、家人、產品都可以），選一個風格，或用文字說明想怎麼改，兩個可以一起用。", pickPhoto: "選擇照片", noPhoto: "尚未選擇", useSelected: "使用畫布上選取的圖片",
       textLead: "描述你想要的圖案，越具體越好。", textPh: "例：一隻戴墨鏡的柴犬坐在衝浪板上",
       generate: "開始生成", again: "重新生成", use: "放進設計", working: "AI 正在繪製，大約需要 10–30 秒，請稍候…", workingShort: "生成中…", resultAlt: "AI 生成的圖案",
       resNote: "AI 圖案解析度約 1024 像素，適合中小面積印刷；印在大面積商品上可能不夠清晰。",

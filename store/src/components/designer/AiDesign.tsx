@@ -41,7 +41,7 @@ export function AiDesign({ open, onClose, onUse, selectedUrl }: { open: boolean;
   if (!open) return null;
   const source = mode === "style" ? (file ? filePreview : useSelected ? selectedUrl : null) : null;
   const remaining = info?.remaining ?? 0;
-  const canGo = !busy && remaining > 0 && (mode === "style" ? !!source : prompt.trim().length >= 2);
+  const canGo = !busy && remaining > 0 && (mode === "style" ? !!source && (!!style || prompt.trim().length >= 2) : prompt.trim().length >= 2);
 
   async function generate() {
     setBusy(true);
@@ -95,6 +95,10 @@ export function AiDesign({ open, onClose, onUse, selectedUrl }: { open: boolean;
                     {selectedUrl && !file && <label className="flex items-center gap-2 text-xs text-mute"><input type="checkbox" checked={useSelected} onChange={(e) => setUseSelected(e.target.checked)} />{a.useSelected}</label>}
                   </div>
                 </div>
+                <label className="block">
+                  <span className="text-mute">{a.editLead}</span>
+                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={300} rows={2} placeholder={a.editPh} className="input mt-2" data-testid="ai-edit" />
+                </label>
               </div>
             ) : (
               <label className="mt-4 block text-sm">
@@ -106,6 +110,7 @@ export function AiDesign({ open, onClose, onUse, selectedUrl }: { open: boolean;
             <div className="mt-4">
               <div className="mb-2 text-xs text-mute">{a.style}</div>
               <div className="flex flex-wrap gap-2">
+                <button type="button" aria-pressed={style === ""} className={chip(style === "")} onClick={() => setStyle("")}>{mode === "style" ? a.styleKeep : a.styleAny}</button>
                 {(info?.styles ?? []).map((s) => <button key={s.id} type="button" aria-pressed={style === s.id} className={chip(style === s.id)} onClick={() => setStyle(s.id)}>{en ? s.en : s.zh}</button>)}
               </div>
             </div>

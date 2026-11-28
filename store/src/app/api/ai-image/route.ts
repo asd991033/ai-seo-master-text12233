@@ -23,7 +23,7 @@ const MESSAGES: Record<AiError["code"], [string, number]> = {
   limit: ["今天的 AI 生成次數已用完，明天再來。登入會員可以用更多次。", 429],
   cap: ["AI 設計今天的使用量已滿，請明天再試。", 429],
   provider: ["AI 服務暫時無法使用，請稍後再試。", 502],
-  input: ["請選擇風格，並提供圖片或描述。", 400],
+  input: ["請提供照片，並選一個風格或寫下想怎麼改。", 400],
 };
 
 /** 生成一張圖：mode=style（照片換風格，需 file 或 imageUrl）或 mode=text（文字生圖，需 prompt） */

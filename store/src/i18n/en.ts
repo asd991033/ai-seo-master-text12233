@@ -198,8 +198,8 @@ export default function en(m: Market): Dict {
     designer: {
       title: "Online designer", back: "Back to product", noDraft: "Please choose quantity and print options on the product page before opening the designer.", toProduct: "Go to product",
       ai: {
-        open: "AI design", title: "AI design", close: "Close", tabStyle: "Restyle a photo", tabText: "Describe an idea", style: "Style",
-        styleLead: "Upload a photo (a pet, family, a product), pick a style and the AI redraws it in that style.", pickPhoto: "Choose photo", noPhoto: "No photo yet", useSelected: "Use the image selected on the canvas",
+        open: "AI design", title: "AI design", close: "Close", editLead: "Anything else to change (optional), such as the background or adding an accessory.", editPh: "e.g. change the background to a beach and add a Santa hat", styleKeep: "Keep original style", styleAny: "Any style", tabStyle: "Edit a photo", tabText: "Describe an idea", style: "Style",
+        styleLead: "Upload a photo (a pet, family, a product), then pick a style, describe what to change, or both.", pickPhoto: "Choose photo", noPhoto: "No photo yet", useSelected: "Use the image selected on the canvas",
         textLead: "Describe the artwork you want. The more specific, the better.", textPh: "e.g. a shiba inu in sunglasses sitting on a surfboard",
         generate: "Generate", again: "Generate again", use: "Add to design", working: "The AI is drawing. This takes about 10–30 seconds…", workingShort: "Generating…", resultAlt: "AI-generated artwork",
         resNote: "AI artwork is about 1024 px, which suits small and medium print areas; it may look soft on large items.",
