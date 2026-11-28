@@ -5,6 +5,7 @@ import { inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getUser } from "@/lib/auth";
 import { trackingFromCookies } from "@/lib/ga-server";
+import { metaFromRequest } from "@/lib/meta-track";
 import { guestUserId, newAccessKey } from "@/lib/order-access";
 import { priceCart, sanitizeLines } from "@/lib/checkout";
 import { computeTotals } from "@/lib/pricing";
@@ -25,10 +26,10 @@ function orderNo() {
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
-  return withMarket(typeof body?.market === "string" ? body.market : null, (m) => placeOrder(body, m, trackingFromCookies(req.headers.get("cookie"))));
+  return withMarket(typeof body?.market === "string" ? body.market : null, (m) => placeOrder(body, m, { ...trackingFromCookies(req.headers.get("cookie")), ...metaFromRequest(req.headers) }));
 }
 
-async function placeOrder(body: Record<string, unknown> | null, m: Market, tracking: ReturnType<typeof trackingFromCookies>) {
+async function placeOrder(body: Record<string, unknown> | null, m: Market, tracking: ReturnType<typeof trackingFromCookies> & ReturnType<typeof metaFromRequest>) {
   const E = dictFor(m).errors;
   // 沒登入也能下單（訪客結帳），訂單用專屬連結查看
   const user = await getUser();

@@ -28,6 +28,8 @@ export async function POST(req: Request) {
         .where(eq(schema.orders.id, order.id));
       // 付款成功就自動把訂單送給供應商；不等它做完，先回應綠界（失敗原因會記在訂單上）
       void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
+      // Meta 轉換 API 的 Purchase（失敗會由定時工作補送）
+      void import("@/lib/meta-server").then((m) => m.sendMetaPurchase(order.id)).catch(() => {});
     }
   }
   return text("1|OK");

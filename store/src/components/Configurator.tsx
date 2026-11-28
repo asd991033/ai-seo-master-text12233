@@ -1,5 +1,5 @@
 "use client";
-import { track } from "@/lib/track";
+import { metaTrack, track } from "@/lib/track";
 import { useMemo, useState } from "react";
 import { useMarket, useMoney, useNav, useT } from "@/market/client";
 import { fmtNum } from "@/config/markets";
@@ -124,6 +124,7 @@ export function Configurator({ p }: { p: ConfigProduct }) {
     if (!quote) return;
     add({ productId: p.id, slug: p.slug, sku: p.sku, name: p.name, image: p.image, colorName: color, sizeName: size, qty, prints, artworkUrl: artwork?.url, artworkName: artwork?.name });
     track("add_to_cart", { currency: market.currency, value: quote.total, items: [{ item_id: p.sku, item_name: p.name, quantity: qty, price: quote.unitAllIn }] });
+    metaTrack("AddToCart", { content_ids: [p.sku], content_type: "product", contents: [{ id: p.sku, quantity: qty }], value: quote.total, currency: market.currency });
     nav.push(next);
   }
 

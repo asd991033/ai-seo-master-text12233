@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "@/components/Link";
 import type { Canvas, FabricObject, FabricImage, Textbox } from "fabric";
-import { useNav, useT } from "@/market/client";
+import { useMarket, useNav, useT } from "@/market/client";
 import { AiDesign } from "./AiDesign";
+import { metaTrack } from "@/lib/track";
 import { loadDraft, useCart, type Draft } from "@/lib/cart";
 import { analyze, planMockup, renderMockup, type MockupModel, type Placement } from "@/lib/mockup";
 import type { HcDesign } from "@/lib/hc3d";
@@ -87,6 +88,7 @@ function clipFor(fabric: Fabric, q: { ax: number; ay: number; aw: number; ah: nu
 
 export default function Designer({ product }: { product: DesignerProduct }) {
   const t = useT();
+  const market = useMarket();
   const nav = useNav();
   const addToCart = useCart((s) => s.add);
   const [draft, setDraft] = useState<Draft | null | undefined>(undefined);
@@ -713,6 +715,8 @@ export default function Designer({ product }: { product: DesignerProduct }) {
   }
 
   /** AI 設計：功能有開才顯示按鈕；目前選取的若是上傳的圖片，可以直接拿來換風格 */
+  // Meta 像素：開啟排版頁送一次 CustomizeProduct
+  useEffect(() => { metaTrack("CustomizeProduct", { content_ids: [product.sku], content_type: "product" }); }, [product.sku]);
   const [aiOn, setAiOn] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   useEffect(() => { fetch("/api/ai-image").then((r) => r.json()).then((j) => setAiOn(!!j.enabled)).catch(() => {}); }, []);
@@ -924,7 +928,10 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         return;
       }
       if (editItem.current) useCart.getState().replace(editItem.current, { designId: json.id, previewUrl: json.previewUrl });
-      else addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, sizeName: draft.sizeName ?? null, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
+      else {
+        metaTrack("AddToCart", { content_ids: [product.sku], content_type: "product", contents: [{ id: product.sku, quantity: draft.qty }], currency: market.currency });
+        addToCart({ productId: product.id, slug: product.slug, sku: product.sku, name: product.name, image: product.image, colorName: draft.colorName, sizeName: draft.sizeName ?? null, qty: draft.qty, prints: draft.prints, designId: json.id, previewUrl: json.previewUrl });
+      }
       nav.push("/cart");
     } catch (e) {
       setError((e as Error).message || t.designer.saveFailed);

@@ -12,6 +12,10 @@ export function start() {
       const { sendMissedPurchases } = await import("@/lib/ga-server");
       const tracked = await sendMissedPurchases();
       if (tracked) console.log(`[ga] sent ${tracked} server-side purchase event(s)`);
+      // Meta 轉換 API：補送已付款但還沒送過的 Purchase
+      const { sendPendingMetaPurchases } = await import("@/lib/meta-server");
+      const metaSent = await sendPendingMetaPurchases();
+      if (metaSent) console.log(`[meta] sent ${metaSent} server-side purchase event(s)`);
       // 未付款訂單的提醒信（要放在補查付款之後，剛付款的人才不會收到提醒）
       const { sendPaymentReminders } = await import("@/lib/recover");
       const reminded = await sendPaymentReminders();

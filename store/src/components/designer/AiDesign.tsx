@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useMarket, useT } from "@/market/client";
+import { metaTrack } from "@/lib/track";
 
 type Info = { enabled: boolean; limit?: number; remaining?: number; member?: boolean; styles?: { id: string; zh: string; en: string }[] };
 
@@ -47,6 +48,7 @@ export function AiDesign({ open, onClose, onUse, selectedUrl }: { open: boolean;
     setBusy(true);
     setError(null);
     setResult(null);
+    metaTrack("AIDesignGenerate", { style: info?.styles?.find((s) => s.id === style)?.zh ?? (mode === "text" ? "不指定" : "不換風格"), mode }, undefined, true);
     try {
       const fd = new FormData();
       fd.set("mode", mode);

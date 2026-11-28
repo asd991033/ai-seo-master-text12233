@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
-import { track } from "@/lib/track";
+import { metaTrack, track } from "@/lib/track";
+import { purchaseEventId } from "@/lib/meta-ids";
 
 export type UserData = { email?: string; phone_number?: string; address?: { first_name?: string; street?: string; city?: string; region?: string; postal_code?: string; country?: string } };
 type Props = {
@@ -14,6 +15,17 @@ type Props = {
 
 /** 訂單付款成功後送出一次「購買」轉換（GA4 purchase ＋ Google Ads 轉換）。同一張訂單只送一次 */
 export function PurchaseEvent({ orderNo, accessKey, value, shipping, currency, adsSendTo, tracked, userData, items }: Props) {
+  // Meta 像素的 Purchase：和 Google 的分開記錄，同一張訂單只送一次；eventID 與伺服器端相同讓 Meta 去重
+  useEffect(() => {
+    const key = `meta-purchase-sent:${orderNo}`;
+    try { if (localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { /* 無法記錄就照送，Meta 會用 eventID 去重 */ }
+    metaTrack("Purchase", {
+      value, currency, order_id: orderNo, content_type: "product",
+      content_ids: [...new Set(items.map((i) => i.item_id))], contents: items.map((i) => ({ id: i.item_id, quantity: i.quantity })),
+      num_items: items.reduce((a, i) => a + i.quantity, 0),
+    }, purchaseEventId(orderNo));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderNo]);
   useEffect(() => {
     if (tracked) return;
     const key = `purchase-sent:${orderNo}`;

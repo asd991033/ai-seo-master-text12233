@@ -55,7 +55,11 @@ export async function applySession(s: StripeSession): Promise<boolean> {
   const done = await db.update(schema.orders)
     .set({ paid: true, paidAt: Math.floor(Date.now() / 1000), paymentMethod: "stripe", paymentRef: String(s.payment_intent ?? s.id).slice(0, 80), status: order.status === "pending_payment" ? "reviewing" : order.status })
     .where(and(eq(schema.orders.id, order.id), eq(schema.orders.paid, false))).returning({ id: schema.orders.id });
-  if (done.length) void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
+  if (done.length) {
+    void sendOrderToSupplier(order.id).catch((e) => console.error("[supplier] auto send failed", order.orderNo, e));
+    // Meta 轉換 API 的 Purchase（失敗會由定時工作補送）
+    void import("@/lib/meta-server").then((m) => m.sendMetaPurchase(order.id)).catch(() => {});
+  }
   return true;
 }
 

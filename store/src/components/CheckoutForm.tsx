@@ -1,8 +1,8 @@
 "use client";
-import { track } from "@/lib/track";
+import { metaTrack, track } from "@/lib/track";
 import { DIAL_CODES, intlPhone } from "@/config/markets";
 import Link from "@/components/Link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMarket, useMoney, useT } from "@/market/client";
 import { useCart } from "@/lib/cart";
 import { ItemThumb, ShippingPicker, TotalsBox, useCartQuote } from "./CartView";
@@ -23,6 +23,15 @@ export function CheckoutForm({ defaults, online = false }: { defaults: Defaults;
     const hit = p.startsWith("+") ? [...DIAL_CODES].sort((x, y) => y[0].length - x[0].length).find(([c]) => p.startsWith(c)) : undefined;
     return hit ? { code: hit[0], number: p.slice(hit[0].length) } : { code: market.dial, number: p };
   })();
+
+  // Meta 像素：進入結帳頁、金額算出來後送一次 InitiateCheckout
+  const checkoutSent = useRef(false);
+  const total = q.totals?.total;
+  useEffect(() => {
+    if (checkoutSent.current || total == null || !q.items.length) return;
+    checkoutSent.current = true;
+    metaTrack("InitiateCheckout", { content_ids: [...new Set(q.items.map((i) => i.sku))], content_type: "product", contents: q.items.map((i) => ({ id: i.sku, quantity: i.qty })), num_items: q.items.reduce((a, i) => a + i.qty, 0), value: total, currency: market.currency });
+  }, [total, q.items, market.currency]);
 
   if (!q.hydrated) return <p className="py-20 text-center text-mute">{t.common.loading}</p>;
   if (!q.items.length && !submitting) {

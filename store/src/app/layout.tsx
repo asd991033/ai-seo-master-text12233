@@ -9,6 +9,7 @@ import { t } from "@/i18n";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@/components/Analytics";
+import { MetaPixel } from "@/components/MetaPixel";
 
 export async function generateMetadata(): Promise<Metadata> {
   const m = await initMarket();
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Footer />
         </MarketProvider>
         <Analytics />
+        <MetaPixel />
         <JsonLd data={organizationLd()} />
         <JsonLd data={websiteLd()} />
       </body>

@@ -271,6 +271,12 @@ export const orders = sqliteTable("orders", {
   gclid: text("gclid"),
   /** 「購買」轉換已送出的時間（瀏覽器送過或伺服器補送過），避免重複計算 */
   trackedAt: integer("tracked_at"),
+  /** Meta 轉換 API：下單時的 _fbp／_fbc、IP 與瀏覽器字串，以及伺服器送出 Purchase 的時間 */
+  metaFbp: text("meta_fbp"),
+  metaFbc: text("meta_fbc"),
+  clientIp: text("client_ip"),
+  clientUa: text("client_ua"),
+  metaSentAt: integer("meta_sent_at"),
   /** 下單的市場（tw / sg / my / au / ae / uk）與幣別；金額欄位都是這個幣別 */
   market: text("market").notNull().default("tw"),
   currency: text("currency").notNull().default("TWD"),

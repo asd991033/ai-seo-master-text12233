@@ -20,6 +20,7 @@ import { Stars } from "@/components/Stars";
 import { ProductReviews } from "@/components/Reviews";
 import { productReviews } from "@/lib/reviews";
 import { reviewsHidden } from "@/config/markets";
+import { MetaEvent } from "@/components/MetaPageView";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,460px)]">
         <div className="min-w-0">
           <div className="lg:sticky lg:top-32">
+            <MetaEvent event="ViewContent" params={{ content_ids: [p.sku], content_type: "product", content_name: p.name, currency: mkt.currency, ...(range ? { value: range.min } : {}) }} />
             <Gallery images={gallery} alt={p.name} firstAlt={p.sampleImage ? t.meta.sampleAlt(p.name) : undefined} />
           </div>
         </div>
