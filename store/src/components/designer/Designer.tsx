@@ -1002,10 +1002,21 @@ export default function Designer({ product }: { product: DesignerProduct }) {
         {/* 工具列 */}
         <aside className="max-lg:contents lg:space-y-4">
           <div className="card grid grid-cols-2 gap-2 p-3 max-lg:order-1 lg:block lg:space-y-2">
+            {/* AI 設計放在最上面，用漸層底色和說明文字讓客戶一眼看到 */}
+            {aiOn && (
+              <button type="button" onClick={() => setAiOpen(true)} disabled={!ready} data-testid="ai-open"
+                className="col-span-2 flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-[#6d28d9] via-[#c026d3] to-[#f97316] px-4 py-3 text-left text-white shadow-md lg:gap-2 lg:px-3 transition hover:brightness-110 disabled:opacity-50">
+                <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 text-lg lg:h-7 lg:w-7 lg:text-sm">✦</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-[15px] font-bold whitespace-nowrap">{t.designer.ai.open}<span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] leading-none font-bold text-[#c026d3]">NEW</span></span>
+                  <span className="mt-0.5 block text-xs leading-snug opacity-90">{t.designer.ai.tagline}</span>
+                </span>
+                <span aria-hidden className="text-lg lg:hidden">→</span>
+              </button>
+            )}
             <button type="button" className={tool} onClick={addText} disabled={!ready}>Ｔ　{t.designer.addText}</button>
             <button type="button" className={tool} onClick={() => fileInput.current?.click()} disabled={!ready}>▣　{t.designer.addImage}</button>
             <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp,.svg" className="sr-only" onChange={(e) => addImage(e.target.files?.[0])} data-testid="image-input" />
-            {aiOn && <button type="button" className={`${tool} col-span-2`} onClick={() => setAiOpen(true)} disabled={!ready} data-testid="ai-open">✦　{t.designer.ai.open}</button>}
             <div className="col-span-2 flex items-center gap-2 px-1 py-1 text-sm">
               <span className="flex-1">{t.designer.bg}</span>
               <input type="color" aria-label={t.designer.bg} className="h-8 w-10 rounded border border-line" value={bg ?? "#ffffff"} onChange={(e) => setBackground(e.target.value)} disabled={!ready} />
