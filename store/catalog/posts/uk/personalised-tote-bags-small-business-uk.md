@@ -65,7 +65,7 @@ If you run a workshop, pop-up or launch, a tote works as both a goody bag and a 
 
 ## Delivery and timing
 
-Production is shown on each product page and is commonly around five working days, starting after payment. Delivery to UK addresses then takes about 8–14 working days after dispatch. Delivery is a flat £12 per order, and free on orders over £120.
+Production is shown on each product page and is commonly around five working days, starting after payment. Delivery to UK addresses then takes about 8–14 working days after dispatch. Delivery is a flat £4.99 per order, and free on orders over £50.
 
 If you have a date to hit, such as a summer fair, a Christmas market or a shop opening, work backwards from it and add a buffer. No specific delivery date is promised, so do not leave it to the last fortnight. If you need other items to go with the bags, put them in the same order so you pay delivery once.
 
@@ -94,7 +94,7 @@ Start with one to check quality, then order what you expect to sell or give away
 Yes. Each print side can be designed separately, so you can put a logo on one side and contact details on the other.
 
 ### How long does delivery take to the UK?
-Production is commonly around five working days after payment, then delivery takes about 8–14 working days after dispatch. Delivery costs £12 per order, or is free over £120.
+Production is commonly around five working days after payment, then delivery takes about 8–14 working days after dispatch. Delivery costs £4.99 per order, or is free over £50.
 
 ### What if the printing is wrong?
 Items are made to order, but misprinted or faulty bags are remade or refunded if you report them within 7 days of delivery with photos. See the [returns policy](/returns).

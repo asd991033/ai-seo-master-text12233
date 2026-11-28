@@ -57,7 +57,7 @@ Screen colours can differ slightly from the printed result. If your group has a 
 
 ## Timing for events, gigs and the academic year
 
-Production is commonly around five working days after payment, and the exact time is shown on each product page. Delivery to UK addresses takes about 8–14 working days after dispatch. Delivery is a flat £12 per order and free on orders over £120.
+Production is commonly around five working days after payment, and the exact time is shown on each product page. Delivery to UK addresses takes about 8–14 working days after dispatch. Delivery is a flat £4.99 per order and free on orders over £50.
 
 Work backwards from your date:
 
@@ -80,7 +80,7 @@ Yes. Every product can be ordered from one piece, with printing included in the 
 Yes. You can order any quantity from one upwards, and the unit price drops at higher tiers shown on each product page.
 
 ### How long does delivery take?
-Production is commonly around five working days after payment, then delivery takes about 8–14 working days after dispatch. Delivery is £12 per order, or free over £120.
+Production is commonly around five working days after payment, then delivery takes about 8–14 working days after dispatch. Delivery is £4.99 per order, or free over £50.
 
 ### Can we sell the merchandise we order?
 Yes, you can sell what you buy to fundraise or cover costs. Set your price above the cost per item including delivery.

@@ -45,7 +45,7 @@ If you want to see the physical product before a large order, order 1 piece firs
 
 Printing is included in the unit price and there is no setup fee. The unit price falls as you order more, with price tiers shown on each product page. Prices are in UAE dirhams.
 
-Delivery is a flat AED 55 per order, and it is free on orders over AED 550. Payment is by card through Stripe checkout. If import duties or taxes are charged by local customs, they are paid by the recipient.
+Delivery is a flat AED 32 per order, and it is free on orders over AED 300. Payment is by card through Stripe checkout. If import duties or taxes are charged by local customs, they are paid by the recipient.
 
 ## Step 4: Production and delivery times
 
@@ -87,7 +87,7 @@ Production is shown on each product page and is commonly around 5 working days a
 You see a live mockup from several angles while designing. For extra confidence, order 1 piece first to check the finished product.
 
 ### How much is delivery?
-Delivery is a flat AED 55 per order, free on orders over AED 550. Import duties or taxes, if charged by local customs, are paid by the recipient.
+Delivery is a flat AED 32 per order, free on orders over AED 300. Import duties or taxes, if charged by local customs, are paid by the recipient.
 
 ### What happens if my order arrives faulty?
 Report it within 7 days of delivery with photos. Faulty, misprinted, wrong or transit-damaged items are remade or refunded free of charge.

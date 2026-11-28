@@ -75,7 +75,7 @@ The [ordering guide](/guide) covers print methods and artwork guidelines in more
 
 - **Production:** commonly around 5 working days after payment, shown on each product page.
 - **Delivery:** about 8 to 14 working days after dispatch for United States addresses.
-- **Shipping fee:** a flat $15 per order, and free on orders over $150.
+- **Shipping fee:** a flat $6.99 per order, and free on orders over $75.
 - **Payment:** by card through Stripe checkout.
 
 If you are planning something for a date, such as a club event or a product launch, order early to leave room for production, delivery and a possible fix.

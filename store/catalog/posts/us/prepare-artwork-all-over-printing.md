@@ -96,7 +96,7 @@ For more on print methods, see the [ordering guide](/guide).
 
 - Production commonly takes around 5 working days after payment.
 - Delivery to United States addresses takes about 8 to 14 working days after dispatch.
-- Delivery is a flat $15 per order and free on orders over $150.
+- Delivery is a flat $6.99 per order and free on orders over $75.
 - You can cancel for a full refund before production starts.
 
 Because items are made to order, there are no returns for change of mind. If something arrives faulty, misprinted, wrong or damaged, report it within 7 days of delivery with photos for a free remake or refund. Read the [returns policy](/returns) before you order.

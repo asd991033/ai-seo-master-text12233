@@ -3,7 +3,8 @@ import type { Dict } from "./zh-TW";
 
 /** English dictionary for the overseas markets (shipping amounts and currency come from the market config). */
 export default function en(m: Market): Dict {
-  const amt = (n: number) => `${m.symbol}${n.toLocaleString("en-US")}`;
+  // 整數不帶小數（$75），有小數就固定兩位（$6.99、S$9.90）
+  const amt = (n: number) => `${m.symbol}${n.toLocaleString("en-US", Number.isInteger(n) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const FLAT_SHIP = `Flat ${amt(m.shipping.fee)} delivery per order to ${m.countryName}, free on orders over ${amt(m.shipping.freeOver)}. Delivery takes about ${m.shipping.days} working days after dispatch.`;
   return {
     nav: { catalogue: "Catalogue", methods: "Print methods", faq: "FAQ", contact: "Contact", menu: "Menu", categories: "Categories", announce: "No minimum order · Lower prices at higher quantities · Live preview as you design", products: "All products", guide: "How it works", blog: "Blog", cart: "Cart", login: "Sign in / Register", account: "My account", admin: "Admin", search: "Search products, SKU…", logout: "Sign out" },

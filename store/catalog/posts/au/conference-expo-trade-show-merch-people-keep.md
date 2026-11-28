@@ -58,7 +58,7 @@ A practical way to decide quantity:
 1. Estimate delegates plus staff plus a small buffer for speakers and sponsors.
 2. Decide whether everyone gets one item, or only visitors to your stand.
 3. Split between two item types if you want a premium option for qualified leads.
-4. Check whether your total passes A$200 for free delivery. Otherwise delivery is a flat A$20 per order.
+4. Check whether your total passes A$99 for free delivery. Otherwise delivery is a flat A$9.99 per order.
 
 Handing out the item only on request or after a conversation at the stand reduces waste and makes recipients value it more.
 

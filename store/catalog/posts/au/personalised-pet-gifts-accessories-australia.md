@@ -67,7 +67,7 @@ If your photo has a busy background, you have two options. You can crop in close
 
 ## Planning delivery and timing
 
-Production starts after payment, commonly around 5 working days, and delivery takes about 8 to 14 working days after dispatch to your Australian address. For a birthday or adoption anniversary, order about four to five weeks early. Items are made to order, so you cannot return them for a change of mind, but faulty or misprinted items are remade or refunded if reported within 7 days of delivery with photos. See the [returns policy](/returns). Delivery is a flat A$20 per order, and free over A$200, so combining gifts for several pet-loving friends in one order helps.
+Production starts after payment, commonly around 5 working days, and delivery takes about 8 to 14 working days after dispatch to your Australian address. For a birthday or adoption anniversary, order about four to five weeks early. Items are made to order, so you cannot return them for a change of mind, but faulty or misprinted items are remade or refunded if reported within 7 days of delivery with photos. See the [returns policy](/returns). Delivery is a flat A$9.99 per order, and free over A$99, so combining gifts for several pet-loving friends in one order helps.
 
 ## FAQ
 

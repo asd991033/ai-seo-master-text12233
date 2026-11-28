@@ -61,7 +61,7 @@ Most products are printed full-colour, so a gradient or a photo is fine and does
 
 Every product can be ordered from 1 piece, so you can order a single sample to check the print before ordering for the whole office. Unit prices drop at higher quantities, with tiers such as 1+, 5+, 15+, 50+ and 100+ shown on each product page. Printing is included in the unit price, with no setup fee.
 
-Production is commonly around 5 working days after payment. Delivery to Singapore addresses takes about 7 to 12 working days after dispatch, at a flat S$15 per order or free over S$150. For a dated event, order about a month ahead.
+Production is commonly around 5 working days after payment. Delivery to Singapore addresses takes about 7 to 12 working days after dispatch, at a flat S$9.90 per order or free over S$80. For a dated event, order about a month ahead.
 
 ## If an item arrives damaged
 
@@ -82,4 +82,4 @@ Most products are printed in full colour, so photos and gradients work well. Use
 Production is commonly around 5 working days after payment, plus about 7 to 12 working days for delivery after dispatch to Singapore addresses.
 
 ### How much is delivery?
-A flat S$15 per order, and free on orders over S$150.
+A flat S$9.90 per order, and free on orders over S$80.

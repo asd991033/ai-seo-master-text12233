@@ -49,7 +49,7 @@ A simple approach:
 3. Check the price tier your total falls into.
 4. If you are close to the next tier, see whether adding a few more pieces lowers the unit price.
 
-Delivery is RM39 flat per order, and it is free on orders over RM400. A large event order often crosses that line.
+Delivery is RM22 flat per order, and it is free on orders over RM200. A large event order often crosses that line.
 
 ## Door gift design checklist
 

@@ -47,7 +47,7 @@ Each product page shows price tiers, such as 1+, 5+, 15+, 50+, 100+ and 300+. Th
 
 A useful habit: before you order, look at the next tier up. If you plan to buy 12 and the 15+ tier is cheaper per piece, check whether the total works out better with three more. Always compare the total cost, including delivery.
 
-Delivery is a flat RM39 per order, and free on orders over RM400. For small orders, combine several items into one checkout to avoid paying delivery twice.
+Delivery is a flat RM22 per order, and free on orders over RM200. For small orders, combine several items into one checkout to avoid paying delivery twice.
 
 ## Tips by type of user
 
@@ -92,7 +92,7 @@ Printing is included in the unit price, and the price drops as quantity rises ac
 Production is commonly around 5 working days after payment. Delivery takes about 7 to 12 working days after dispatch.
 
 ### What does delivery cost?
-Delivery is a flat RM39 per order, and it is free on orders over RM400. Orders ship to Malaysia addresses.
+Delivery is a flat RM22 per order, and it is free on orders over RM200. Orders ship to Malaysia addresses.
 
 ### What if I change my mind after ordering?
 Items are made to order, so there are no returns for change of mind. You can cancel for a full refund before production starts. Faulty, misprinted, wrong or transit-damaged items are remade or refunded within 7 days of delivery with photos. See the [returns policy](/returns).

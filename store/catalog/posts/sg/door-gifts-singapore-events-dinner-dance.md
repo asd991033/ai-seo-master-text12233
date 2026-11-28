@@ -35,7 +35,7 @@ Keep budgets modest and designs fun. Items from [Hats & Accessories](/products?c
 
 ## Setting a budget per guest
 
-Door gift budgets in Singapore tend to be small relative to the overall event spend, so work out your total first and divide by headcount. Remember to include delivery: a flat S$15 per order, free over S$150.
+Door gift budgets in Singapore tend to be small relative to the overall event spend, so work out your total first and divide by headcount. Remember to include delivery: a flat S$9.90 per order, free over S$80.
 
 Because unit prices drop at higher quantities, the price tiers on each product page (such as 1+, 5+, 15+, 50+ or 100+) can help you decide whether to order slightly more. A modest buffer of extra pieces is sensible for late RSVPs and organisers.
 
@@ -85,7 +85,7 @@ A tote bag or a reusable bottle is a safe choice because guests use them afterwa
 Order about a month ahead. Production is commonly around 5 working days, and delivery takes about 7 to 12 working days after dispatch.
 
 ### Can I have a different design for each guest?
-Each order is one design per product, and every order ships to one address. You can place separate orders for different designs, but each will carry its own delivery fee unless it is over S$150.
+Each order is one design per product, and every order ships to one address. You can place separate orders for different designs, but each will carry its own delivery fee unless it is over S$80.
 
 ### Do you deliver to Singapore addresses?
-Yes. Delivery is S$15 flat per order, free on orders over S$150, and you pay by card at checkout.
+Yes. Delivery is S$9.90 flat per order, free on orders over S$80, and you pay by card at checkout.

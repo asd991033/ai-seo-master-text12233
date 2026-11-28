@@ -165,6 +165,36 @@ function filePosts() {
   return out;
 }
 
+/**
+ * 2026-11 海外站調整運費後，把已經發布的各國文章裡提到的舊運費與免運門檻換成新的數字（只做一次）。
+ * 文章只在第一次建立時寫入資料庫，之後改檔案不會同步，所以要直接更新資料庫裡的內容。
+ */
+const SHIPPING_V2: Record<string, [RegExp, string][]> = {
+  us: [[/\$150\b/g, "$75"], [/\$15\b/g, "$6.99"]],
+  uk: [[/£120\b/g, "£50"], [/£12\b/g, "£4.99"]],
+  au: [[/A\$200\b/g, "A$99"], [/A\$20\b/g, "A$9.99"]],
+  sg: [[/S\$150\b/g, "S$80"], [/S\$15\b/g, "S$9.90"]],
+  my: [[/RM400\b/g, "RM200"], [/RM39\b/g, "RM22"]],
+  ae: [[/AED 550\b/g, "AED 300"], [/AED 55\b/g, "AED 32"]],
+};
+async function applyShippingV2() {
+  const KEY = "posts_shipping_v2";
+  const [done] = await db.select().from(schema.settings).where(eq(schema.settings.key, KEY));
+  if (done) return;
+  let changed = 0;
+  for (const [market, rules] of Object.entries(SHIPPING_V2)) {
+    const fix = (t: string | null) => (t == null ? t : rules.reduce((x, [re, to]) => x.replace(re, () => to), t));
+    for (const p of await db.select().from(schema.posts).where(eq(schema.posts.market, market))) {
+      const next = { content: fix(p.content)!, excerpt: fix(p.excerpt)!, seoDescription: fix(p.seoDescription) };
+      if (next.content === p.content && next.excerpt === p.excerpt && next.seoDescription === p.seoDescription) continue;
+      await db.update(schema.posts).set(next).where(eq(schema.posts.id, p.id));
+      changed++;
+    }
+  }
+  await db.insert(schema.settings).values({ key: KEY, value: String(changed) }).onConflictDoNothing();
+  if (changed) console.log(`[posts] updated shipping amounts in ${changed} post(s)`);
+}
+
 export async function seedPosts() {
   for (const p of POSTS) {
     const hit = await db.select({ id: schema.posts.id }).from(schema.posts).where(eq(schema.posts.slug, p.slug));
@@ -177,4 +207,5 @@ export async function seedPosts() {
     const hit = await db.select({ id: schema.posts.id }).from(schema.posts).where(eq(schema.posts.slug, p.slug));
     if (!hit.length) { await db.insert(schema.posts).values({ ...p, publishedAt: now - n * 60, updatedAt: now - n * 60 }); n++; }
   }
+  await applyShippingV2();
 }

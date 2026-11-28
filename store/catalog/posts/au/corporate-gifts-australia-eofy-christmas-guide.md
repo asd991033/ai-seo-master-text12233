@@ -28,7 +28,7 @@ Decide the budget before you browse. A simple structure keeps decisions fast and
 - **Mid-range:** a tote, bottle, blanket or cushion with a name or logo, for key clients and long-serving staff.
 - **Premium:** a larger home or living item for top clients, or a combination of two items for senior milestones.
 
-Remember to add delivery to the budget. Delivery is a flat A$20 per order, and free on orders over A$200, so one consolidated order is usually more economical than several small ones. Unit price also drops at higher quantities, with tiers shown on each product page, so a single design across the whole team often goes further.
+Remember to add delivery to the budget. Delivery is a flat A$9.99 per order, and free on orders over A$99, so one consolidated order is usually more economical than several small ones. Unit price also drops at higher quantities, with tiers shown on each product page, so a single design across the whole team often goes further.
 
 ## Lead times: how early to order
 
@@ -65,7 +65,7 @@ Use this list to run any corporate gift order from start to finish:
 3. Pick one product type and one design for the whole group.
 4. Upload a transparent PNG or vector logo (300 dpi recommended, 150 dpi minimum) and check the live mockup from every angle.
 5. Order one piece first if you want to see the real product before committing to a big run.
-6. Place the full order in one go to take advantage of price tiers and free delivery over A$200.
+6. Place the full order in one go to take advantage of price tiers and free delivery over A$99.
 
 ## Mistakes to avoid
 
@@ -85,7 +85,7 @@ Allow four to five weeks from the day you pay, covering production of around 5 w
 No. Every product can be ordered from one piece, and the unit price falls as quantity rises. Many businesses order a single item first to check quality.
 
 ### How much does delivery cost for a bulk order?
-Delivery is a flat A$20 per order, and free on orders over A$200. Delivery is to Australian addresses only.
+Delivery is a flat A$9.99 per order, and free on orders over A$99. Delivery is to Australian addresses only.
 
 ### Can I send gifts directly to each staff member?
 No, each order goes to a single delivery address. You can either distribute the gifts yourself or place separate orders for each address.

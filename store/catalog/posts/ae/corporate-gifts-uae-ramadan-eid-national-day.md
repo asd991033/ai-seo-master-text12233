@@ -46,7 +46,7 @@ Decide the budget before you browse. The ranges below are planning guidelines fo
 - **Regular clients:** a step up in quality or a small set of two items.
 - **Key clients and senior contacts:** a more considered gift, perhaps personalised with a name or a greeting.
 
-Remember delivery: it is a flat AED 55 per order and free on orders over AED 550, so consolidating a team order into one shipment often makes sense. Unit prices also fall as quantities rise, with price tiers shown on each product page, so ordering for the whole group at once is usually more economical than many small orders.
+Remember delivery: it is a flat AED 32 per order and free on orders over AED 300, so consolidating a team order into one shipment often makes sense. Unit prices also fall as quantities rise, with price tiers shown on each product page, so ordering for the whole group at once is usually more economical than many small orders.
 
 ## How to plan your timeline
 
@@ -91,7 +91,7 @@ Yes. Every product can be ordered from 1 piece, so you can personalise a handful
 Each order goes to one UAE address. If you need gifts at several locations, place a separate order for each, or receive them in one place and distribute them yourself.
 
 ### How much does delivery cost?
-Delivery is a flat AED 55 per order, and it is free on orders over AED 550. Payment is by card through Stripe checkout.
+Delivery is a flat AED 32 per order, and it is free on orders over AED 300. Payment is by card through Stripe checkout.
 
 ### What if a gift arrives faulty or misprinted?
 Report it within 7 days of delivery with photos. Faulty, misprinted, wrong or transit-damaged items are remade or refunded free of charge, as set out in the [returns policy](/returns).

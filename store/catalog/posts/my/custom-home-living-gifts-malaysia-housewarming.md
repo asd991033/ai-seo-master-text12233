@@ -69,7 +69,7 @@ Most products are printed all-over in full colour by transfer or dye-sublimation
 
 Production is usually around 5 working days after payment, and delivery takes about 7 to 12 working days after dispatch. That means you should order at least four to six weeks before a dated occasion. Festive dates shift every year, so check the calendar early.
 
-Delivery is a flat RM39 per order, and free on orders over RM400. If you are buying several gifts, putting them in one order can save on delivery.
+Delivery is a flat RM22 per order, and free on orders over RM200. If you are buying several gifts, putting them in one order can save on delivery.
 
 ### Gifting without a minimum
 

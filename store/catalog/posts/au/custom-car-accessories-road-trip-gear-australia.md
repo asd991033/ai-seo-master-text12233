@@ -58,7 +58,7 @@ Here is a simple way to put together a theme without overspending:
 3. Use one design across all items so they look like a set.
 4. Place everything in a single order so it ships together to one address.
 
-Delivery is a flat A$20 per order, and free on orders over A$200, so a combined order of several items is usually more economical than separate ones. Note that gift wrapping is not offered, so plan how you will present the gift yourself.
+Delivery is a flat A$9.99 per order, and free on orders over A$99, so a combined order of several items is usually more economical than separate ones. Note that gift wrapping is not offered, so plan how you will present the gift yourself.
 
 ## Using car and outdoor items as club merch
 
@@ -85,7 +85,7 @@ Sun shades are a common custom car accessory, and you can browse current options
 Yes. There is no minimum order and no setup fee, so a club can order exactly the number members have paid for. Unit price falls as quantity increases.
 
 ### How long does delivery take in Australia?
-Production commonly takes around 5 working days after payment, then delivery takes about 8 to 14 working days after dispatch. Delivery is a flat A$20 per order, or free on orders over A$200.
+Production commonly takes around 5 working days after payment, then delivery takes about 8 to 14 working days after dispatch. Delivery is a flat A$9.99 per order, or free on orders over A$99.
 
 ### Will seat or steering covers fit my car?
 Check the size and fit details on the product page against your vehicle before ordering. Items are made to order, so there are no returns for change of mind.

@@ -47,7 +47,7 @@ This is a simple method any committee can follow:
 1. **Pick one hero item.** One well-chosen item is easier to promote than six.
 2. **Design once.** Upload your crest or artwork in the online designer and check the live preview from several angles.
 3. **Open pre-orders.** Collect names, sizes where relevant, and payment through your usual club channels, with a clear closing date.
-4. **Place one combined order.** Use the price tiers to lower cost per item, and check whether you reach free delivery over A$200.
+4. **Place one combined order.** Use the price tiers to lower cost per item, and check whether you reach free delivery over A$99.
 5. **Hand out and thank.** The order arrives at a single address, so arrange a pick-up day at training or the school office.
 
 ## How to price for a profit
@@ -58,7 +58,7 @@ Work from the total, not from guesswork.
 - Divide by the number of items you expect to sell.
 - Add your fundraising margin on top and round to a friendly price.
 
-Delivery is a flat A$20 per order, and free on orders over A$200, so a single order is better than lots of small ones. Do not forget to include delivery in your costing if you stay under that line.
+Delivery is a flat A$9.99 per order, and free on orders over A$99, so a single order is better than lots of small ones. Do not forget to include delivery in your costing if you stay under that line.
 
 ## Design tips that keep clubs looking sharp
 

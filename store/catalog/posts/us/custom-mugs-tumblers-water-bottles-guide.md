@@ -76,7 +76,7 @@ Most products are printed full-color, so gradients and photographs are fine and 
 - Printing is included in the unit price, with no setup fee.
 - Production commonly takes around 5 working days after payment.
 - Delivery takes about 8 to 14 working days after dispatch to United States addresses.
-- Delivery is a flat $15 per order and free on orders over $150.
+- Delivery is a flat $6.99 per order and free on orders over $75.
 - Payment is by card through Stripe checkout.
 
 Drinkware makes an excellent team or event gift, so order early for dated occasions. If a piece arrives faulty, misprinted or damaged, report it within 7 days of delivery with photos for a free remake or refund. See the [returns policy](/returns).
@@ -101,4 +101,4 @@ Yes. Every product can be ordered from 1 piece, which is also the best way to ch
 
 ### How much is delivery in the US?
 
-A flat $15 per order, free on orders over $150.
+A flat $6.99 per order, free on orders over $75.

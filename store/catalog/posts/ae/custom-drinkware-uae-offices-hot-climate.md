@@ -61,7 +61,7 @@ Follow these steps for a smooth order:
 
 There is no minimum order, and printing is included in the unit price with no setup fee. The unit price falls at higher quantities, with price tiers shown on each product page, so ordering for the whole team together tends to be more economical.
 
-Timing has two parts. Production is shown on each product page, commonly around 5 working days after payment. Delivery then takes about 8 to 14 working days after dispatch. Delivery costs a flat AED 55 per order and is free on orders over AED 550. For dated moments such as Ramadan, Eid, National Day or an office launch, order early and do not rely on a specific delivery date.
+Timing has two parts. Production is shown on each product page, commonly around 5 working days after payment. Delivery then takes about 8 to 14 working days after dispatch. Delivery costs a flat AED 32 per order and is free on orders over AED 300. For dated moments such as Ramadan, Eid, National Day or an office launch, order early and do not rely on a specific delivery date.
 
 If you are planning gifts as well as office stock, our guide to [corporate gifts](/blog) is a helpful companion, and you can also see the [ordering guide](/guide) for print methods and artwork guidelines.
 

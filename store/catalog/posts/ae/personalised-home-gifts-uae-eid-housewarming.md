@@ -70,7 +70,7 @@ Follow these steps:
 
 There is no minimum order, so you can make one special gift or a set for the family. Printing is included in the unit price, and unit prices drop at higher quantities, with tiers on each product page.
 
-Production is shown on each product page and is commonly around 5 working days after payment. Delivery then takes about 8 to 14 working days after dispatch. Delivery costs a flat AED 55 per order, free on orders over AED 550. For Eid or another dated occasion, order early and do not count on a particular delivery date.
+Production is shown on each product page and is commonly around 5 working days after payment. Delivery then takes about 8 to 14 working days after dispatch. Delivery costs a flat AED 32 per order, free on orders over AED 300. For Eid or another dated occasion, order early and do not count on a particular delivery date.
 
 Each order goes to one address. If gifts are for different relatives, have them delivered to you and hand them over in person, which also lets you present them yourself. For a fuller explanation of the process, read the [ordering guide](/guide).
 

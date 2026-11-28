@@ -56,7 +56,7 @@ Unit price falls at higher quantities, with tiers such as 1+, 5+, 15+, 50+, 100+
 5. Order at least four to six weeks before the festival.
 6. Receive delivery at one address and distribute from there.
 
-Delivery is a flat RM39 per order and free on orders over RM400, so consolidating your tiers into a single order can make sense.
+Delivery is a flat RM22 per order and free on orders over RM200, so consolidating your tiers into a single order can make sense.
 
 ## Design tips for company gifts
 
@@ -83,7 +83,7 @@ Order at least four to six weeks ahead. Production takes around 5 working days a
 Yes. Every product can be ordered from 1 piece, with no minimum order and no setup fee. Price tiers reward larger quantities.
 
 ### Do you charge for delivery in Malaysia?
-Delivery is a flat RM39 per order, and it is free on orders over RM400. Payment is by card through Stripe checkout.
+Delivery is a flat RM22 per order, and it is free on orders over RM200. Payment is by card through Stripe checkout.
 
 ### What if the print comes out wrong?
 Because items are made to order, there are no returns for change of mind. Faulty, misprinted, wrong or transit-damaged items are remade or refunded free of charge if reported within 7 days of delivery with photos. See the [returns policy](/returns) for details.

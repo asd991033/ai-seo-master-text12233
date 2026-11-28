@@ -69,7 +69,7 @@ Ask three questions:
 - Use the live preview in the designer to check the placement from several angles.
 - Expect small differences between screen and print colour.
 
-For more detail, read the [print methods and artwork guidance](/guide). Production is commonly around five working days after payment, and delivery to UK addresses takes about 8–14 working days after dispatch, with a flat £12 delivery charge per order, free over £120. You can also [browse all products](/products) to see what suits your idea.
+For more detail, read the [print methods and artwork guidance](/guide). Production is commonly around five working days after payment, and delivery to UK addresses takes about 8–14 working days after dispatch, with a flat £4.99 delivery charge per order, free over £50. You can also [browse all products](/products) to see what suits your idea.
 
 ## FAQ
 

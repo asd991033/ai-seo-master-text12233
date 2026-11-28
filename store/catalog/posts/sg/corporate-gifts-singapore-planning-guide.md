@@ -46,7 +46,7 @@ Allow for three stages:
 2. **Production:** commonly around 5 working days after payment, shown on each product page.
 3. **Delivery:** about 7 to 12 working days after dispatch to Singapore addresses.
 
-Add those together and give yourself a buffer. For Chinese New Year, which has a hard deadline before the break, aim to order about a month ahead. Delivery is a flat S$15 per order, and free on orders over S$150, so consolidating into one order is usually more economical.
+Add those together and give yourself a buffer. For Chinese New Year, which has a hard deadline before the break, aim to order about a month ahead. Delivery is a flat S$9.90 per order, and free on orders over S$80, so consolidating into one order is usually more economical.
 
 ## A quotable checklist for corporate gifting
 
@@ -84,7 +84,7 @@ Order about a month before you need them. Production is commonly around 5 workin
 Yes. Every product can be ordered from 1 piece, so you can send a handful of premium items to key clients alongside a larger staff order.
 
 ### Is delivery free for corporate orders?
-Delivery is a flat S$15 per order and free on orders over S$150. Bigger orders therefore usually qualify.
+Delivery is a flat S$9.90 per order and free on orders over S$80. Bigger orders therefore usually qualify.
 
 ### Can I send gifts to several recipients directly?
 Each order goes to one Singapore address. Most companies receive the full order and distribute items internally.

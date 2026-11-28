@@ -69,7 +69,7 @@ More on file requirements and print methods is in the [ordering guide](/guide).
 
 ## Timing, delivery and returns
 
-Production is commonly around 5 working days after payment, shown on each product page. Delivery to Singapore addresses takes about 7 to 12 working days after dispatch. The delivery fee is a flat S$15 per order, and free on orders over S$150. If you have a dated event or launch, order early.
+Production is commonly around 5 working days after payment, shown on each product page. Delivery to Singapore addresses takes about 7 to 12 working days after dispatch. The delivery fee is a flat S$9.90 per order, and free on orders over S$80. If you have a dated event or launch, order early.
 
 Orders are made to order, so there are no returns for change of mind. If an item is faulty, misprinted, wrong or damaged in transit, report it within 7 days of delivery with photos for a free remake or refund. You can cancel for a full refund before production starts. See the [returns policy](/returns), and browse [all products](/products) to start.
 
@@ -88,4 +88,4 @@ Yes. You can place a new order with the same artwork whenever you need more, for
 You can add text in the designer. Each order uses one design per product, so for different names on each piece you would place separate orders.
 
 ### How do I pay and how is it delivered?
-You pay by card at checkout, and items are delivered to a Singapore address. Delivery is S$15 flat per order, or free over S$150.
+You pay by card at checkout, and items are delivered to a Singapore address. Delivery is S$9.90 flat per order, or free over S$80.

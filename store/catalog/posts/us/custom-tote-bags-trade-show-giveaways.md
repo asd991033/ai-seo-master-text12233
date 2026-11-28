@@ -76,7 +76,7 @@ Add those up and you will see that you need to order several weeks before the sh
 
 ## Costs and shipping
 
-Printing is included in the unit price, with no setup fee. Delivery is a flat $15 per order, and free on orders over $150. For a booth order, you will often pass that threshold, but check the cart total before you pay. Payment is by card through Stripe checkout.
+Printing is included in the unit price, with no setup fee. Delivery is a flat $6.99 per order, and free on orders over $75. For a booth order, you will often pass that threshold, but check the cart total before you pay. Payment is by card through Stripe checkout.
 
 Items are made to order. If something arrives faulty, misprinted or damaged, report it within 7 days of delivery with photos for a free remake or refund. See the [returns policy](/returns).
 
@@ -98,7 +98,7 @@ Yes. Each print side can be designed separately in the online designer, and you 
 
 ### Do I have to pay shipping on a large booth order?
 
-Delivery is a flat $15 per order and free on orders over $150. Large giveaway orders often qualify for free delivery.
+Delivery is a flat $6.99 per order and free on orders over $75. Large giveaway orders often qualify for free delivery.
 
 ### What if my order arrives misprinted?
 

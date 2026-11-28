@@ -67,7 +67,7 @@ The [Holiday & Seasonal](/products?category=c-eaba8078) category is a good place
 You can plan costs without surprises:
 
 - Printing is included in the unit price, with no setup fee on these products.
-- Delivery is a flat $15 per order, and free on orders over $150.
+- Delivery is a flat $6.99 per order, and free on orders over $75.
 - Larger quantities lower the unit price, so combining several gifts into one order can help you reach free delivery.
 
 Import duties or taxes, if charged by local customs, are paid by the recipient.
@@ -95,7 +95,7 @@ Production commonly takes around 5 working days after payment. Delivery then tak
 
 ### How much does shipping cost?
 
-Delivery is a flat $15 per order and free on orders over $150.
+Delivery is a flat $6.99 per order and free on orders over $75.
 
 ### Can I ship gifts to several employees from one order?
 

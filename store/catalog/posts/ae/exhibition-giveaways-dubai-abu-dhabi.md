@@ -61,7 +61,7 @@ Plan the timeline backwards from the first day of the event:
 
 Add buffer for artwork approval, for any remake you might need, and for moving stock to the venue. Order early rather than relying on a specific delivery date.
 
-Delivery is a flat AED 55 per order, free over AED 550. All items in an order go to a single UAE address, so many exhibitors send their order to their office and then transfer the boxes to Dubai or Abu Dhabi themselves.
+Delivery is a flat AED 32 per order, free over AED 300. All items in an order go to a single UAE address, so many exhibitors send their order to their office and then transfer the boxes to Dubai or Abu Dhabi themselves.
 
 ## Quick checklist for event giveaways
 

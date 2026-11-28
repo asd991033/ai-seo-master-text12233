@@ -67,7 +67,7 @@ This list can be used as written:
 
 ## Timing and delivery
 
-Production is shown on each product page and is commonly around five working days, starting after payment. Delivery to UK addresses takes about 8–14 working days after dispatch. Delivery is a flat £12 per order and free on orders over £120, so if you are buying for several people at once, putting everything into one order can reduce the cost per gift.
+Production is shown on each product page and is commonly around five working days, starting after payment. Delivery to UK addresses takes about 8–14 working days after dispatch. Delivery is a flat £4.99 per order and free on orders over £50, so if you are buying for several people at once, putting everything into one order can reduce the cost per gift.
 
 No delivery date is promised. For a dated event, work backwards from the day you need it, add a buffer, and place the order early. Each order goes to one address, so if the gift is a surprise, have it delivered to your own home first.
 

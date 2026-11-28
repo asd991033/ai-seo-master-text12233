@@ -65,7 +65,7 @@ Use this list before you pay:
 
 Production usually takes around 5 working days after payment, and delivery takes about 7 to 12 working days after dispatch. Add time for size collection and design approval, and you can see why five to six weeks is a sensible lead time.
 
-On budget, unit price falls as quantity rises, with tiers such as 1+, 5+, 15+, 50+, 100+ and 300+. Printing is included, with no setup fee. Delivery is a flat RM39 per order and free on orders over RM400, so a group order often qualifies.
+On budget, unit price falls as quantity rises, with tiers such as 1+, 5+, 15+, 50+, 100+ and 300+. Printing is included, with no setup fee. Delivery is a flat RM22 per order and free on orders over RM200, so a group order often qualifies.
 
 Because each order goes to one address, plan to receive everything in one place, then hand shirts out at the office, school or venue.
 
@@ -95,4 +95,4 @@ Yes. Each print side can be designed separately, so you can put the event name o
 Make sure sizes are confirmed before ordering, since items are made to order and there are no returns for change of mind. Misprinted, faulty, wrong or transit-damaged items can be remade or refunded if reported within 7 days with photos. See the [returns policy](/returns).
 
 ### How much does delivery cost?
-Delivery is RM39 flat per order, and free on orders over RM400. Delivery takes about 7 to 12 working days after dispatch.
+Delivery is RM22 flat per order, and free on orders over RM200. Delivery takes about 7 to 12 working days after dispatch.

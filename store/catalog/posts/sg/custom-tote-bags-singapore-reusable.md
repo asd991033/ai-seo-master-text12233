@@ -67,7 +67,7 @@ Since every product can be ordered from 1 piece, you can order a single tote to 
 
 ## Ordering and delivery
 
-Production is commonly around 5 working days after payment, and delivery to Singapore addresses takes about 7 to 12 working days after dispatch. Order early for dated events. Delivery is a flat S$15 per order, free over S$150. If an item is faulty, misprinted or damaged, report it within 7 days of delivery with photos for a free remake or refund, as set out in the [returns policy](/returns).
+Production is commonly around 5 working days after payment, and delivery to Singapore addresses takes about 7 to 12 working days after dispatch. Order early for dated events. Delivery is a flat S$9.90 per order, free over S$80. If an item is faulty, misprinted or damaged, report it within 7 days of delivery with photos for a free remake or refund, as set out in the [returns policy](/returns).
 
 ## FAQ
 

@@ -32,7 +32,7 @@ Work out the total first, then divide. A few practical rules:
 - Decide the budget for the whole programme, then split it between groups such as top clients, regular clients and staff.
 - Keep the gift itself within the budget and add delivery separately.
 - Remember that unit prices fall at higher quantities, so a team of 50 may afford a better item than a team of 5 at the same per-head spend.
-- Delivery is a flat £12 per order and free on orders over £120, so combining gifts into one order is usually cheaper than several small ones.
+- Delivery is a flat £4.99 per order and free on orders over £50, so combining gifts into one order is usually cheaper than several small ones.
 
 One limit to plan around: each order goes to a single delivery address. If your recipients are spread across the country, have the order delivered to your office and hand the gifts out or post them on yourself.
 
@@ -68,7 +68,7 @@ This checklist can be used as written:
 3. Pick one to three product types that suit the recipients.
 4. Prepare a transparent PNG or vector logo.
 5. Design and preview each side of the product.
-6. Order everything to one UK address in a single order to keep delivery at £12 or free over £120.
+6. Order everything to one UK address in a single order to keep delivery at £4.99 or free over £50.
 7. Allow production plus 8–14 working days for delivery, and add a buffer.
 
 ## Mistakes to avoid
@@ -84,7 +84,7 @@ Order in October if you can. Production is commonly around five working days and
 Yes. There is no minimum order, so you can order from one piece. Unit prices fall as quantities rise, with tiers shown on each product page.
 
 ### Is delivery free for business orders?
-Delivery is a flat £12 per order and free on orders over £120. Each order goes to one UK address.
+Delivery is a flat £4.99 per order and free on orders over £50. Each order goes to one UK address.
 
 ### Can I get a sample before ordering in bulk?
 The way to sample is to order one piece. This lets you check colours and quality before placing a larger order.
